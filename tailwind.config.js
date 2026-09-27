@@ -1,0 +1,88 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ["Inter", "sans-serif"],
+      },
+      colors: {
+        primary: {
+          50: "#EFF6FF",
+          100: "#DBEAFE",
+          200: "#BFDBFE",
+          300: "#93C5FD",
+          400: "#60A5FA",
+          500: "#2563EB",
+          600: "#1D4ED8",
+          700: "#1E40AF",
+          800: "#1E3A8A",
+          900: "#172554",
+          DEFAULT: "#2563EB",
+        },
+        neutral: {
+          50: "#F9FAFB",
+          100: "#F3F4F6",
+          200: "#E5E7EB",
+          300: "#D1D5DB",
+          400: "#9CA3AF",
+          500: "#6B7280",
+          600: "#4B5563",
+          700: "#374151",
+          800: "#1F2937",
+          900: "#111827",
+        },
+        success: {
+          50: "#F0FDF4",
+          500: "#16A34A",
+          600: "#15803D",
+          DEFAULT: "#16A34A",
+        },
+        error: {
+          50: "#FEF2F2",
+          500: "#DC2626",
+          600: "#B91C1C",
+          DEFAULT: "#DC2626",
+        },
+        warning: {
+          50: "#FFFBEB",
+          500: "#D97706",
+          600: "#B45309",
+          DEFAULT: "#D97706",
+        },
+        info: {
+          50: "#EFF6FF",
+          500: "#2563EB",
+          600: "#1D4ED8",
+          DEFAULT: "#2563EB",
+        },
+        surface: "#FFFFFF",
+        page: "#F9FAFB",
+      },
+      textColor: {
+        primary: "#111827",
+        secondary: "#6B7280",
+        muted: "#9CA3AF",
+      },
+      spacing: {
+        1: "4px",
+        2: "8px",
+        3: "12px",
+        4: "16px",
+        6: "24px",
+        8: "32px",
+        10: "40px",
+        12: "48px",
+        16: "64px",
+      },
+      borderRadius: {
+        sm: "6px",
+        md: "8px",
+        lg: "12px",
+        xl: "16px",
+        full: "9999px",
+      },
+    },
+  },
+  plugins: [],
+};
