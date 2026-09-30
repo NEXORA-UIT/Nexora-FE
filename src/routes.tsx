@@ -1,5 +1,6 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 import { AuthLayout } from "@/layouts/AuthLayout";
+import { LandingPage } from "@/pages/landing/LandingPage";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
 import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
@@ -8,10 +9,13 @@ import { UnderDevelopmentPage } from "@/pages/UnderDevelopmentPage";
 import { ROUTES } from "@/constants/routes";
 
 export const router = createBrowserRouter([
+  // Public Marketing Landing Page
   {
-    path: ROUTES.HOME,
-    element: <Navigate to={ROUTES.LOGIN} replace />,
+    path: ROUTES.LANDING,
+    element: <LandingPage />,
   },
+
+  // Authentication Flow Layout
   {
     element: <AuthLayout />,
     children: [
