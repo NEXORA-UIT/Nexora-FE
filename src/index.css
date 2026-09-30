@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -172,6 +174,12 @@
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
   }
 
+  /* Hide Edge/IE native password reveal button */
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none;
+  }
+
   input:disabled,
   textarea:disabled,
   select:disabled {
@@ -272,5 +280,17 @@
     font-size: 12px;
     line-height: 16px;
     font-weight: 500;
+  }
+
+  .text-primary-500 {
+    color: var(--color-primary-500);
+  }
+
+  .text-primary-600 {
+    color: var(--color-primary-600);
+  }
+
+  .text-primary-700 {
+    color: var(--color-primary-700);
   }
 }

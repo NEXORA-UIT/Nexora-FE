@@ -6,7 +6,7 @@ This repository contains the complete frontend web application built with **Reac
 
 ---
 
-## 🏛️ Domain Hierarchy
+## Domain Hierarchy
 
 Nexora is designed for general project management across various domains (not restricted solely to software development). The core organizational hierarchy follows:
 
@@ -26,7 +26,7 @@ Workspace
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 | Layer | Technologies |
 | :--- | :--- |
@@ -35,13 +35,13 @@ Workspace
 | **Styling** | [Tailwind CSS 3](https://tailwindcss.com/), [PostCSS](https://postcss.org/), [Autoprefixer](https://github.com/postcss/autoprefixer) |
 | **UI Primitives** | [Radix UI](https://www.radix-ui.com/), [Lucide React](https://lucide.dev/), [class-variance-authority](https://cva.style/) |
 | **State Management** | **Server State:** [TanStack Query v5](https://tanstack.com/query)<br>**Client/UI State:** [Zustand v5](https://github.com/pmndrs/zustand)<br>**Form State:** [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/)<br>**URL State:** React Router |
-| **API Client & Mocking**| [Axios](https://axios-http.com/), [MSW (Mock Service Worker)](https://mswjs.io/) |
+| **API Client & Mocking** | [Axios](https://axios-http.com/), [MSW (Mock Service Worker)](https://mswjs.io/) |
 | **Testing** | [Vitest](https://vitest.dev/), [React Testing Library](https://testing-library.com/), [Playwright](https://playwright.dev/) |
 | **Code Quality** | [ESLint 9](https://eslint.org/) (Flat Config), [Prettier](https://prettier.io/) |
 
 ---
 
-## 📂 Project Architecture
+## Project Architecture
 
 ```text
 frontend/
@@ -89,7 +89,7 @@ frontend/
 
 ---
 
-## 🎨 Design System Principles
+## Design System Principles
 
 - **Font:** Inter (`400`, `500`, `600`, `700`)
 - **Primary Brand Color:** `#2563EB` (Primary 500)
@@ -99,7 +99,7 @@ frontend/
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -144,10 +144,11 @@ The application will be accessible at `http://localhost:5173/`.
 
 ---
 
-## 🤝 Team Collaboration
+## Team Collaboration
 
-This repository is developed by a two-student team utilizing AI coding agents:
-- **Developer A:** Antigravity
-- **Developer B:** Codex
+This repository is developed by a two-student team:
+
+- **Developer A:** Phan Gia Đạt - 24520287
+- **Developer B:** Nguyễn Gia Bảo - 24520168
 
 Both developers and AI agents **MUST** follow the documentation in `agent-docs/` before implementing any feature or use case.
