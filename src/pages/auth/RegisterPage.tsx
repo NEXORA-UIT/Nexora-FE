@@ -23,7 +23,7 @@ export const RegisterPage: React.FC = () => {
       </div>
 
       {/* Register Form */}
-      <RegisterForm onSuccess={() => navigate(ROUTES.UNDER_DEVELOPMENT)} />
+      <RegisterForm onSuccess={() => navigate(ROUTES.HOME)} />
 
       {/* Social OAuth Buttons */}
       <OAuthButtons />
