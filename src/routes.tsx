@@ -2,6 +2,8 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AuthLayout } from "@/layouts/AuthLayout";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
+import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
+import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
 import { UnderDevelopmentPage } from "@/pages/UnderDevelopmentPage";
 import { ROUTES } from "@/constants/routes";
 
@@ -22,11 +24,15 @@ export const router = createBrowserRouter([
         element: <RegisterPage />,
       },
       {
-        path: ROUTES.UNDER_DEVELOPMENT,
-        element: <UnderDevelopmentPage />,
+        path: ROUTES.FORGOT_PASSWORD,
+        element: <ForgotPasswordPage />,
       },
       {
-        path: ROUTES.FORGOT_PASSWORD,
+        path: ROUTES.RESET_PASSWORD,
+        element: <ResetPasswordPage />,
+      },
+      {
+        path: ROUTES.UNDER_DEVELOPMENT,
         element: <UnderDevelopmentPage />,
       },
       {

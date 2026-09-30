@@ -14,3 +14,10 @@ export interface IconProps extends React.SVGProps<SVGSVGElement> {
   className?: string;
   size?: number;
 }
+
+export interface UseCountdownReturn {
+  secondsLeft: number;
+  isActive: boolean;
+  start: (seconds: number) => void;
+  reset: () => void;
+}

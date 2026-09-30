@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Link, Outlet } from "react-router-dom";
 import { Lock } from "lucide-react";
-import { AuthBackground } from "@/components/common/AuthBackground";
+import { AuthBackground } from "@/components/auth";
 import { ROUTES } from "@/constants/routes";
 import nexoraLogoSrc from "@/assets/logo/logo.png";
 import type { AuthLayoutProps } from "@/types";
