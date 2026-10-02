@@ -2,14 +2,18 @@ import * as React from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Layers } from "lucide-react";
 import { ROUTES } from "@/constants/routes";
+import { useAuthStore } from "@/stores/auth.store";
 
 export const HomeGreeting: React.FC = () => {
+  const user = useAuthStore((state) => state.user);
+  const displayName = user?.fullName || "Đạt";
+
   return (
     <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
       {/* Left: User Welcome & Scope Stats */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl">
-          Good morning, Đạt
+          Good morning, {displayName}
         </h1>
         <p className="mt-1 text-sm text-neutral-500">
           Here's what needs your attention today.

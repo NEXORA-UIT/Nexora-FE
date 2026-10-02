@@ -7,6 +7,7 @@ import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
 import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
+import { VerifyEmailPage } from "@/pages/auth/VerifyEmailPage";
 import { UnderDevelopmentPage } from "@/pages/UnderDevelopmentPage";
 import { ROUTES } from "@/constants/routes";
 
@@ -75,6 +76,10 @@ export const router = createBrowserRouter([
       {
         path: ROUTES.RESET_PASSWORD,
         element: <ResetPasswordPage />,
+      },
+      {
+        path: ROUTES.VERIFY_EMAIL,
+        element: <VerifyEmailPage />,
       },
       {
         path: ROUTES.UNDER_DEVELOPMENT,

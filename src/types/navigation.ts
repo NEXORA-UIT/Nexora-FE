@@ -22,7 +22,7 @@ export interface WorkspaceOption {
   isCurrent?: boolean;
 }
 
-export interface UserProfile {
+export interface NavUserProfile {
   name: string;
   email: string;
   avatarUrl?: string;
