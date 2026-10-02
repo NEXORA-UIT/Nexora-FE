@@ -49,7 +49,7 @@ export const ContinueWorkingSection: React.FC = () => {
             Continue working
           </h2>
           <p className="text-xs text-neutral-500">
-            Recently accessed Boards and workspaces
+            Recently accessed boards in Core Platform
           </p>
         </div>
 
@@ -89,11 +89,15 @@ export const ContinueWorkingSection: React.FC = () => {
                 </span>
               </div>
 
-              {/* Title & Workspace */}
-              <h3 className="mt-3.5 text-sm font-bold text-neutral-900">
-                {board.title}
-              </h3>
-              <p className="text-xs text-neutral-400">{board.workspace}</p>
+              {/* Workspace Context & Board Title */}
+              <div className="mt-3.5">
+                <p className="text-[11px] font-medium text-neutral-500">
+                  {board.workspace} · Board
+                </p>
+                <h3 className="mt-0.5 text-sm font-bold text-neutral-900">
+                  {board.title}
+                </h3>
+              </div>
 
               {/* Status Description */}
               <p className="mt-2 text-xs font-medium text-neutral-600">

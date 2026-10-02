@@ -9,7 +9,7 @@ import {
   LandingEcosystem,
   LandingCta,
   LandingFooter,
-} from "./components";
+} from "@/components/landing";
 
 export const LandingPage: React.FC = () => {
   return (

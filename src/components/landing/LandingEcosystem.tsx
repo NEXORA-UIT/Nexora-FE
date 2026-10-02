@@ -9,6 +9,7 @@ interface IntegrationItem {
   iconBg: string;
   badgeText: string;
   icon: React.ReactNode;
+  docsUrl: string;
 }
 
 const INTEGRATIONS: IntegrationItem[] = [
@@ -20,6 +21,7 @@ const INTEGRATIONS: IntegrationItem[] = [
     iconBg: "bg-neutral-900 text-white",
     badgeText: "Native App",
     icon: <GitHubIcon size={22} />,
+    docsUrl: "https://docs.github.com/en/apps",
   },
   {
     name: "GitLab",
@@ -33,6 +35,7 @@ const INTEGRATIONS: IntegrationItem[] = [
         <path d="M22.65 14.39L12 22.13 1.35 14.39a.84.84 0 0 1-.29-.94l1.22-3.78 2.44-7.51c.06-.18.2-.32.38-.37.18-.05.37 0 .5.12.13.12.2.29.17.47l-2 6.13h16.46l-2-6.13c-.03-.18.04-.35.17-.47.13-.12.32-.17.5-.12.18.05.32.19.38.37l2.44 7.51 1.22 3.78c.07.31-.03.64-.29.94z" />
       </svg>
     ),
+    docsUrl: "https://docs.gitlab.com/ee/integration/",
   },
   {
     name: "Figma",
@@ -50,6 +53,7 @@ const INTEGRATIONS: IntegrationItem[] = [
         <path d="M20 12c0 2.2-1.8 4-4 4s-4-1.8-4-4 1.8-4 4-4 4 1.8 4 4z" fill="#1ABCFE" />
       </svg>
     ),
+    docsUrl: "https://www.figma.com/developers/api",
   },
   {
     name: "Slack",
@@ -63,6 +67,7 @@ const INTEGRATIONS: IntegrationItem[] = [
         <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z" />
       </svg>
     ),
+    docsUrl: "https://api.slack.com/apps",
   },
   {
     name: "VS Code",
@@ -76,6 +81,7 @@ const INTEGRATIONS: IntegrationItem[] = [
         <path d="M23.15 2.587L18.21.21a1.494 1.494 0 0 0-1.705.29l-9.46 8.63-4.12-3.128a.999.999 0 0 0-1.276.057L.327 7.261A1 1 0 0 0 .32 8.688l3.415 3.308L.32 15.304a1 1 0 0 0 .007 1.427l1.322 1.202a1 1 0 0 0 1.276.057l4.12-3.128 9.46 8.63a1.49 1.49 0 0 0 1.704.29l4.94-2.377A1.5 1.5 0 0 0 24 20.06V3.939a1.5 1.5 0 0 0-.85-1.352zm-5.146 14.861L10.826 12l7.178-5.448v10.896z" />
       </svg>
     ),
+    docsUrl: "https://code.visualstudio.com/api",
   },
   {
     name: "Postman",
@@ -89,6 +95,7 @@ const INTEGRATIONS: IntegrationItem[] = [
         <path d="M13.528 8.665c-.147-.023-.298-.035-.453-.035-1.42 0-2.57 1.15-2.57 2.57 0 .313.056.613.16.89L7.49 14.364a2.553 2.553 0 0 0-.743-.11c-1.42 0-2.57 1.15-2.57 2.57s1.15 2.57 2.57 2.57 2.57-1.15 2.57-2.57c0-.313-.056-.613-.16-.89l3.175-2.274c.23.07.474.11.726.11 1.42 0 2.57-1.15 2.57-2.57a2.57 2.57 0 0 0-2.095-2.535zM12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z" />
       </svg>
     ),
+    docsUrl: "https://learning.postman.com/docs/integrations/intro-integrations/",
   },
 ];
 
@@ -111,14 +118,17 @@ export const LandingEcosystem: React.FC = () => {
         {/* 6 Grid Cards */}
         <div className="mt-14 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {INTEGRATIONS.map((item) => (
-            <div
+            <a
               key={item.name}
-              className="flex flex-col justify-between rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs hover:border-primary-300 hover:shadow-md transition-all"
+              href={item.docsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex flex-col justify-between rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs hover:border-primary-300 hover:shadow-md hover:-translate-y-1 transition-all duration-200 cursor-pointer block no-underline"
             >
               <div>
                 <div className="flex items-center justify-between">
                   <div
-                    className={`flex h-11 w-11 items-center justify-center rounded-xl ${item.iconBg} shadow-xs`}
+                    className={`flex h-11 w-11 items-center justify-center rounded-xl ${item.iconBg} shadow-xs transition-transform duration-200 group-hover:scale-105`}
                   >
                     {item.icon}
                   </div>
@@ -131,7 +141,7 @@ export const LandingEcosystem: React.FC = () => {
                   <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
                     {item.category}
                   </span>
-                  <h3 className="text-base font-bold text-neutral-900">
+                  <h3 className="text-base font-bold text-neutral-900 group-hover:text-primary-700 transition-colors">
                     {item.name}
                   </h3>
                   <p className="mt-2 text-xs leading-relaxed text-neutral-600">
@@ -140,11 +150,11 @@ export const LandingEcosystem: React.FC = () => {
                 </div>
               </div>
 
-              <div className="mt-5 pt-4 border-t border-neutral-100 flex items-center text-xs font-semibold text-primary-600 hover:text-primary-700 select-none cursor-pointer">
+              <div className="mt-5 pt-4 border-t border-neutral-100 flex items-center text-xs font-semibold text-primary-600 group-hover:text-primary-700 select-none">
                 <span>View integration docs</span>
-                <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                <ArrowRight className="ml-1 h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
               </div>
-            </div>
+            </a>
           ))}
         </div>
       </div>

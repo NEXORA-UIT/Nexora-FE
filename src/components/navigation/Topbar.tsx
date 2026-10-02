@@ -56,9 +56,9 @@ export const Topbar: React.FC = () => {
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
             placeholder="Search projects, boards, tasks, members..."
-            className="h-8 w-full rounded-lg border border-neutral-200 bg-neutral-50/70 pl-8.5 pr-8 text-xs text-neutral-800 placeholder-neutral-400 outline-none transition-all focus:border-primary-500 focus:bg-white focus:ring-1 focus:ring-primary-500/20"
+            className="h-8 w-full rounded-lg border border-neutral-200 bg-neutral-50/70 pl-9 pr-9 text-xs text-neutral-800 placeholder-neutral-400 outline-none transition-all focus:border-primary-500 focus:bg-white focus:ring-1 focus:ring-primary-500/20"
           />
-          <div className="pointer-events-none absolute right-2.5 flex h-4.5 items-center justify-center rounded border border-neutral-200 bg-white px-1.5 text-[10px] font-medium text-neutral-400">
+          <div className="pointer-events-none absolute right-2.5 flex h-5 min-w-5 items-center justify-center rounded border border-neutral-200 bg-white px-1 text-[10px] font-medium text-neutral-400 select-none">
             /
           </div>
         </div>

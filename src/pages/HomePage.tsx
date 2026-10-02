@@ -5,7 +5,7 @@ import {
   AiInsightCard,
   UpcomingSection,
   ContinueWorkingSection,
-} from "./components";
+} from "@/components/dashboard";
 
 export const HomePage: React.FC = () => {
   return (
@@ -20,10 +20,10 @@ export const HomePage: React.FC = () => {
           <MyWorkSection />
         </div>
 
-        {/* Right Column (4 cols): AI Insight & Upcoming Milestones */}
+        {/* Right Column (4 cols): Upcoming Tasks & Supporting AI Insight */}
         <div className="space-y-6 lg:col-span-4">
-          <AiInsightCard />
           <UpcomingSection />
+          <AiInsightCard />
         </div>
       </div>
 

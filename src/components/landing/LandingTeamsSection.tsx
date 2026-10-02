@@ -368,8 +368,7 @@ export const LandingTeamsSection: React.FC = () => {
             Every team works better in Nexora.
           </h2>
           <p className="mt-3 text-base text-neutral-600 sm:text-lg leading-relaxed max-w-2xl">
-            Customized workflows, board views, and context for every engineering
-            and product discipline.
+            Customized workflows, board views, and context for every team and department.
           </p>
 
           {/* Interactive Role Tabs (Inspired by Jira's Persona Selector) */}
@@ -433,7 +432,7 @@ export const LandingTeamsSection: React.FC = () => {
         </div>
 
         {/* Dynamic Board Preview based on Selected Team */}
-        <div className="mt-12">
+        <div key={activeRole} className="mt-12 animate-tab-fade">
           <MockKanbanBoard
             boardTitle={currentTeam.sprintName}
             customColumns={currentTeam.columns}

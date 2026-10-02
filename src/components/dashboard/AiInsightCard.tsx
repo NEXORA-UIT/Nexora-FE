@@ -9,10 +9,10 @@ export const AiInsightCard: React.FC = () => {
       {/* Header: Title, Contextual Badge & View Link */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-[#7C3AED]" />
-          <h2 className="text-sm font-bold text-neutral-900">AI Insight</h2>
-          <span className="rounded-md bg-purple-50 px-2 py-0.5 text-[11px] font-semibold text-[#7C3AED]">
-            Contextual
+          <Sparkles className="h-4 w-4 text-primary-600" />
+          <h2 className="text-sm font-semibold text-neutral-900">Project Assistant</h2>
+          <span className="rounded bg-neutral-100 px-2 py-0.5 text-[10px] font-medium text-neutral-600">
+            Assistant
           </span>
         </div>
 
@@ -29,7 +29,7 @@ export const AiInsightCard: React.FC = () => {
       <p className="mt-3 text-xs leading-relaxed text-neutral-600">
         3 tasks are approaching deadlines this week. Task{" "}
         <span className="font-semibold text-neutral-800">
-          "API schema for AI agent"
+          "API schema validation"
         </span>{" "}
         has an upstream dependency with Clara Chen that is currently pending
         review.
@@ -39,13 +39,13 @@ export const AiInsightCard: React.FC = () => {
       <div className="mt-3.5 flex flex-wrap items-center gap-1.5 text-[11px]">
         <span className="text-neutral-400 font-medium">Sources:</span>
         <span className="rounded border border-neutral-200 bg-neutral-50 px-1.5 py-0.5 font-mono text-neutral-600">
-          Sprint 42
+          Core Platform
         </span>
         <span className="rounded border border-neutral-200 bg-neutral-50 px-1.5 py-0.5 font-mono text-neutral-600">
-          Task #128
+          Task #104
         </span>
         <span className="rounded border border-neutral-200 bg-neutral-50 px-1.5 py-0.5 font-mono text-neutral-600">
-          Auth_Spec_v2.pdf
+          Project_Brief.pdf
         </span>
       </div>
 

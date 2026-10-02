@@ -1,8 +1,8 @@
 import { createBrowserRouter } from "react-router-dom";
 import { AuthLayout } from "@/layouts/AuthLayout";
 import { AppLayout } from "@/layouts/AppLayout";
-import { LandingPage } from "@/pages/landing/LandingPage";
-import { HomePage } from "@/pages/home/HomePage";
+import { LandingPage } from "@/pages/LandingPage";
+import { HomePage } from "@/pages/HomePage";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
 import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";

@@ -9,7 +9,7 @@ export const HomeGreeting: React.FC = () => {
       {/* Left: User Welcome & Scope Stats */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl">
-          Good morning, Đạt 👋
+          Good morning, Đạt
         </h1>
         <p className="mt-1 text-sm text-neutral-500">
           Here's what needs your attention today.
@@ -19,7 +19,7 @@ export const HomeGreeting: React.FC = () => {
         <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs font-medium text-neutral-600">
           <div className="flex items-center gap-1.5 text-primary-600 font-semibold">
             <Layers className="h-3.5 w-3.5" />
-            <span>Core Platform</span>
+            <span>Workspace: Core Platform</span>
           </div>
           <span className="text-neutral-300">•</span>
           <span>4 Boards</span>

@@ -21,8 +21,8 @@ export const LandingFooter: React.FC = () => {
               </span>
             </Link>
             <p className="max-w-sm text-xs leading-relaxed text-neutral-500">
-              Intelligent project management workspace for engineering and product teams.
-              Contextual AI, visual boards, and integrated knowledge in one platform.
+              Intelligent project management workspace for modern teams.
+              Visual boards, document collaboration, and smart assistance in one platform.
             </p>
             <p className="pt-2 text-[11px] text-neutral-400">
               © 2025 Nexora Systems Inc. All rights reserved.

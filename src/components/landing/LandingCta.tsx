@@ -25,13 +25,13 @@ export const LandingCta: React.FC = () => {
             {/* Lime Green Accent Badge */}
 
             <h2 className="mt-6 text-3xl font-extrabold tracking-tight text-white sm:text-5xl leading-tight">
-              Ready to build faster with{" "}
-              <span className="text-[#38BDF8]">grounded AI</span>?
+              Ready to streamline your{" "}
+              <span className="text-[#38BDF8]">project workflows</span>?
             </h2>
 
             <p className="mt-4 text-sm text-neutral-300 sm:text-base leading-relaxed max-w-2xl mx-auto">
-              Join thousands of engineers who plan sprints, track architectural
-              decisions, and eliminate delivery blockers with Nexora.
+              Empower your team to plan projects, coordinate tasks, and track
+              progress with clarity and intelligent support.
             </p>
 
             {/* Action Buttons */}

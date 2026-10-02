@@ -10,6 +10,7 @@ import {
   Sparkles,
   MousePointer,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { MockBoardColumn } from "@/types";
 
 interface MockKanbanBoardProps {
@@ -26,7 +27,7 @@ const DEFAULT_COLUMNS: MockBoardColumn[] = [
     cards: [
       {
         id: "c-1",
-        title: "Setup Tailwind color tokens & WCAG AA contrast rules",
+        title: "Setup brand color tokens & design guidelines",
         tag: "Design System",
         tagColorClass: "bg-blue-100 text-blue-800 border-blue-300",
         priority: "medium",
@@ -36,8 +37,8 @@ const DEFAULT_COLUMNS: MockBoardColumn[] = [
       },
       {
         id: "c-2",
-        title: "Define auth schema validation & session rotation RFC",
-        tag: "Backend",
+        title: "Finalize project brief & milestone deliverables",
+        tag: "Planning",
         tagColorClass: "bg-purple-100 text-purple-800 border-purple-300",
         priority: "high",
         dueText: "Oct 13",
@@ -54,8 +55,8 @@ const DEFAULT_COLUMNS: MockBoardColumn[] = [
     cards: [
       {
         id: "c-3",
-        title: "Implement AI context retrieval & citation grounding",
-        tag: "AI Engine",
+        title: "Draft user onboarding flow & task checklist",
+        tag: "Product",
         tagColorClass: "bg-indigo-100 text-indigo-800 border-indigo-300",
         priority: "high",
         dueText: "Today",
@@ -64,8 +65,8 @@ const DEFAULT_COLUMNS: MockBoardColumn[] = [
       },
       {
         id: "c-4",
-        title: "Audit accessibility keyboard shortcuts and focus trap",
-        tag: "Frontend",
+        title: "Audit accessibility guidelines & keyboard navigation",
+        tag: "UX Review",
         tagColorClass: "bg-sky-100 text-sky-800 border-sky-300",
         priority: "medium",
         dueText: "Oct 14",
@@ -82,8 +83,8 @@ const DEFAULT_COLUMNS: MockBoardColumn[] = [
     cards: [
       {
         id: "c-5",
-        title: "Review OAuth rotation specs and security headers",
-        tag: "Security",
+        title: "Review contract deliverables & compliance sign-off",
+        tag: "Legal",
         tagColorClass: "bg-amber-100 text-amber-800 border-amber-300",
         priority: "high",
         dueText: "Today 4:00 PM",
@@ -110,8 +111,8 @@ const DEFAULT_COLUMNS: MockBoardColumn[] = [
       },
       {
         id: "c-7",
-        title: "Initialize Vitest & Playwright e2e test harness",
-        tag: "DevOps",
+        title: "Initialize workspace templates & member permissions",
+        tag: "Operations",
         tagColorClass: "bg-neutral-100 text-neutral-800 border-neutral-300",
         priority: "low",
         dueText: "Oct 09",
@@ -124,7 +125,7 @@ const DEFAULT_COLUMNS: MockBoardColumn[] = [
 
 export const MockKanbanBoard: React.FC<MockKanbanBoardProps> = ({
   customColumns,
-  boardTitle = "Website Redesign / Sprint 42",
+  boardTitle = "Website Redesign / Q4 Project",
 }) => {
   const columns = customColumns ?? DEFAULT_COLUMNS;
 
@@ -156,7 +157,7 @@ export const MockKanbanBoard: React.FC<MockKanbanBoardProps> = ({
               <Layers className="h-4 w-4 text-primary-600" />
               <span>{boardTitle}</span>
               <span className="rounded bg-primary-50 px-2 py-0.5 text-[10px] font-semibold text-primary-700">
-                Active Sprint
+                Active Project
               </span>
             </div>
           </div>
@@ -189,14 +190,14 @@ export const MockKanbanBoard: React.FC<MockKanbanBoardProps> = ({
         {/* 2. Board Columns Grid */}
         <div className="relative p-4 sm:p-6 bg-neutral-50/50 overflow-x-auto">
           {/* Simulated Live Collab Cursors (like Jira & Figma) */}
-          <div className="pointer-events-none absolute top-12 left-1/3 z-20 hidden lg:flex items-center gap-1">
+          <div className="pointer-events-none absolute top-12 left-1/3 z-20 hidden lg:flex items-center gap-1 animate-cursor-clara">
             <MousePointer className="h-4 w-4 text-[#7C3AED] fill-[#7C3AED]" />
             <span className="rounded-full bg-[#7C3AED] px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
               Clara Chen (Reviewing)
             </span>
           </div>
 
-          <div className="pointer-events-none absolute bottom-16 right-1/4 z-20 hidden lg:flex items-center gap-1">
+          <div className="pointer-events-none absolute bottom-16 right-1/4 z-20 hidden lg:flex items-center gap-1 animate-cursor-alex">
             <MousePointer className="h-4 w-4 text-[#0284C7] fill-[#0284C7]" />
             <span className="rounded-full bg-[#0284C7] px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
               Alex Morgan
@@ -227,7 +228,12 @@ export const MockKanbanBoard: React.FC<MockKanbanBoardProps> = ({
                   {col.cards.map((card) => (
                     <div
                       key={card.id}
-                      className="group rounded-xl border border-neutral-200 bg-white p-3.5 shadow-xs hover:border-neutral-300 hover:shadow-sm transition-all"
+                      className={cn(
+                        "group rounded-xl border border-neutral-200 bg-white p-3.5 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-md cursor-pointer",
+                        card.id === "c-3" || card.id === "sw-3"
+                          ? "animate-card-float ring-1 ring-primary-400/50"
+                          : ""
+                      )}
                     >
                       {/* Tag Chip & Priority */}
                       <div className="flex items-center justify-between">

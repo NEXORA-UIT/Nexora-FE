@@ -12,6 +12,7 @@ import {
   Settings,
   HelpCircle,
   FolderKanban,
+  Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ROUTES } from "@/constants/routes";
@@ -105,16 +106,14 @@ export const Sidebar: React.FC = () => {
               )}
             </div>
 
-            {/* Other Workspace */}
-            <button
-              type="button"
-              className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
+            {/* Add Workspace */}
+            <Link
+              to={ROUTES.UNDER_DEVELOPMENT}
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
             >
-              <div className="flex items-center gap-2">
-                <ChevronRight className="h-3 w-3 text-neutral-400" />
-                <span>Other Workspace</span>
-              </div>
-            </button>
+              <Plus className="h-3.5 w-3.5 text-neutral-400" />
+              <span>Add Workspace</span>
+            </Link>
           </div>
         </div>
 
