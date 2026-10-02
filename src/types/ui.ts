@@ -17,3 +17,20 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
   actionSlot?: React.ReactNode;
   isRequired?: boolean;
 }
+
+export type BadgeVariant =
+  | "primary"
+  | "secondary"
+  | "outline"
+  | "success"
+  | "warning"
+  | "error"
+  | "info";
+
+export type BadgeSize = "sm" | "md" | "lg";
+
+export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
+  variant?: BadgeVariant;
+  size?: BadgeSize;
+}
+

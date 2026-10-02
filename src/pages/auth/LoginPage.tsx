@@ -23,7 +23,7 @@ export const LoginPage: React.FC = () => {
       </div>
 
       {/* Login Form */}
-      <LoginForm onSuccess={() => navigate(ROUTES.UNDER_DEVELOPMENT)} />
+      <LoginForm onSuccess={() => navigate(ROUTES.HOME)} />
 
       {/* Social OAuth Buttons */}
       <OAuthButtons />

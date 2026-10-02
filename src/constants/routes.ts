@@ -1,8 +1,16 @@
 export const ROUTES = {
-  HOME: "/",
+  LANDING: "/",
+  HOME: "/home",
   LOGIN: "/login",
   REGISTER: "/register",
   FORGOT_PASSWORD: "/forgot-password",
   RESET_PASSWORD: "/reset-password",
+  BOARDS: "/boards",
+  MY_TASKS: "/tasks",
+  CALENDAR: "/calendar",
+  KNOWLEDGE_BASE: "/knowledge",
+  AI_ASSISTANT: "/assistant",
+  SETTINGS: "/settings",
+  HELP: "/help",
   UNDER_DEVELOPMENT: "/under-development",
 } as const;
