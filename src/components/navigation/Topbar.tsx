@@ -136,11 +136,11 @@ export const Topbar: React.FC = () => {
         {/* User Profile Pill */}
         <button
           type="button"
-          className="flex items-center gap-1.5 rounded-lg p-1 hover:bg-neutral-100 transition-colors"
-          onClick={() => navigate(ROUTES.UNDER_DEVELOPMENT)}
-          title={`User profile: ${displayName}`}
+          className="flex items-center gap-2 rounded-lg p-1 hover:bg-neutral-100 transition-colors"
+          onClick={() => navigate(ROUTES.SETTINGS)}
+          title={`Account Settings: ${displayName}`}
         >
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-100 font-semibold text-primary-700 text-xs">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-100 font-semibold text-primary-700 text-xs overflow-hidden">
             {user?.avatarUrl ? (
               <img
                 src={user.avatarUrl}
@@ -155,7 +155,11 @@ export const Topbar: React.FC = () => {
               />
             )}
           </div>
-          <span className="text-xs font-semibold text-neutral-800">{displayName}</span>
+          <div className="hidden sm:flex flex-col text-left leading-none">
+            <span className="text-xs font-semibold text-neutral-800">{displayName}</span>
+            <span className="text-[10px] text-neutral-500 font-medium mt-0.5">Owner</span>
+          </div>
+          <ChevronDown className="h-3 w-3 text-neutral-400" />
         </button>
 
         {/* Sign Out Action Button */}

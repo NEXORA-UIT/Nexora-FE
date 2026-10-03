@@ -76,11 +76,13 @@ apiClient.interceptors.response.use(
     const status = error.response?.status;
     const url = originalRequest?.url || "";
 
-    // Check if 401 should trigger token refresh
+    // Check if 401 should trigger token refresh (exclude auth endpoints or credential errors)
     const isAuthRoute =
       url.includes("/auth/login") ||
       url.includes("/auth/register") ||
-      url.includes("/auth/refresh");
+      url.includes("/auth/refresh") ||
+      (url.includes("/auth/change-password") &&
+        error.response?.data?.error?.code === "INVALID_CREDENTIALS");
 
     if (status === 401 && !originalRequest?._retry && !isAuthRoute) {
       const refreshToken = useAuthStore.getState().refreshToken;

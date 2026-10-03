@@ -12,6 +12,7 @@ export const ROUTES = {
   KNOWLEDGE_BASE: "/knowledge",
   AI_ASSISTANT: "/assistant",
   SETTINGS: "/settings",
+  PROFILE: "/profile",
   HELP: "/help",
   UNDER_DEVELOPMENT: "/under-development",
 } as const;
