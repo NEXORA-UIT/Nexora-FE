@@ -28,3 +28,8 @@ export interface NavUserProfile {
   avatarUrl?: string;
   initials: string;
 }
+
+export interface UserMenuProps {
+  onLogoutClick: () => void;
+  className?: string;
+}

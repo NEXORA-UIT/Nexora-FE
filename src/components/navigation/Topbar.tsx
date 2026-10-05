@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/constants/routes";
 import { useAuthStore } from "@/stores/auth.store";
 import { authApi } from "@/apis/auth.api";
+import { UserMenu } from "./UserMenu";
 import nexoraLogoSrc from "@/assets/logo/logo.png";
 
 export const Topbar: React.FC = () => {
@@ -21,9 +22,7 @@ export const Topbar: React.FC = () => {
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
 
-  const user = useAuthStore((state) => state.user);
   const clearAuth = useAuthStore((state) => state.clearAuth);
-  const displayName = user?.fullName || "Đạt";
 
   const handleConfirmLogout = async () => {
     setIsLoggingOut(true);
@@ -133,45 +132,8 @@ export const Topbar: React.FC = () => {
           <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-error-500 ring-2 ring-white" />
         </button>
 
-        {/* User Profile Pill */}
-        <button
-          type="button"
-          className="flex items-center gap-2 rounded-lg p-1 hover:bg-neutral-100 transition-colors"
-          onClick={() => navigate(ROUTES.SETTINGS)}
-          title={`Account Settings: ${displayName}`}
-        >
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-100 font-semibold text-primary-700 text-xs overflow-hidden">
-            {user?.avatarUrl ? (
-              <img
-                src={user.avatarUrl}
-                alt="Avatar"
-                className="h-7 w-7 rounded-lg object-cover"
-              />
-            ) : (
-              <img
-                src={nexoraLogoSrc}
-                alt="Avatar"
-                className="h-4 w-4 object-contain"
-              />
-            )}
-          </div>
-          <div className="hidden sm:flex flex-col text-left leading-none">
-            <span className="text-xs font-semibold text-neutral-800">{displayName}</span>
-            <span className="text-[10px] text-neutral-500 font-medium mt-0.5">Owner</span>
-          </div>
-          <ChevronDown className="h-3 w-3 text-neutral-400" />
-        </button>
-
-        {/* Sign Out Action Button */}
-        <button
-          type="button"
-          onClick={() => setShowLogoutConfirm(true)}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-error-600 transition-colors"
-          title="Sign out"
-          aria-label="Sign out"
-        >
-          <LogOut className="h-4 w-4" />
-        </button>
+        {/* User Account Menu Dropdown */}
+        <UserMenu onLogoutClick={() => setShowLogoutConfirm(true)} />
       </div>
 
       {/* Logout Confirmation Modal */}

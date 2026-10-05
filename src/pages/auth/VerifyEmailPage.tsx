@@ -5,7 +5,7 @@ import { AuthCard } from "@/components/auth";
 import { NexoraLogo } from "@/components/common/NexoraLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { authApi } from "@/apis";
+import { authApi, ApiError } from "@/apis";
 import { useAuthStore } from "@/stores";
 import { ROUTES } from "@/constants/routes";
 
@@ -39,17 +39,20 @@ export const VerifyEmailPage: React.FC = () => {
         setStatus("success");
       } catch (err: unknown) {
         setStatus("error");
-        const apiError = err as { code?: string; message?: string };
-        if (apiError.code === "INVALID_REGISTRATION_TOKEN") {
-          setErrorMessage(
-            "The verification link is invalid or has expired (valid for 15 minutes)."
-          );
-        } else if (apiError.code === "EMAIL_TAKEN") {
-          setErrorMessage("This account has already been verified.");
+        if (err instanceof ApiError) {
+          if (err.code === "INVALID_REGISTRATION_TOKEN") {
+            setErrorMessage(
+              "The verification link is invalid or has expired (valid for 15 minutes)."
+            );
+          } else if (err.code === "EMAIL_TAKEN") {
+            setErrorMessage("This account has already been verified.");
+          } else {
+            setErrorMessage(
+              err.message || "Account verification failed. Please try again."
+            );
+          }
         } else {
-          setErrorMessage(
-            apiError.message || "Account verification failed. Please try again."
-          );
+          setErrorMessage("Account verification failed. Please try again.");
         }
       }
     },

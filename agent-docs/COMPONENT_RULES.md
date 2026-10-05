@@ -89,6 +89,8 @@ Examples:
 * WorkspaceSwitcher
 * UserMenu
 
+Note: The account area trigger (`[Avatar] [Name/Owner] [ChevronDown]`) in the header is an account menu trigger that toggles the `UserMenu` dropdown (containing Profile, Logout), not a direct link to the Profile page.
+
 ---
 
 ## 5. Feedback Components
