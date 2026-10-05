@@ -6,16 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { AvatarSection } from "./AvatarSection";
-import { profileSchema, type ProfileSchemaType } from "@/schemas";
+import { profileSchema } from "@/schemas";
 import { profileApi } from "@/apis/profile.api";
 import { ApiError } from "@/apis/client";
 import { useAuthStore } from "@/stores/auth.store";
-import type { UserProfile } from "@/types";
-
-export interface ProfileInformationCardProps {
-  user: UserProfile | null;
-  onUpdateSuccess?: (updatedUser: UserProfile) => void;
-}
+import type {
+  UserProfile,
+  ProfileInformationCardProps,
+  ProfileFormData,
+} from "@/types";
 
 export const ProfileInformationCard: React.FC<ProfileInformationCardProps> = ({
   user,
@@ -35,7 +34,7 @@ export const ProfileInformationCard: React.FC<ProfileInformationCardProps> = ({
     handleSubmit,
     reset,
     formState: { errors, isDirty },
-  } = useForm<ProfileSchemaType>({
+  } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       fullName: user?.fullName || "",
@@ -60,7 +59,7 @@ export const ProfileInformationCard: React.FC<ProfileInformationCardProps> = ({
     setErrorMessage(null);
   };
 
-  const onSubmit = async (data: ProfileSchemaType) => {
+  const onSubmit = async (data: ProfileFormData) => {
     setSuccessMessage(null);
     setErrorMessage(null);
     setIsSubmitting(true);

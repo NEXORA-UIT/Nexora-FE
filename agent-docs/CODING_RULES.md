@@ -22,6 +22,10 @@ as any
 
 or excessive type assertions.
 
+### Type Centralization Rule
+
+Reusable domain, API request/response, DTO, entity, and shared types must live under `src/types/`. Components, pages, API modules, and stores should import these types rather than redefining them locally. Local types are allowed only when they are genuinely private implementation details of a single file.
+
 ---
 
 ## 2. Components

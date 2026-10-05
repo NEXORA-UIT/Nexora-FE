@@ -4,16 +4,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Check, AlertCircle, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  changePasswordFormSchema,
-  type ChangePasswordFormSchemaType,
-} from "@/schemas";
+import { changePasswordFormSchema } from "@/schemas";
 import { profileApi } from "@/apis/profile.api";
 import { ApiError } from "@/apis/client";
-
-export interface ChangePasswordCardProps {
-  onSuccess?: () => void;
-}
+import type {
+  ChangePasswordCardProps,
+  ChangePasswordFormData,
+} from "@/types";
 
 export const ChangePasswordCard: React.FC<ChangePasswordCardProps> = ({
   onSuccess,
@@ -31,7 +28,7 @@ export const ChangePasswordCard: React.FC<ChangePasswordCardProps> = ({
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<ChangePasswordFormSchemaType>({
+  } = useForm<ChangePasswordFormData>({
     resolver: zodResolver(changePasswordFormSchema),
     defaultValues: {
       oldPassword: "",
@@ -40,7 +37,7 @@ export const ChangePasswordCard: React.FC<ChangePasswordCardProps> = ({
     },
   });
 
-  const onSubmit = async (data: ChangePasswordFormSchemaType) => {
+  const onSubmit = async (data: ChangePasswordFormData) => {
     setSuccessMessage(null);
     setErrorMessage(null);
     setIsSubmitting(true);

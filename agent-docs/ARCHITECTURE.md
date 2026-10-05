@@ -278,6 +278,10 @@ Examples:
 * API types
 * shared enums
 * response types
+* component props interfaces
+* store state interfaces
+
+Reusable domain, API request/response, DTO, entity, and shared types must live under `src/types/`. Components, pages, API modules, and stores should import these types rather than redefining them locally. Local types are allowed only when they are genuinely private implementation details of a single file.
 
 ---
 

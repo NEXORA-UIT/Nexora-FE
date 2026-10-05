@@ -2,10 +2,7 @@ import * as React from "react";
 import { Outlet } from "react-router-dom";
 import { Topbar } from "@/components/navigation/Topbar";
 import { Sidebar } from "@/components/navigation/Sidebar";
-
-export interface AppLayoutProps {
-  children?: React.ReactNode;
-}
+import type { AppLayoutProps } from "@/types";
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   return (

@@ -22,10 +22,15 @@ export interface ChangePasswordFormData {
   confirmPassword: string;
 }
 
+export interface AvatarSectionProps {
+  currentAvatarUrl: string | null;
+  onAvatarChange: (url: string | null) => void;
+  disabled?: boolean;
+}
+
 export interface ProfileInformationCardProps {
   user: UserProfile | null;
-  isLoading: boolean;
-  onUpdateSuccess: (updatedUser: UserProfile) => void;
+  onUpdateSuccess?: (updatedUser: UserProfile) => void;
 }
 
 export interface ChangePasswordCardProps {

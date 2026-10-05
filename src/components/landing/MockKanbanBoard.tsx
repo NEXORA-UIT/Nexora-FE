@@ -11,12 +11,7 @@ import {
   MousePointer,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { MockBoardColumn } from "@/types";
-
-interface MockKanbanBoardProps {
-  customColumns?: MockBoardColumn[];
-  boardTitle?: string;
-}
+import type { MockBoardColumn, MockKanbanBoardProps } from "@/types";
 
 const DEFAULT_COLUMNS: MockBoardColumn[] = [
   {

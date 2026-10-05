@@ -2,12 +2,7 @@ import * as React from "react";
 import { Upload, Trash2, Info, Link as LinkIcon, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import nexoraLogoSrc from "@/assets/logo/logo.png";
-
-export interface AvatarSectionProps {
-  currentAvatarUrl: string | null;
-  onAvatarChange: (url: string | null) => void;
-  disabled?: boolean;
-}
+import type { AvatarSectionProps } from "@/types";
 
 export const AvatarSection: React.FC<AvatarSectionProps> = ({
   currentAvatarUrl,

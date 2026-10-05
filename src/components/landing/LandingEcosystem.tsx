@@ -1,16 +1,7 @@
 import * as React from "react";
 import { ArrowRight } from "lucide-react";
 import { GitHubIcon } from "@/components/common/Icons";
-
-interface IntegrationItem {
-  name: string;
-  category: string;
-  description: string;
-  iconBg: string;
-  badgeText: string;
-  icon: React.ReactNode;
-  docsUrl: string;
-}
+import type { IntegrationItem } from "@/types";
 
 const INTEGRATIONS: IntegrationItem[] = [
   {

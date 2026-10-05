@@ -144,3 +144,18 @@ export interface ResetPasswordRequest {
   newPassword: string;
 }
 
+// ==========================================
+// Auth Store State Interface
+// ==========================================
+
+export interface AuthState {
+  accessToken: string | null;
+  refreshToken: string | null;
+  user: UserProfile | null;
+  isAuthenticated: boolean;
+  setAuth: (tokens: AuthTokens) => void;
+  setUser: (user: UserProfile) => void;
+  setAccessToken: (accessToken: string) => void;
+  clearAuth: () => void;
+}
+
