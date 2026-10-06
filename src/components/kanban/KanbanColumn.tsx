@@ -22,8 +22,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
 }) => {
   return (
     <div
-      data-no-pan="true"
-      className="flex h-full w-[320px] min-w-[320px] max-w-[320px] shrink-0 flex-col rounded-2xl border border-neutral-200/90 bg-neutral-50/80 p-3.5 select-none max-h-[calc(100vh-230px)] shadow-2xs cursor-default"
+      className="flex h-full w-[320px] min-w-[320px] max-w-[320px] shrink-0 flex-col rounded-2xl border border-neutral-200/90 bg-neutral-50/80 p-3.5 select-none max-h-[calc(100vh-230px)] shadow-2xs"
     >
       {/* 1. Column Header */}
       <div className="flex items-center justify-between gap-2 pb-3 border-b border-neutral-200/60">
