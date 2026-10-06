@@ -9,6 +9,7 @@ import {
   BoardDetailToolbar,
   KanbanBoard,
   KanbanColumnSkeleton,
+  CardDetailDrawer,
 } from "@/components/kanban";
 import { Button } from "@/components/ui/button";
 
@@ -25,9 +26,21 @@ export const BoardDetailPage: React.FC = () => {
     setSearchQuery,
     activeView,
     setActiveView,
+    selectedCardId,
+    selectedCard,
+    handleSelectCard,
+    handleCloseCardDetail,
     handleAddCard,
     handleAddColumn,
     handleCommitMoveCard,
+    handleStatusChange,
+    handleUpdateCard,
+    handleDeleteCard,
+    handleAddChecklistItem,
+    handleToggleChecklistItem,
+    handleDeleteChecklistItem,
+    handleAddComment,
+    fetchCardActivities,
   } = useBoardDetail(boardId);
 
   const handleShareClick = () => {
@@ -137,15 +150,30 @@ export const BoardDetailPage: React.FC = () => {
                 onCommitMoveCard={handleCommitMoveCard}
                 onAddCard={handleAddCard}
                 onAddColumn={handleAddColumn}
-                onCardClick={(card) => {
-                  toast.info(`Card ${card.code}: "${card.title}" selected`);
-                }}
+                onCardClick={handleSelectCard}
                 onColumnOptionsClick={(list) => {
                   toast.info(`Column "${list.name}" options`);
                 }}
               />
             </div>
           )}
+
+          {/* Card Detail Side Panel Drawer */}
+          <CardDetailDrawer
+            card={selectedCard}
+            isOpen={Boolean(selectedCardId && selectedCard)}
+            lists={board.lists}
+            members={board.members}
+            onClose={handleCloseCardDetail}
+            onUpdate={(payload) => handleUpdateCard(selectedCard!.id, payload)}
+            onStatusChange={handleStatusChange}
+            onDelete={handleDeleteCard}
+            onAddChecklistItem={handleAddChecklistItem}
+            onToggleChecklistItem={handleToggleChecklistItem}
+            onDeleteChecklistItem={handleDeleteChecklistItem}
+            onAddComment={handleAddComment}
+            onFetchActivities={fetchCardActivities}
+          />
         </>
       )}
     </div>
