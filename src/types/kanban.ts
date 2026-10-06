@@ -53,6 +53,7 @@ export interface BoardDetail {
   members: BoardMember[];
   labels: BoardLabel[];
   lists: KanbanList[];
+  archivedListsCount?: number;
   updatedAt: string;
   createdAt: string;
 }

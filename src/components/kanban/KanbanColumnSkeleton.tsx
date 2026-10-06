@@ -1,9 +1,15 @@
 import * as React from "react";
 
-export const KanbanColumnSkeleton: React.FC = () => {
+export interface KanbanColumnSkeletonProps {
+  count?: number;
+}
+
+export const KanbanColumnSkeleton: React.FC<KanbanColumnSkeletonProps> = ({ count = 3 }) => {
+  const columns = Array.from({ length: count }, (_, i) => i + 1);
+
   return (
     <div className="flex gap-5 overflow-hidden animate-pulse">
-      {[1, 2, 3].map((col) => (
+      {columns.map((col) => (
         <div
           key={col}
           className="w-[320px] min-w-[320px] shrink-0 rounded-2xl border border-neutral-200/90 bg-neutral-50/80 p-3.5 space-y-4"
