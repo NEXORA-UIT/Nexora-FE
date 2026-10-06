@@ -10,4 +10,5 @@ export * from "./profile";
 export * from "./workspace";
 export * from "./board";
 export * from "./kanban";
+export * from "./task";
 

@@ -1,4 +1,10 @@
 import type { BoardMember } from "./board";
+import type {
+  ChecklistItem,
+  CardDependency,
+  CardAttachment,
+  CardComment,
+} from "./task";
 
 export type CardPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 export type ListCategory = "TODO" | "IN_PROGRESS" | "DONE";
@@ -28,6 +34,10 @@ export interface KanbanCard {
   completedTasksCount: number;
   isBlocked?: boolean;
   blockReason?: string;
+  checklist?: ChecklistItem[];
+  dependencies?: CardDependency[];
+  attachments?: CardAttachment[];
+  comments?: CardComment[];
   updatedAt: string;
   createdAt: string;
 }
