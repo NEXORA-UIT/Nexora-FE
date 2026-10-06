@@ -2,7 +2,15 @@ import * as React from "react";
 import { toast } from "sonner";
 import { boardApi, cardApi, listApi } from "@/apis";
 import { filterCardsByQuery } from "@/utils";
-import type { BoardDetail, KanbanList, ListCategory, MoveCardInput } from "@/types";
+import type {
+  BoardDetail,
+  KanbanCard,
+  KanbanList,
+  ListCategory,
+  MoveCardInput,
+  UpdateCardInput,
+  CardActivity,
+} from "@/types";
 
 export function useBoardDetail(boardId?: string) {
   const [board, setBoard] = React.useState<BoardDetail | null>(null);
@@ -12,6 +20,9 @@ export function useBoardDetail(boardId?: string) {
   // Search & View tab state
   const [searchQuery, setSearchQuery] = React.useState<string>("");
   const [activeView, setActiveView] = React.useState<"board" | "calendar">("board");
+
+  // Selected Card for Drawer
+  const [selectedCardId, setSelectedCardId] = React.useState<string | null>(null);
 
   const loadBoard = React.useCallback(async () => {
     if (!boardId) {
@@ -46,6 +57,24 @@ export function useBoardDetail(boardId?: string) {
       cards: filterCardsByQuery(list.cards, searchQuery),
     }));
   }, [board, searchQuery]);
+
+  // Derived selected card memoized from current board.lists
+  const selectedCard = React.useMemo<KanbanCard | null>(() => {
+    if (!board || !selectedCardId) return null;
+    for (const list of board.lists) {
+      const card = list.cards.find((c) => c.id === selectedCardId);
+      if (card) return card;
+    }
+    return null;
+  }, [board, selectedCardId]);
+
+  const handleSelectCard = React.useCallback((card: KanbanCard) => {
+    setSelectedCardId(card.id);
+  }, []);
+
+  const handleCloseCardDetail = React.useCallback(() => {
+    setSelectedCardId(null);
+  }, []);
 
   // Action: Add Card
   const handleAddCard = async (listId: string, title: string) => {
@@ -132,6 +161,199 @@ export function useBoardDetail(boardId?: string) {
     }
   };
 
+  // Action: Status Change (moves card across Kanban lists via moveCard)
+  const handleStatusChange = async (card: KanbanCard, targetCategory: ListCategory): Promise<boolean> => {
+    if (!board) return false;
+
+    const targetList = board.lists.find((l) => l.category === targetCategory);
+    if (!targetList) {
+      toast.error(`Target list for category ${targetCategory} not found`);
+      return false;
+    }
+
+    if (card.listId === targetList.id) return true;
+
+    // Prerequisite validation: if moving to DONE and card is blocked, reject transition
+    if (targetCategory === "DONE" && card.isBlocked) {
+      toast.error(card.blockReason || "Cannot move to Done: Prerequisite is not completed.");
+      return false;
+    }
+
+    const maxPos = targetList.cards.reduce((max, c) => Math.max(max, c.position), 0);
+    const position = maxPos + 1024;
+
+    await handleCommitMoveCard(card.id, {
+      targetListId: targetList.id,
+      position,
+      updatedAt: card.updatedAt,
+    });
+    return true;
+  };
+
+  // Action: Update Card fields with OCC
+  const handleUpdateCard = async (cardId: string, payload: UpdateCardInput): Promise<void> => {
+    try {
+      const updatedCard = await cardApi.updateCard(cardId, payload);
+      setBoard((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          lists: prev.lists.map((list) => ({
+            ...list,
+            cards: list.cards.map((c) => (c.id === cardId ? updatedCard : c)),
+          })),
+        };
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to update card";
+      if (msg.includes("CARD_CONFLICT")) {
+        toast.error("Card was modified by another session. Refreshing...");
+        void loadBoard();
+      } else {
+        toast.error(msg);
+      }
+      throw err;
+    }
+  };
+
+  // Action: Delete Card
+  const handleDeleteCard = async (cardId: string): Promise<void> => {
+    try {
+      await cardApi.deleteCard(cardId);
+      setBoard((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          lists: prev.lists.map((list) => ({
+            ...list,
+            cards: list.cards.filter((c) => c.id !== cardId),
+          })),
+        };
+      });
+      if (selectedCardId === cardId) {
+        setSelectedCardId(null);
+      }
+      toast.success("Card deleted.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete card");
+    }
+  };
+
+  // Action: Add Checklist Item
+  const handleAddChecklistItem = async (cardId: string, title: string) => {
+    try {
+      const newItem = await cardApi.addChecklistItem(cardId, title);
+      setBoard((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          lists: prev.lists.map((list) => ({
+            ...list,
+            cards: list.cards.map((c) => {
+              if (c.id !== cardId) return c;
+              const checklist = c.checklist ? [...c.checklist, newItem] : [newItem];
+              return {
+                ...c,
+                checklist,
+                tasksCount: checklist.length,
+                completedTasksCount: checklist.filter((t) => t.isCompleted).length,
+                updatedAt: newItem.updatedAt || c.updatedAt,
+              };
+            }),
+          })),
+        };
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to add checklist item");
+    }
+  };
+
+  // Action: Toggle / Update Checklist Item
+  const handleToggleChecklistItem = async (cardId: string, taskId: string, isCompleted: boolean) => {
+    try {
+      const updated = await cardApi.updateChecklistItem(taskId, { isCompleted });
+      setBoard((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          lists: prev.lists.map((list) => ({
+            ...list,
+            cards: list.cards.map((c) => {
+              if (c.id !== cardId) return c;
+              const checklist = (c.checklist || []).map((t) => (t.id === taskId ? updated : t));
+              return {
+                ...c,
+                checklist,
+                completedTasksCount: checklist.filter((t) => t.isCompleted).length,
+                updatedAt: updated.updatedAt || c.updatedAt,
+              };
+            }),
+          })),
+        };
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update checklist item");
+    }
+  };
+
+  // Action: Delete Checklist Item
+  const handleDeleteChecklistItem = async (cardId: string, taskId: string) => {
+    try {
+      await cardApi.deleteChecklistItem(taskId);
+      setBoard((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          lists: prev.lists.map((list) => ({
+            ...list,
+            cards: list.cards.map((c) => {
+              if (c.id !== cardId) return c;
+              const checklist = (c.checklist || []).filter((t) => t.id !== taskId);
+              return {
+                ...c,
+                checklist,
+                tasksCount: checklist.length,
+                completedTasksCount: checklist.filter((t) => t.isCompleted).length,
+              };
+            }),
+          })),
+        };
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete checklist item");
+    }
+  };
+
+  // Action: Add Comment
+  const handleAddComment = async (cardId: string, content: string) => {
+    try {
+      const newComment = await cardApi.addComment(cardId, content);
+      setBoard((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          lists: prev.lists.map((list) => ({
+            ...list,
+            cards: list.cards.map((c) => {
+              if (c.id !== cardId) return c;
+              return {
+                ...c,
+                comments: c.comments ? [...c.comments, newComment] : [newComment],
+              };
+            }),
+          })),
+        };
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to add comment");
+    }
+  };
+
+  // Action: Fetch Card Activities (Lazy)
+  const fetchCardActivities = async (cardId: string): Promise<CardActivity[]> => {
+    return cardApi.getActivities(cardId);
+  };
+
   return {
     board,
     filteredLists,
@@ -145,9 +367,23 @@ export function useBoardDetail(boardId?: string) {
     activeView,
     setActiveView,
 
+    // Card Detail Selection
+    selectedCardId,
+    selectedCard,
+    handleSelectCard,
+    handleCloseCardDetail,
+
     // Operations
     handleAddCard,
     handleAddColumn,
     handleCommitMoveCard,
+    handleStatusChange,
+    handleUpdateCard,
+    handleDeleteCard,
+    handleAddChecklistItem,
+    handleToggleChecklistItem,
+    handleDeleteChecklistItem,
+    handleAddComment,
+    fetchCardActivities,
   };
 }
