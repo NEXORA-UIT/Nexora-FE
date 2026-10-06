@@ -8,6 +8,7 @@ export * from "./AddColumnInline";
 export * from "./KanbanColumn";
 export * from "./KanbanColumnSkeleton";
 export * from "./KanbanBoard";
+export * from "./detail";
 
 
 
