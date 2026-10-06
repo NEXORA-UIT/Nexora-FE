@@ -26,6 +26,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "jsdom",
+    css: false,
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
   },
 } as VitestConfigExport);
