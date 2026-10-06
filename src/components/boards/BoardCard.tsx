@@ -5,6 +5,7 @@ import type { BoardCardProps } from "@/types";
 export const BoardCard: React.FC<BoardCardProps> = ({
   board,
   onArchive,
+  onDelete,
   onClick,
 }) => {
   const maxVisible = board.maxVisibleAvatars ?? 3;
@@ -33,7 +34,7 @@ export const BoardCard: React.FC<BoardCardProps> = ({
           <h3 className="text-sm font-bold text-neutral-900 group-hover:text-primary-600 transition-colors">
             {board.title}
           </h3>
-          <BoardActionMenu board={board} onArchive={onArchive} />
+          <BoardActionMenu board={board} onArchive={onArchive} onDelete={onDelete} />
         </div>
 
         {/* Description */}

@@ -10,6 +10,7 @@ export interface BoardMember {
 export interface Board {
   id: string;
   workspaceId: string;
+  name?: string;
   title: string;
   description: string;
   status: BoardStatus;
@@ -17,6 +18,8 @@ export interface Board {
   completedPercent: number;
   members: BoardMember[];
   maxVisibleAvatars?: number;
+  coverColor?: string | null;
+  coverUrl?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -30,9 +33,11 @@ export type BoardSortOption =
   | "tasks_desc";
 
 export interface CreateBoardInput {
+  name?: string;
   title: string;
   description?: string;
   workspaceId: string;
+  coverColor?: string;
 }
 
 export interface BoardToolbarProps {
@@ -52,6 +57,7 @@ export interface BoardToolbarProps {
 export interface BoardCardProps {
   board: Board;
   onArchive?: (id: string) => void;
+  onDelete?: (id: string) => void;
   onClick?: (board: Board) => void;
 }
 
@@ -76,3 +82,12 @@ export interface CreateBoardModalProps {
   workspaceId: string;
   isSubmitting?: boolean;
 }
+
+export interface ConfirmDeleteBoardDialogProps {
+  board: Board | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (boardId: string, confirmationName: string) => Promise<void> | void;
+  isDeleting?: boolean;
+}
+

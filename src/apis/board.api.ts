@@ -77,9 +77,16 @@ export const boardApi = {
 
   /**
    * Deletes a board
-   * (Mock implementation ready for DELETE /api/v1/boards/:id)
+   * (Mock implementation ready for DELETE /api/v1/boards/:id with ConfirmDeleteBoardRequest)
    */
-  async deleteBoard(boardId: string): Promise<void> {
+  async deleteBoard(boardId: string, confirmationName?: string): Promise<void> {
+    const target = inMemoryBoards.find((b) => b.id === boardId);
+    if (confirmationName && target) {
+      const actualName = target.name || target.title;
+      if (confirmationName.trim().toLowerCase() !== actualName.trim().toLowerCase()) {
+        throw new Error("Confirmation name does not match board name.");
+      }
+    }
     inMemoryBoards = inMemoryBoards.filter((b) => b.id !== boardId);
   },
 };

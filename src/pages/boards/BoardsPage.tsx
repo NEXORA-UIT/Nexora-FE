@@ -1,13 +1,15 @@
 import * as React from "react";
 import { useNavigate } from "react-router-dom";
-import { FolderArchive, Loader2 } from "lucide-react";
+import { FolderArchive } from "lucide-react";
 import { WorkspaceHeader, WorkspaceTabs } from "@/components/workspace";
 import {
   BoardToolbar,
   BoardCard,
+  BoardCardSkeleton,
   ArchivedBoardCard,
   BoardEmptyState,
   CreateBoardModal,
+  ConfirmDeleteBoardDialog,
 } from "@/components/boards";
 import { useWorkspaceBoards } from "@/hooks";
 import { getBoardDetailRoute } from "@/constants/routes";
@@ -33,17 +35,22 @@ export const BoardsPage: React.FC = () => {
     isCreateOpen,
     setIsCreateOpen,
     isSubmitting,
+    deleteTargetBoard,
+    setDeleteTargetBoard,
+    isDeleting,
     handleCreateBoard,
     handleArchiveBoard,
     handleRestoreBoard,
     handleDeleteBoard,
+    handleConfirmDelete,
   } = useWorkspaceBoards("ws-core-platform");
 
   // Loading State
   if (isLoading && !workspace) {
     return (
-      <div className="flex h-96 items-center justify-center">
-        <Loader2 className="h-7 w-7 animate-spin text-primary-600" />
+      <div className="space-y-6">
+        <div className="h-28 w-full animate-pulse rounded-2xl border border-neutral-200/90 bg-white p-6" />
+        <BoardCardSkeleton />
       </div>
     );
   }
@@ -139,6 +146,7 @@ export const BoardsPage: React.FC = () => {
                         key={board.id}
                         board={board}
                         onArchive={handleArchiveBoard}
+                        onDelete={handleDeleteBoard}
                         onClick={(b) => navigate(getBoardDetailRoute(b.id))}
                       />
                     ))}
@@ -193,6 +201,15 @@ export const BoardsPage: React.FC = () => {
         onSubmit={handleCreateBoard}
         workspaceId={workspace.id}
         isSubmitting={isSubmitting}
+      />
+
+      {/* 5. Safe Delete Confirmation Dialog */}
+      <ConfirmDeleteBoardDialog
+        board={deleteTargetBoard}
+        isOpen={Boolean(deleteTargetBoard)}
+        onClose={() => setDeleteTargetBoard(null)}
+        onConfirm={handleConfirmDelete}
+        isDeleting={isDeleting}
       />
     </div>
   );
