@@ -9,3 +9,5 @@ export * from "./api";
 export * from "./profile";
 export * from "./workspace";
 export * from "./board";
+export * from "./kanban";
+
