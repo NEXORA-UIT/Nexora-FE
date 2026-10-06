@@ -27,11 +27,11 @@ export function useKanbanDnd({ lists, onCommitMoveCard }: UseKanbanDndProps) {
     setPreviewLists(lists);
   }, [lists]);
 
-  // Pointer sensor with 5px distance constraint to avoid triggering drag on card click
+  // Pointer sensor with 7px distance constraint to avoid triggering drag on card click
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5,
+        distance: 7,
       },
     }),
     useSensor(KeyboardSensor, {

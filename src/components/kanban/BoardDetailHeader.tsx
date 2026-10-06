@@ -65,7 +65,8 @@ export const BoardDetailHeader: React.FC<BoardDetailHeaderProps> = ({
               <div
                 key={member.id}
                 title={member.name}
-                className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-primary-600 text-[11px] font-bold text-white shadow-2xs"
+                aria-label={member.name}
+                className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-primary-600 text-[11px] font-bold text-white shadow-2xs transition-transform hover:scale-110 hover:z-10 cursor-default"
               >
                 {member.initials}
               </div>
@@ -74,7 +75,8 @@ export const BoardDetailHeader: React.FC<BoardDetailHeaderProps> = ({
             {remainingCount > 0 && (
               <div
                 title={`${remainingCount} more members`}
-                className="flex h-7 min-w-7 items-center justify-center rounded-full border-2 border-white bg-neutral-100 px-1 text-[11px] font-semibold text-neutral-700 shadow-2xs"
+                aria-label={`${remainingCount} more members`}
+                className="flex h-7 min-w-7 items-center justify-center rounded-full border-2 border-white bg-neutral-100 px-1 text-[11px] font-semibold text-neutral-700 shadow-2xs hover:z-10 cursor-default"
               >
                 +{remainingCount}
               </div>

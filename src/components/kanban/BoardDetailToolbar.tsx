@@ -67,11 +67,19 @@ export const BoardDetailToolbar: React.FC<BoardDetailToolbarProps> = ({
           variant="outline"
           size="sm"
           onClick={onArchivedListsClick}
-          className="h-8 gap-1.5 rounded-lg border-neutral-200/90 bg-white text-xs font-medium text-neutral-600 hover:bg-neutral-50"
+          className={`h-8 gap-1.5 rounded-lg text-xs font-medium transition-colors ${
+            archivedListsCount > 0
+              ? "border-neutral-200/90 bg-white text-neutral-600 hover:bg-neutral-50 shadow-2xs"
+              : "border-transparent bg-transparent text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100/60"
+          }`}
         >
-          <Archive className="h-3.5 w-3.5 text-neutral-400" />
+          <Archive className={`h-3.5 w-3.5 ${archivedListsCount > 0 ? "text-neutral-500" : "text-neutral-400"}`} />
           <span>Archived lists</span>
-          <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-neutral-100 px-1 text-[10px] font-semibold text-neutral-600">
+          <span
+            className={`flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold ${
+              archivedListsCount > 0 ? "bg-neutral-100 text-neutral-700" : "bg-neutral-100/60 text-neutral-400"
+            }`}
+          >
             {archivedListsCount}
           </span>
         </Button>

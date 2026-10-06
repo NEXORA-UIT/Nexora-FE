@@ -21,11 +21,14 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   onSetAddingCard,
 }) => {
   return (
-    <div className="flex h-full w-[320px] min-w-[320px] max-w-[320px] shrink-0 flex-col rounded-2xl border border-neutral-200/90 bg-neutral-50/80 p-3.5 select-none max-h-[calc(100vh-230px)] shadow-2xs">
+    <div
+      data-no-pan="true"
+      className="flex h-full w-[320px] min-w-[320px] max-w-[320px] shrink-0 flex-col rounded-2xl border border-neutral-200/90 bg-neutral-50/80 p-3.5 select-none max-h-[calc(100vh-230px)] shadow-2xs cursor-default"
+    >
       {/* 1. Column Header */}
       <div className="flex items-center justify-between gap-2 pb-3 border-b border-neutral-200/60">
         <div className="flex items-center gap-1.5 min-w-0">
-          <GripVertical className="h-4 w-4 text-neutral-400 shrink-0 cursor-grab" />
+          <GripVertical className="h-4 w-4 text-neutral-300 shrink-0 pointer-events-none select-none" aria-hidden="true" />
           <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-800 truncate">
             {list.name}
           </h3>

@@ -60,6 +60,13 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 }) => {
   const [addingCardListId, setAddingCardListId] = React.useState<string | null>(null);
 
+  // Canvas horizontal panning state & refs
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const [isPanning, setIsPanning] = React.useState(false);
+  const isMouseDownRef = React.useRef(false);
+  const startXRef = React.useRef(0);
+  const scrollLeftRef = React.useRef(0);
+
   const {
     sensors,
     activeCard,
@@ -72,6 +79,67 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     onCommitMoveCard,
   });
 
+  const handleCanvasPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    // Only primary left button
+    if (e.button !== 0) return;
+
+    // Do not initiate canvas panning if a card is actively dragged by dnd-kit
+    if (activeCard) return;
+
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+
+    // Filter out interactive elements, column containers, buttons, and cards
+    const interactive = target.closest(
+      'button, input, textarea, select, a, [role="button"], form, [data-no-pan="true"]'
+    );
+    if (interactive) return;
+
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    isMouseDownRef.current = true;
+    startXRef.current = e.pageX - container.offsetLeft;
+    scrollLeftRef.current = container.scrollLeft;
+
+    try {
+      container.setPointerCapture(e.pointerId);
+    } catch {
+      // Ignore if pointer capture is unsupported or already set
+    }
+  };
+
+  const handleCanvasPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isMouseDownRef.current) return;
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const x = e.pageX - container.offsetLeft;
+    const distance = x - startXRef.current;
+
+    if (Math.abs(distance) > 3) {
+      if (!isPanning) {
+        setIsPanning(true);
+      }
+      container.scrollLeft = scrollLeftRef.current - distance;
+    }
+  };
+
+  const handleCanvasPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isMouseDownRef.current) return;
+    isMouseDownRef.current = false;
+    setIsPanning(false);
+
+    const container = scrollContainerRef.current;
+    if (container) {
+      try {
+        container.releasePointerCapture(e.pointerId);
+      } catch {
+        // Ignore
+      }
+    }
+  };
+
   return (
     <DndContext
       sensors={sensors}
@@ -80,7 +148,16 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-5 overflow-x-auto pb-6 items-start scrollbar-thin select-none">
+      <div
+        ref={scrollContainerRef}
+        onPointerDown={handleCanvasPointerDown}
+        onPointerMove={handleCanvasPointerMove}
+        onPointerUp={handleCanvasPointerUp}
+        onPointerCancel={handleCanvasPointerUp}
+        className={`flex gap-5 overflow-x-auto pb-6 pt-1 pr-10 items-start scrollbar-thin min-h-[calc(100vh-230px)] ${
+          isPanning ? "cursor-grabbing select-none" : "cursor-grab"
+        }`}
+      >
         {previewLists.map((list) => (
           <KanbanColumn
             key={list.id}
@@ -109,6 +186,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
         {/* Far Right: Add Column Button */}
         <AddColumnInline onAdd={onAddColumn} />
+
+        {/* Rightmost padding spacer to guarantee full visibility without clipping */}
+        <div className="w-8 shrink-0 pointer-events-none" aria-hidden="true" />
       </div>
 
       {/* Floating Drag Overlay */}

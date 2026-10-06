@@ -122,7 +122,8 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
         {primaryAssignee && (
           <div
             title={primaryAssignee.name}
-            className="flex h-5.5 w-5.5 items-center justify-center rounded-full bg-primary-600 text-[10px] font-bold text-white shadow-2xs shrink-0"
+            aria-label={primaryAssignee.name}
+            className="flex h-5.5 w-5.5 items-center justify-center rounded-full bg-primary-600 text-[10px] font-bold text-white shadow-2xs shrink-0 cursor-default"
           >
             {primaryAssignee.initials}
           </div>
