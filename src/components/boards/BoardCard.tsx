@@ -13,8 +13,16 @@ export const BoardCard: React.FC<BoardCardProps> = ({
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={() => onClick?.(board)}
-      className="group relative flex flex-col justify-between rounded-2xl border border-neutral-200/90 bg-white p-5 shadow-xs transition-all hover:border-neutral-300 hover:shadow-sm cursor-pointer select-none overflow-hidden"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick?.(board);
+        }
+      }}
+      className="group relative flex flex-col justify-between rounded-2xl border border-neutral-200/90 bg-white p-5 shadow-xs transition-all hover:border-neutral-300 hover:shadow-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary-500 cursor-pointer select-none overflow-hidden"
     >
       {/* Top Accent Strip */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-primary-600" />

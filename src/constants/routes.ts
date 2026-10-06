@@ -7,6 +7,7 @@ export const ROUTES = {
   RESET_PASSWORD: "/reset-password",
   VERIFY_EMAIL: "/verify-email",
   BOARDS: "/boards",
+  BOARD_DETAIL: "/boards/:boardId",
   MY_TASKS: "/tasks",
   CALENDAR: "/calendar",
   KNOWLEDGE_BASE: "/knowledge",
@@ -16,3 +17,6 @@ export const ROUTES = {
   HELP: "/help",
   UNDER_DEVELOPMENT: "/under-development",
 } as const;
+
+export const getBoardDetailRoute = (boardId: string) => `/boards/${boardId}`;
+

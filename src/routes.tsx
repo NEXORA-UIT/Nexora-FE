@@ -9,7 +9,7 @@ import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
 import { VerifyEmailPage } from "@/pages/auth/VerifyEmailPage";
 import { SettingsPage } from "@/pages/settings/SettingsPage";
-import { BoardsPage } from "@/pages/boards";
+import { BoardsPage, BoardDetailPage } from "@/pages/boards";
 import { UnderDevelopmentPage } from "@/pages/UnderDevelopmentPage";
 import { ROUTES } from "@/constants/routes";
 
@@ -31,6 +31,10 @@ export const router = createBrowserRouter([
       {
         path: ROUTES.BOARDS,
         element: <BoardsPage />,
+      },
+      {
+        path: ROUTES.BOARD_DETAIL,
+        element: <BoardDetailPage />,
       },
       {
         path: ROUTES.MY_TASKS,

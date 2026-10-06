@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useNavigate } from "react-router-dom";
 import { FolderArchive, Loader2 } from "lucide-react";
 import { WorkspaceHeader, WorkspaceTabs } from "@/components/workspace";
 import {
@@ -9,9 +10,11 @@ import {
   CreateBoardModal,
 } from "@/components/boards";
 import { useWorkspaceBoards } from "@/hooks";
+import { getBoardDetailRoute } from "@/constants/routes";
 import type { WorkspaceTabId } from "@/types";
 
 export const BoardsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = React.useState<WorkspaceTabId>("boards");
 
   const {
@@ -136,6 +139,7 @@ export const BoardsPage: React.FC = () => {
                         key={board.id}
                         board={board}
                         onArchive={handleArchiveBoard}
+                        onClick={(b) => navigate(getBoardDetailRoute(b.id))}
                       />
                     ))}
                   </div>
