@@ -70,8 +70,8 @@ export const Topbar: React.FC = () => {
         <button
           type="button"
           className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-neutral-700 hover:bg-neutral-100 transition-colors"
-          onClick={() => navigate(ROUTES.UNDER_DEVELOPMENT)}
-          title="Switch Workspace"
+          onClick={() => navigate(ROUTES.BOARDS)}
+          title="Switch Workspace: Core Platform"
         >
           <Layers className="h-3.5 w-3.5 text-primary-600" />
           <span>Core Platform</span>

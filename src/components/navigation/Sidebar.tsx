@@ -22,6 +22,7 @@ export const Sidebar: React.FC = () => {
   const [corePlatformExpanded, setCorePlatformExpanded] = React.useState(true);
 
   const isHomeActive = location.pathname === ROUTES.HOME;
+  const isBoardsActive = location.pathname === ROUTES.BOARDS;
   const isSettingsActive =
     location.pathname === ROUTES.SETTINGS ||
     location.pathname === ROUTES.PROFILE;
@@ -99,10 +100,20 @@ export const Sidebar: React.FC = () => {
               {corePlatformExpanded && (
                 <div className="mt-1 pl-4 space-y-0.5">
                   <Link
-                    to={ROUTES.UNDER_DEVELOPMENT}
-                    className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
+                    to={ROUTES.BOARDS}
+                    className={cn(
+                      "flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors",
+                      isBoardsActive
+                        ? "bg-primary-50 font-semibold text-primary-700"
+                        : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+                    )}
                   >
-                    <Kanban className="h-3.5 w-3.5 text-neutral-400" />
+                    <Kanban
+                      className={cn(
+                        "h-3.5 w-3.5",
+                        isBoardsActive ? "text-primary-600" : "text-neutral-400"
+                      )}
+                    />
                     <span>Boards</span>
                   </Link>
                 </div>
