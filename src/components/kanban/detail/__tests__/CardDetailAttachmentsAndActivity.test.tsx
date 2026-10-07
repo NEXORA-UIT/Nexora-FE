@@ -52,4 +52,28 @@ describe("CardDetailAttachments & CardDetailActivity", () => {
       expect(screen.getByText(/updated status to IN PROGRESS/i)).toBeDefined();
     });
   });
+
+  it("submits comment using Ctrl+Enter shortcut and validates non-empty content", async () => {
+    const handleAddComment = vi.fn().mockResolvedValue(undefined);
+    const handleFetchActivities = vi.fn();
+
+    render(
+      <CardDetailActivity
+        card={card101}
+        onAddComment={handleAddComment}
+        onFetchActivities={handleFetchActivities}
+      />
+    );
+
+    const submitBtn = screen.getByRole("button", { name: /Send comment/i });
+    expect(submitBtn.hasAttribute("disabled")).toBe(true);
+
+    const textarea = screen.getByRole("textbox", { name: /Write a comment/i });
+    fireEvent.change(textarea, { target: { value: "A new constructive remark" } });
+    expect(submitBtn.hasAttribute("disabled")).toBe(false);
+
+    fireEvent.keyDown(textarea, { key: "Enter", ctrlKey: true });
+
+    expect(handleAddComment).toHaveBeenCalledWith("card-101", "A new constructive remark");
+  });
 });

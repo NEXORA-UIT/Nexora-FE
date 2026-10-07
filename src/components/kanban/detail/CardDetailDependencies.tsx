@@ -19,7 +19,7 @@ export const CardDetailDependencies: React.FC<CardDetailDependenciesProps> = ({ 
         {/* Read-only + Add dependency indicator */}
         <span
           className="inline-flex cursor-not-allowed items-center gap-1 text-[11px] font-medium text-neutral-400"
-          title="Dependency management in development"
+          title="Dependency management is coming in a future release."
         >
           <span>+ Add dependency</span>
           <HelpCircle className="h-2.5 w-2.5" />

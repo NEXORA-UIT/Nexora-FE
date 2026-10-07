@@ -58,23 +58,25 @@ export const CardDetailDrawer: React.FC<CardDetailDrawerProps> = ({
         {/* Right-Side Slide-Over Panel Container */}
         <Dialog.Content
           data-no-pan
-          className="fixed inset-y-0 right-0 z-50 flex w-full max-w-2xl flex-col border-l border-neutral-200 bg-white shadow-2xl focus:outline-none transition-all duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right"
+          className="fixed inset-y-0 right-0 z-50 flex w-full max-w-full sm:max-w-xl lg:max-w-2xl flex-col border-l border-neutral-200 bg-white shadow-2xl focus:outline-none transition-all duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right"
         >
           {/* Accessible Dialog Title */}
           <Dialog.Title className="sr-only">
             Task details for {card.code}: {card.title}
           </Dialog.Title>
 
-          {/* Independent Vertical Scroll Area */}
-          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-2 scrollbar-thin">
-            {/* Header: Code Badge, Title, Verified Options Menu, Close */}
+          {/* Pinned Sticky Header */}
+          <div className="shrink-0 bg-white border-b border-neutral-200 px-4 sm:px-6 pt-4 pb-1">
             <CardDetailHeader
               card={card}
               onUpdate={onUpdate}
               onDelete={onDelete}
               onClose={onClose}
             />
+          </div>
 
+          {/* Independent Vertical Scroll Area */}
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-2 space-y-2 scrollbar-thin">
             {/* Core Metadata: Status select (moveCard), Priority, Assignee, Dates, Labels */}
             <CardDetailMetadata
               card={card}

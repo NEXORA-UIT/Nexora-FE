@@ -30,7 +30,7 @@ export const CardDetailAttachments: React.FC<CardDetailAttachmentsProps> = ({ ca
         {/* Read-only + Upload indicator */}
         <span
           className="inline-flex cursor-not-allowed items-center gap-1 text-[11px] font-medium text-neutral-400"
-          title="Cloud storage upload in development"
+          title="File upload is coming in a future release."
         >
           <span>+ Upload</span>
           <HelpCircle className="h-2.5 w-2.5" />

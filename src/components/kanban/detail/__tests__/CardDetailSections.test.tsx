@@ -20,6 +20,39 @@ describe("Card Detail Content Sections", () => {
     expect(screen.getByText("Unsaved changes...")).toBeDefined();
   });
 
+  it("commits description immediately on blur", async () => {
+    const handleUpdate = vi.fn().mockResolvedValue(undefined);
+    render(<CardDetailDescription card={card101} onUpdate={handleUpdate} />);
+
+    const textarea = screen.getByPlaceholderText(/Add a detailed description/i);
+    fireEvent.change(textarea, { target: { value: "Immediate blur save test" } });
+    fireEvent.blur(textarea);
+
+    expect(handleUpdate).toHaveBeenCalledWith({
+      description: "Immediate blur save test",
+      updatedAt: card101.updatedAt,
+    });
+  });
+
+  it("handles description save failure and retries on button click", async () => {
+    const handleUpdate = vi.fn().mockRejectedValueOnce(new Error("Network error")).mockResolvedValueOnce(undefined);
+    render(<CardDetailDescription card={card101} onUpdate={handleUpdate} />);
+
+    const textarea = screen.getByPlaceholderText(/Add a detailed description/i);
+    fireEvent.change(textarea, { target: { value: "Failing text" } });
+    fireEvent.blur(textarea);
+
+    // Should show error state
+    const errorText = await screen.findByText(/Unable to save changes/i);
+    expect(errorText).toBeDefined();
+
+    // Click retry
+    const retryBtn = screen.getByRole("button", { name: /Retry/i });
+    fireEvent.click(retryBtn);
+
+    expect(handleUpdate).toHaveBeenCalledTimes(2);
+  });
+
   it("renders Checklist progress and tasks", () => {
     const handleAdd = vi.fn();
     const handleToggle = vi.fn();
@@ -37,6 +70,21 @@ describe("Card Detail Content Sections", () => {
     expect(screen.getByText(/Checklist/i)).toBeDefined();
     expect(screen.getByText("Draft quotes")).toBeDefined();
     expect(screen.getByText("Legal review")).toBeDefined();
+  });
+
+  it("renders empty checklist helper state when checklist is empty", () => {
+    const emptyCard = { ...card101, checklist: [] };
+    render(
+      <CardDetailChecklist
+        card={emptyCard}
+        onAddItem={vi.fn()}
+        onToggleItem={vi.fn()}
+        onDeleteItem={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("No checklist items yet.")).toBeDefined();
+    expect(screen.getByText(/Add a task to break this card into smaller steps/i)).toBeDefined();
   });
 
   it("does NOT show blocked alert for card-101 with completed prerequisite", () => {

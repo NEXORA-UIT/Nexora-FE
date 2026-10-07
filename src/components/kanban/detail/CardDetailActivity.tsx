@@ -98,17 +98,29 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
               <textarea
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Write a comment..."
+                onKeyDown={(e) => {
+                  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                    e.preventDefault();
+                    void handleCommentSubmit();
+                  }
+                }}
+                disabled={isSubmitting}
+                placeholder="Write a comment... (Ctrl+Enter to post)"
+                aria-label="Write a comment"
                 rows={2}
-                className="w-full rounded-lg border border-neutral-200 bg-white p-2.5 pr-10 text-xs text-neutral-800 placeholder:text-neutral-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full rounded-lg border border-neutral-200 bg-white p-2.5 pr-10 text-xs text-neutral-800 placeholder:text-neutral-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:opacity-60"
               />
               <button
                 type="submit"
                 disabled={!commentText.trim() || isSubmitting}
-                className="absolute bottom-2.5 right-2.5 flex h-6 w-6 items-center justify-center rounded-md bg-primary-600 text-white transition-opacity hover:bg-primary-700 disabled:opacity-40"
+                className="absolute bottom-2.5 right-2.5 flex h-7 w-7 items-center justify-center rounded-md bg-primary-600 text-white transition-opacity hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 aria-label="Send comment"
               >
-                <Send className="h-3 w-3" />
+                {isSubmitting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Send className="h-3.5 w-3.5" />
+                )}
               </button>
             </div>
           </form>
@@ -141,9 +153,16 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
         {/* Activity Tab Content (Lazy Loaded) */}
         <Tabs.Content value="activity" className="space-y-3 focus:outline-none">
           {isLoadingActivities ? (
-            <div className="flex items-center justify-center py-6 text-xs text-neutral-400 gap-2">
-              <Loader2 className="h-4 w-4 animate-spin text-primary-600" />
-              <span>Loading audit logs...</span>
+            <div className="space-y-3 py-2">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="flex items-center gap-2.5 animate-pulse">
+                  <div className="h-5 w-5 rounded-full bg-neutral-200 shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3 w-3/4 rounded bg-neutral-200" />
+                    <div className="h-2.5 w-1/3 rounded bg-neutral-100" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : activities && activities.length > 0 ? (
             <div className="space-y-3">
