@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, AlertCircle, RefreshCw, CalendarDays } from "lucide-react";
+import { ArrowLeft, AlertCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { ROUTES } from "@/constants/routes";
 import { useBoardDetail } from "@/hooks";
@@ -10,6 +10,7 @@ import {
   KanbanBoard,
   KanbanColumnSkeleton,
   CardDetailDrawer,
+  BoardCalendar,
 } from "@/components/kanban";
 import { Button } from "@/components/ui/button";
 
@@ -126,22 +127,11 @@ export const BoardDetailPage: React.FC = () => {
 
           {/* Canvas Views */}
           {activeView === "calendar" ? (
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-neutral-50/60 p-16 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-2xs border border-neutral-200/80 text-primary-600 mb-3">
-                <CalendarDays className="h-6 w-6" />
-              </div>
-              <h3 className="text-base font-bold text-neutral-900">Calendar View</h3>
-              <p className="mt-1 text-xs text-neutral-500 max-w-sm">
-                Milestone and sprint timeline visualization is coming in the next release.
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setActiveView("board")}
-                className="mt-4"
-              >
-                Switch back to Kanban Board
-              </Button>
+            <div className="flex-1 min-h-0">
+              <BoardCalendar
+                lists={filteredLists}
+                onCardClick={handleSelectCard}
+              />
             </div>
           ) : (
             <div className="flex-1 min-h-0">
