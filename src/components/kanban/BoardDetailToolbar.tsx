@@ -60,7 +60,7 @@ export const BoardDetailToolbar: React.FC<BoardDetailToolbarProps> = ({
       </div>
 
       {/* 2. Utility Actions: Archived Lists, Search, Filter */}
-      <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+      <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
         {/* Archived Lists Counter Pill */}
         <Button
           type="button"
@@ -85,7 +85,7 @@ export const BoardDetailToolbar: React.FC<BoardDetailToolbarProps> = ({
         </Button>
 
         {/* Search Cards Input */}
-        <div className="relative w-48 sm:w-56">
+        <div className="relative min-w-[130px] flex-1 sm:w-56 sm:flex-initial">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400 pointer-events-none" />
           <input
             type="text"

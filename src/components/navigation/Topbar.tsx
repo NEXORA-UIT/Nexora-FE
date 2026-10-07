@@ -51,8 +51,8 @@ export const Topbar: React.FC = () => {
   return (
     <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-neutral-200 bg-white px-4 sm:px-6 select-none">
       {/* Left: Brand Logo & Workspace Selector */}
-      <div className="flex items-center gap-3.5">
-        <Link to={ROUTES.HOME} className="flex items-center gap-2">
+      <div className="flex items-center gap-2 sm:gap-3.5 min-w-0">
+        <Link to={ROUTES.HOME} className="flex items-center gap-2 shrink-0">
           <img
             src={nexoraLogoSrc}
             alt="Nexora Logo"
@@ -64,12 +64,12 @@ export const Topbar: React.FC = () => {
         </Link>
 
         {/* Subtle Divider */}
-        <div className="h-4 w-px bg-neutral-200" />
+        <div className="h-4 w-px bg-neutral-200 hidden sm:block" />
 
         {/* Workspace Dropdown Button */}
         <button
           type="button"
-          className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-neutral-700 hover:bg-neutral-100 transition-colors"
+          className="hidden sm:flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-neutral-700 hover:bg-neutral-100 transition-colors"
           onClick={() => navigate(ROUTES.BOARDS)}
           title="Switch Workspace: Core Platform"
         >
@@ -97,16 +97,18 @@ export const Topbar: React.FC = () => {
       </div>
 
       {/* Right: Actions & User Menu */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         {/* + Create Button */}
         <Button
           type="button"
           size="sm"
-          className="h-8 gap-1 rounded-lg bg-primary-600 px-3 text-xs font-medium text-white shadow-xs hover:bg-primary-700"
+          className="h-8 gap-1 rounded-lg bg-primary-600 px-2.5 sm:px-3 text-xs font-medium text-white shadow-xs hover:bg-primary-700"
           onClick={() => navigate(ROUTES.UNDER_DEVELOPMENT)}
+          title="Create"
+          aria-label="Create"
         >
           <Plus className="h-3.5 w-3.5" />
-          <span>Create</span>
+          <span className="hidden sm:inline">Create</span>
         </Button>
 
         {/* AI Assistant Quick Launcher */}
@@ -114,8 +116,10 @@ export const Topbar: React.FC = () => {
           type="button"
           variant="outline"
           size="sm"
-          className="h-8 gap-1.5 rounded-lg border-neutral-200 bg-white px-2.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 shadow-xs"
+          className="h-8 gap-1.5 rounded-lg border-neutral-200 bg-white px-2 sm:px-2.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 shadow-xs"
           onClick={() => navigate(ROUTES.UNDER_DEVELOPMENT)}
+          title="AI Assistant"
+          aria-label="AI Assistant"
         >
           <Sparkles className="h-3.5 w-3.5 text-primary-600" />
           <span className="hidden sm:inline">AI Assistant</span>

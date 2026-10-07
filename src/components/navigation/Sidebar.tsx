@@ -28,7 +28,7 @@ export const Sidebar: React.FC = () => {
     location.pathname === ROUTES.PROFILE;
 
   return (
-    <aside className="flex h-[calc(100vh-3.5rem)] w-56 flex-col justify-between border-r border-neutral-200 bg-white px-3 py-4 select-none shrink-0 overflow-y-auto">
+    <aside className="hidden md:flex h-[calc(100vh-3.5rem)] w-56 flex-col justify-between border-r border-neutral-200 bg-white px-3 py-4 select-none shrink-0 overflow-y-auto">
       {/* Top Navigation Sections */}
       <div className="space-y-6">
         {/* Section 1: MENU */}
