@@ -1,7 +1,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { boardApi, cardApi, listApi } from "@/apis";
-import { filterCardsByQuery } from "@/utils";
+import { filterCardsByQuery, canMoveCardToDone, isCardBlocked } from "@/utils";
 import type {
   BoardDetail,
   KanbanCard,
@@ -19,7 +19,7 @@ export function useBoardDetail(boardId?: string) {
 
   // Search & View tab state
   const [searchQuery, setSearchQuery] = React.useState<string>("");
-  const [activeView, setActiveView] = React.useState<"board" | "calendar">("board");
+  const [activeView, setActiveView] = React.useState<"board" | "calendar" | "planning">("board");
 
   // Selected Card for Drawer
   const [selectedCardId, setSelectedCardId] = React.useState<string | null>(null);
@@ -117,6 +117,25 @@ export function useBoardDetail(boardId?: string) {
 
   // Action: Commit card move after drag end
   const handleCommitMoveCard = async (cardId: string, payload: MoveCardInput) => {
+    if (!board) return;
+
+    const currentCard = board.lists
+      .flatMap((l) => l.cards)
+      .find((c) => c.id === cardId);
+
+    const targetList = board.lists.find((l) => l.id === payload.targetListId);
+
+    // Enforce business rule: Blocked card cannot be moved to DONE (UC-PLAN-11)
+    if (currentCard && targetList) {
+      const check = canMoveCardToDone(currentCard, targetList.category);
+      if (!check.allowed) {
+        toast.error(check.reason);
+        // Force state update to reset optimistic DnD preview lists
+        setBoard((prev) => (prev ? { ...prev, lists: [...prev.lists] } : prev));
+        return;
+      }
+    }
+
     try {
       await cardApi.moveCard(cardId, payload);
       // Synchronize persistent board state
@@ -174,8 +193,9 @@ export function useBoardDetail(boardId?: string) {
     if (card.listId === targetList.id) return true;
 
     // Prerequisite validation: if moving to DONE and card is blocked, reject transition
-    if (targetCategory === "DONE" && card.isBlocked) {
-      toast.error(card.blockReason || "Cannot move to Done: Prerequisite is not completed.");
+    const check = canMoveCardToDone(card, targetCategory);
+    if (!check.allowed) {
+      toast.error(check.reason);
       return false;
     }
 
@@ -354,9 +374,80 @@ export function useBoardDetail(boardId?: string) {
     return cardApi.getActivities(cardId);
   };
 
+  // Derived all board cards for planning and dependency picker
+  const allBoardCards = React.useMemo<KanbanCard[]>(() => {
+    if (!board) return [];
+    return board.lists.flatMap((l) => l.cards);
+  }, [board]);
+
+  // Action: Add Dependency (Optimistic with rollback)
+  const handleAddDependency = async (cardId: string, prerequisiteCardId: string): Promise<void> => {
+    if (!board) return;
+    const previousBoard = JSON.parse(JSON.stringify(board)) as BoardDetail;
+
+    try {
+      const newDep = await cardApi.addDependency(cardId, { dependsOnCardId: prerequisiteCardId });
+      setBoard((prev) => {
+        if (!prev) return prev;
+        const nextLists = prev.lists.map((list) => ({
+          ...list,
+          cards: list.cards.map((c) => {
+            if (c.id === cardId) {
+              const updatedDeps = [...(c.dependencies || []), newDep];
+              const updatedCard = { ...c, dependencies: updatedDeps };
+              const { isBlocked, blockReason } = isCardBlocked(updatedCard, prev.lists);
+              return { ...updatedCard, isBlocked, blockReason };
+            }
+            return c;
+          }),
+        }));
+        return { ...prev, lists: nextLists };
+      });
+      toast.success("Dependency added");
+    } catch (err) {
+      setBoard(previousBoard);
+      const msg = err instanceof Error ? err.message : "Failed to add dependency";
+      toast.error(msg);
+      throw err;
+    }
+  };
+
+  // Action: Delete Dependency (Optimistic with rollback)
+  const handleDeleteDependency = async (cardId: string, dependencyId: string): Promise<void> => {
+    if (!board) return;
+    const previousBoard = JSON.parse(JSON.stringify(board)) as BoardDetail;
+
+    try {
+      await cardApi.deleteDependency(cardId, dependencyId);
+      setBoard((prev) => {
+        if (!prev) return prev;
+        const nextLists = prev.lists.map((list) => ({
+          ...list,
+          cards: list.cards.map((c) => {
+            if (c.id === cardId) {
+              const updatedDeps = (c.dependencies || []).filter((d) => d.id !== dependencyId);
+              const updatedCard = { ...c, dependencies: updatedDeps };
+              const { isBlocked, blockReason } = isCardBlocked(updatedCard, prev.lists);
+              return { ...updatedCard, isBlocked, blockReason };
+            }
+            return c;
+          }),
+        }));
+        return { ...prev, lists: nextLists };
+      });
+      toast.success("Dependency removed");
+    } catch (err) {
+      setBoard(previousBoard);
+      const msg = err instanceof Error ? err.message : "Failed to delete dependency";
+      toast.error(msg);
+      throw err;
+    }
+  };
+
   return {
     board,
     filteredLists,
+    allBoardCards,
     isLoading,
     error,
     reload: loadBoard,
@@ -385,5 +476,7 @@ export function useBoardDetail(boardId?: string) {
     handleDeleteChecklistItem,
     handleAddComment,
     fetchCardActivities,
+    handleAddDependency,
+    handleDeleteDependency,
   };
 }

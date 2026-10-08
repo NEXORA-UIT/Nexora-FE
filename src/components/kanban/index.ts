@@ -10,6 +10,7 @@ export * from "./KanbanColumnSkeleton";
 export * from "./KanbanBoard";
 export * from "./detail";
 export * from "./calendar";
+export * from "./planning";
 
 
 

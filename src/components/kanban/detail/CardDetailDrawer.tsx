@@ -30,6 +30,10 @@ export interface CardDetailDrawerProps {
   onDeleteChecklistItem: (cardId: string, taskId: string) => Promise<void>;
   onAddComment: (cardId: string, content: string) => Promise<void>;
   onFetchActivities: (cardId: string) => Promise<CardActivity[]>;
+  boardCards?: KanbanCard[];
+  canManageDependencies?: boolean;
+  onAddDependency?: (cardId: string, prerequisiteCardId: string) => Promise<void>;
+  onDeleteDependency?: (cardId: string, dependencyId: string) => Promise<void>;
 }
 
 export const CardDetailDrawer: React.FC<CardDetailDrawerProps> = ({
@@ -46,6 +50,10 @@ export const CardDetailDrawer: React.FC<CardDetailDrawerProps> = ({
   onDeleteChecklistItem,
   onAddComment,
   onFetchActivities,
+  boardCards = [],
+  canManageDependencies = false,
+  onAddDependency,
+  onDeleteDependency,
 }) => {
   if (!card) return null;
 
@@ -98,7 +106,21 @@ export const CardDetailDrawer: React.FC<CardDetailDrawerProps> = ({
             />
 
             {/* Dependencies & Prerequisites: Consistent Blocked Warning + Linked Cards */}
-            <CardDetailDependencies card={card} />
+            <CardDetailDependencies
+              card={card}
+              boardCards={boardCards}
+              canManage={Boolean(canManageDependencies)}
+              onAddDependency={
+                canManageDependencies && onAddDependency
+                  ? (prereqId) => onAddDependency(card.id, prereqId)
+                  : undefined
+              }
+              onDeleteDependency={
+                canManageDependencies && onDeleteDependency
+                  ? (depId) => onDeleteDependency(card.id, depId)
+                  : undefined
+              }
+            />
 
             {/* Attachments: Read-only preview cards + disabled upload indicator */}
             <CardDetailAttachments card={card} />

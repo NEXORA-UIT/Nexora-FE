@@ -6,7 +6,10 @@ import type {
   ChecklistItem,
   CardComment,
   CardActivity,
+  CardDependency,
+  CreateDependencyRequest,
 } from "@/types";
+import { wouldCreateCycle } from "@/utils/planning.utils";
 import {
   MOCK_BOARD_DETAIL,
   MOCK_BOARD_MEMBERS,
@@ -286,6 +289,78 @@ export const cardApi = {
       const idx = list.cards.findIndex((c) => c.id === cardId);
       if (idx !== -1) {
         list.cards = list.cards.filter((c) => c.id !== cardId);
+        return;
+      }
+    }
+    throw new Error(`Card not found: ${cardId}`);
+  },
+
+  /**
+   * Declares a dependency prerequisite for a card
+   * (Mirrors POST /api/v1/cards/{id}/dependencies -> CardDependencyResponse)
+   */
+  async addDependency(cardId: string, payload: CreateDependencyRequest): Promise<CardDependency> {
+    if (cardId === payload.dependsOnCardId) {
+      throw new Error("Cannot depend on self");
+    }
+
+    let targetCard: KanbanCard | undefined;
+    let prereqCard: KanbanCard | undefined;
+    let prereqListCategory: "TODO" | "IN_PROGRESS" | "DONE" = "TODO";
+
+    const allCards = inMemoryLists.flatMap((l) => l.cards);
+
+    for (const list of inMemoryLists) {
+      for (const card of list.cards) {
+        if (card.id === cardId) targetCard = card;
+        if (card.id === payload.dependsOnCardId) {
+          prereqCard = card;
+          prereqListCategory = list.category;
+        }
+      }
+    }
+
+    if (!targetCard) {
+      throw new Error(`Target card not found: ${cardId}`);
+    }
+    if (!prereqCard) {
+      throw new Error(`Prerequisite card not found: ${payload.dependsOnCardId}`);
+    }
+
+    if (targetCard.dependencies?.some((d) => d.prerequisiteCardId === payload.dependsOnCardId)) {
+      throw new Error("Dependency already exists");
+    }
+
+    if (wouldCreateCycle(cardId, payload.dependsOnCardId, allCards)) {
+      throw new Error("Circular dependency detected");
+    }
+
+    const newDep: CardDependency = {
+      id: `dep-${Date.now()}`,
+      cardId,
+      prerequisiteCardId: payload.dependsOnCardId,
+      prerequisiteCode: prereqCard.code,
+      prerequisiteTitle: prereqCard.title,
+      prerequisiteStatus: prereqListCategory,
+      isCompleted: prereqListCategory === "DONE",
+    };
+
+    targetCard.dependencies = [...(targetCard.dependencies || []), newDep];
+    targetCard.updatedAt = new Date().toISOString();
+
+    return newDep;
+  },
+
+  /**
+   * Removes a dependency prerequisite from a card
+   * (Mirrors DELETE /api/v1/cards/{id}/dependencies/{dependencyId} -> EmptySuccessResponse)
+   */
+  async deleteDependency(cardId: string, dependencyId: string): Promise<void> {
+    for (const list of inMemoryLists) {
+      const card = list.cards.find((c) => c.id === cardId);
+      if (card) {
+        card.dependencies = (card.dependencies || []).filter((d) => d.id !== dependencyId);
+        card.updatedAt = new Date().toISOString();
         return;
       }
     }

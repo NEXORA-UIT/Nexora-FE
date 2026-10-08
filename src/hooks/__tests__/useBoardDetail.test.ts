@@ -50,4 +50,34 @@ describe("useBoardDetail Card Detail State Orchestration", () => {
 
     expect(moved).toBe(true);
   });
+
+  it("enforces blocked card rejection in drag-and-drop handleCommitMoveCard", async () => {
+    const { result } = renderHook(() => useBoardDetail("board-website-redesign"));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    // card-103 is blocked
+    const card103 = result.current.board?.lists[0].cards.find((c) => c.id === "card-103");
+    expect(card103?.isBlocked).toBe(true);
+
+    const doneList = result.current.board!.lists.find((l) => l.category === "DONE");
+    expect(doneList).toBeDefined();
+    if (!doneList) return;
+
+    // Attempt drag-and-drop move of blocked card into DONE column
+    await act(async () => {
+      await result.current.handleCommitMoveCard("card-103", {
+        targetListId: doneList.id,
+        position: 1024,
+        updatedAt: card103!.updatedAt,
+      });
+    });
+
+    // Verify card-103 was NOT moved to doneList
+    const doneCards = result.current.board?.lists.find((l) => l.id === doneList.id)?.cards || [];
+    expect(doneCards.some((c) => c.id === "card-103")).toBe(false);
+
+    // Verify card-103 is still in original list
+    const originalListCards = result.current.board?.lists.find((l) => l.id === card103!.listId)?.cards || [];
+    expect(originalListCards.some((c) => c.id === "card-103")).toBe(true);
+  });
 });

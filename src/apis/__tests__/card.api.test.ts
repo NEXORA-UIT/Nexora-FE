@@ -68,4 +68,30 @@ describe("cardApi Operations & OCC", () => {
     await cardApi.deleteCard(tempCard.id);
     await expect(cardApi.getCardById(tempCard.id)).rejects.toThrow("Card not found");
   });
+
+  it("adds and deletes a dependency", async () => {
+    // Add dependency: card-102 depends on card-101
+    const dep = await cardApi.addDependency("card-102", {
+      dependsOnCardId: "card-101",
+    });
+
+    expect(dep.cardId).toBe("card-102");
+    expect(dep.prerequisiteCardId).toBe("card-101");
+
+    const card = await cardApi.getCardById("card-102");
+    expect(card.dependencies?.some((d) => d.id === dep.id)).toBe(true);
+
+    // Delete dependency
+    await cardApi.deleteDependency("card-102", dep.id);
+    const cardAfterDelete = await cardApi.getCardById("card-102");
+    expect(cardAfterDelete.dependencies?.some((d) => d.id === dep.id)).toBe(false);
+  });
+
+  it("rejects self-dependency in addDependency", async () => {
+    await expect(
+      cardApi.addDependency("card-101", {
+        dependsOnCardId: "card-101",
+      })
+    ).rejects.toThrow("Cannot depend on self");
+  });
 });

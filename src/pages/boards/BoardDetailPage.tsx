@@ -11,8 +11,12 @@ import {
   KanbanColumnSkeleton,
   CardDetailDrawer,
   BoardCalendar,
+  BoardPlanningView,
 } from "@/components/kanban";
+
 import { Button } from "@/components/ui/button";
+import { useAuthStore } from "@/stores/auth.store";
+import { canUserManageDependencies } from "@/utils";
 
 export const BoardDetailPage: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
@@ -42,7 +46,25 @@ export const BoardDetailPage: React.FC = () => {
     handleDeleteChecklistItem,
     handleAddComment,
     fetchCardActivities,
+    allBoardCards,
+    handleAddDependency,
+    handleDeleteDependency,
   } = useBoardDetail(boardId);
+
+  const currentUser = useAuthStore((state) => state.user);
+
+  // Authoritative role-based permission for card dependencies (PM & Owner only)
+  const canManageDependencies = React.useMemo(() => {
+    if (!board) return false;
+    const member = board.members.find(
+      (m) =>
+        (currentUser && m.id === currentUser.id) ||
+        (currentUser && m.name === currentUser.fullName) ||
+        m.name === "Phan Gia Đạt" // Primary authenticated workspace user
+    );
+    const role = member?.role;
+    return canUserManageDependencies(role);
+  }, [board, currentUser]);
 
   const handleShareClick = () => {
     if (navigator.clipboard) {
@@ -133,6 +155,14 @@ export const BoardDetailPage: React.FC = () => {
                 onCardClick={handleSelectCard}
               />
             </div>
+          ) : activeView === "planning" ? (
+            <div className="flex-1 min-h-0">
+              <BoardPlanningView
+                boardId={board.id}
+                lists={filteredLists}
+                onCardClick={handleSelectCard}
+              />
+            </div>
           ) : (
             <div className="flex-1 min-h-0">
               <KanbanBoard
@@ -147,6 +177,7 @@ export const BoardDetailPage: React.FC = () => {
               />
             </div>
           )}
+
 
           {/* Card Detail Side Panel Drawer */}
           <CardDetailDrawer
@@ -163,6 +194,10 @@ export const BoardDetailPage: React.FC = () => {
             onDeleteChecklistItem={handleDeleteChecklistItem}
             onAddComment={handleAddComment}
             onFetchActivities={fetchCardActivities}
+            boardCards={allBoardCards}
+            canManageDependencies={canManageDependencies}
+            onAddDependency={handleAddDependency}
+            onDeleteDependency={handleDeleteDependency}
           />
         </>
       )}

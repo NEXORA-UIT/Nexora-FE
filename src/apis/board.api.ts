@@ -1,4 +1,5 @@
-import type { Board, BoardDetail, CreateBoardInput } from "@/types";
+import type { Board, BoardDetail, CreateBoardInput, BoardDashboard } from "@/types";
+import { getBoardDashboardMetrics } from "@/utils/planning.utils";
 import { MOCK_BOARDS } from "@/mocks/data/boards.mock";
 import { MOCK_BOARD_DETAIL } from "@/mocks/data/kanban.mock";
 
@@ -156,5 +157,33 @@ export const boardApi = {
       }
     }
     inMemoryBoards = inMemoryBoards.filter((b) => b.id !== boardId);
+  },
+
+  /**
+   * Retrieves aggregated statistical metrics of a project board
+   * (Mirrors GET /api/v1/boards/{id}/dashboard -> BoardDashboardResponse)
+   */
+  async getBoardDashboard(boardId: string): Promise<BoardDashboard> {
+    let detail = inMemoryBoardDetails[boardId];
+    if (!detail) {
+      try {
+        detail = await this.getBoardDetail(boardId);
+      } catch {
+        // board not found
+      }
+    }
+
+    if (detail && detail.lists) {
+      return getBoardDashboardMetrics(detail.lists);
+    }
+
+    return {
+      totalCards: 0,
+      completedCards: 0,
+      inProgressCards: 0,
+      todoCards: 0,
+      overdueCards: 0,
+      completionRate: 0,
+    };
   },
 };

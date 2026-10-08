@@ -2,6 +2,7 @@ import * as React from "react";
 import {
   Columns3,
   Calendar as CalendarIcon,
+  CalendarCheck,
   Archive,
   Search,
   SlidersHorizontal,
@@ -10,8 +11,8 @@ import {
 import { Button } from "@/components/ui/button";
 
 export interface BoardDetailToolbarProps {
-  activeView: "board" | "calendar";
-  onViewChange: (view: "board" | "calendar") => void;
+  activeView: "board" | "calendar" | "planning";
+  onViewChange: (view: "board" | "calendar" | "planning") => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   archivedListsCount?: number;
@@ -30,7 +31,7 @@ export const BoardDetailToolbar: React.FC<BoardDetailToolbarProps> = ({
 }) => {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-200/80 pb-4 select-none">
-      {/* 1. View Switcher Tabs (Board vs Calendar) */}
+      {/* 1. View Switcher Tabs (Board vs Calendar vs Planning) */}
       <div className="flex items-center gap-1 rounded-xl bg-neutral-100/80 p-1 border border-neutral-200/60 self-start">
         <button
           type="button"
@@ -56,6 +57,19 @@ export const BoardDetailToolbar: React.FC<BoardDetailToolbarProps> = ({
         >
           <CalendarIcon className="h-3.5 w-3.5" />
           <span>Calendar</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onViewChange("planning")}
+          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+            activeView === "planning"
+              ? "bg-white text-neutral-900 shadow-2xs border border-neutral-200/80"
+              : "text-neutral-500 hover:text-neutral-900"
+          }`}
+        >
+          <CalendarCheck className="h-3.5 w-3.5" />
+          <span>Planning</span>
         </button>
       </div>
 

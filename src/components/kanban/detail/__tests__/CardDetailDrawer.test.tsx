@@ -80,4 +80,54 @@ describe("CardDetailDrawer Component", () => {
 
     expect(container.firstChild).toBeNull();
   });
+
+  it("defaults canManageDependencies to false (deny-by-default) when prop is omitted", () => {
+    render(
+      <CardDetailDrawer
+        card={card101}
+        isOpen={true}
+        lists={MOCK_BOARD_DETAIL.lists}
+        members={MOCK_BOARD_MEMBERS}
+        onClose={vi.fn()}
+        onUpdate={vi.fn()}
+        onStatusChange={vi.fn()}
+        onDelete={vi.fn()}
+        onAddChecklistItem={vi.fn()}
+        onToggleChecklistItem={vi.fn()}
+        onDeleteChecklistItem={vi.fn()}
+        onAddComment={vi.fn()}
+        onFetchActivities={vi.fn().mockResolvedValue([])}
+        onAddDependency={vi.fn()}
+        onDeleteDependency={vi.fn()}
+      />
+    );
+
+    // With canManageDependencies omitted, Add dependency button should NOT render
+    expect(screen.queryByRole("button", { name: /Add dependency/i })).toBeNull();
+  });
+
+  it("renders Add dependency button when canManageDependencies is explicitly true", () => {
+    render(
+      <CardDetailDrawer
+        card={card101}
+        isOpen={true}
+        lists={MOCK_BOARD_DETAIL.lists}
+        members={MOCK_BOARD_MEMBERS}
+        canManageDependencies={true}
+        onClose={vi.fn()}
+        onUpdate={vi.fn()}
+        onStatusChange={vi.fn()}
+        onDelete={vi.fn()}
+        onAddChecklistItem={vi.fn()}
+        onToggleChecklistItem={vi.fn()}
+        onDeleteChecklistItem={vi.fn()}
+        onAddComment={vi.fn()}
+        onFetchActivities={vi.fn().mockResolvedValue([])}
+        onAddDependency={vi.fn()}
+        onDeleteDependency={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /Add dependency/i })).toBeDefined();
+  });
 });

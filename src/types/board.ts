@@ -5,6 +5,7 @@ export interface BoardMember {
   name: string;
   initials: string;
   avatarUrl?: string;
+  role?: string;
 }
 
 export interface Board {
