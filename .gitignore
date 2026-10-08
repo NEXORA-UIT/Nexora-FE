@@ -35,3 +35,6 @@ playwright/.cache/
 .env
 .env.local
 .env.*.local
+
+# Internal tools & scratch
+.superpowers/

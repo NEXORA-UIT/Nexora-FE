@@ -56,7 +56,7 @@ src/
 
 ### `apis/`
 
-Backend API communication.
+Backend API communication. All HTTP and backend API calls belong in `src/apis/`.
 
 Contains:
 
@@ -64,6 +64,7 @@ Contains:
 * request functions
 * response mapping when required
 
+Do not make direct API calls inside page or UI components.
 Do not put React UI logic here.
 
 ---
@@ -115,7 +116,7 @@ Examples:
 
 ### `components/navigation/`
 
-Navigation components.
+Navigation components. Reusable navigation UI belongs in `src/components/navigation/`.
 
 Examples:
 
@@ -123,6 +124,9 @@ Examples:
 * Topbar
 * Breadcrumb
 * WorkspaceSwitcher
+* UserMenu
+
+Note: The account trigger in the header (`[Avatar] [Name/Owner] [ChevronDown]`) is a menu trigger that opens an account dropdown menu (containing Profile, Logout), not automatically a direct navigation link to Profile.
 
 ---
 
@@ -215,7 +219,7 @@ Pages compose:
 * hooks
 * API-driven data
 
-Pages should not become large business-logic containers.
+Pages should primarily handle page composition, connecting hooks/stores/components, and minimal page-level state. Pages should not become large business-logic containers and must not contain direct API calls.
 
 ---
 
@@ -247,12 +251,13 @@ Primarily:
 
 ### `stores/`
 
-Client-side state.
+Client-side state management belongs in `src/stores/`.
 
 Use Zustand only for:
 
 * UI state
 * temporary client state
+* session and auth state
 * local preferences
 * navigation-related state
 
@@ -278,6 +283,10 @@ Examples:
 * API types
 * shared enums
 * response types
+* component props interfaces
+* store state interfaces
+
+Reusable domain, API request/response, DTO, entity, and shared types must live under `src/types/`. Components, pages, API modules, and stores should import these types rather than redefining them locally. Local types are allowed only when they are genuinely private implementation details of a single file.
 
 ---
 

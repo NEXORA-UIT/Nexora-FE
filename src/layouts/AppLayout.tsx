@@ -2,10 +2,7 @@ import * as React from "react";
 import { Outlet } from "react-router-dom";
 import { Topbar } from "@/components/navigation/Topbar";
 import { Sidebar } from "@/components/navigation/Sidebar";
-
-export interface AppLayoutProps {
-  children?: React.ReactNode;
-}
+import type { AppLayoutProps } from "@/types";
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   return (
@@ -19,7 +16,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <Sidebar />
 
         {/* Scrollable Main Content Area */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
           <div className="mx-auto max-w-7xl">
             {children ?? <Outlet />}
           </div>

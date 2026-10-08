@@ -7,6 +7,9 @@ import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
 import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
+import { VerifyEmailPage } from "@/pages/auth/VerifyEmailPage";
+import { SettingsPage } from "@/pages/settings/SettingsPage";
+import { BoardsPage, BoardDetailPage } from "@/pages/boards";
 import { UnderDevelopmentPage } from "@/pages/UnderDevelopmentPage";
 import { ROUTES } from "@/constants/routes";
 
@@ -27,7 +30,11 @@ export const router = createBrowserRouter([
       },
       {
         path: ROUTES.BOARDS,
-        element: <UnderDevelopmentPage />,
+        element: <BoardsPage />,
+      },
+      {
+        path: ROUTES.BOARD_DETAIL,
+        element: <BoardDetailPage />,
       },
       {
         path: ROUTES.MY_TASKS,
@@ -47,7 +54,11 @@ export const router = createBrowserRouter([
       },
       {
         path: ROUTES.SETTINGS,
-        element: <UnderDevelopmentPage />,
+        element: <SettingsPage />,
+      },
+      {
+        path: ROUTES.PROFILE,
+        element: <SettingsPage />,
       },
       {
         path: ROUTES.HELP,
@@ -75,6 +86,10 @@ export const router = createBrowserRouter([
       {
         path: ROUTES.RESET_PASSWORD,
         element: <ResetPasswordPage />,
+      },
+      {
+        path: ROUTES.VERIFY_EMAIL,
+        element: <VerifyEmailPage />,
       },
       {
         path: ROUTES.UNDER_DEVELOPMENT,

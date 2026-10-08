@@ -22,9 +22,14 @@ export interface WorkspaceOption {
   isCurrent?: boolean;
 }
 
-export interface UserProfile {
+export interface NavUserProfile {
   name: string;
   email: string;
   avatarUrl?: string;
   initials: string;
+}
+
+export interface UserMenuProps {
+  onLogoutClick: () => void;
+  className?: string;
 }

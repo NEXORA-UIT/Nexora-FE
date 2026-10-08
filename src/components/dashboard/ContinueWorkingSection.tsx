@@ -54,7 +54,7 @@ export const ContinueWorkingSection: React.FC = () => {
         </div>
 
         <Link
-          to={ROUTES.UNDER_DEVELOPMENT}
+          to={ROUTES.BOARDS}
           className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 hover:underline transition-colors"
         >
           <span>View all boards (4)</span>

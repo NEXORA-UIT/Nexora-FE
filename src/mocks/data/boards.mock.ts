@@ -1,0 +1,112 @@
+import type { Board } from "@/types";
+
+export const MOCK_BOARDS: Board[] = [
+  {
+    id: "board-website-redesign",
+    workspaceId: "ws-core-platform",
+    title: "Website Redesign",
+    description:
+      "Product website redesign and high-conversion landing systems",
+    status: "active",
+    openTasksCount: 18,
+    completedPercent: 72,
+    members: [
+      { id: "m-1", name: "Đạt Phan", initials: "Đ" },
+      { id: "m-2", name: "Minh Vũ", initials: "M" },
+      { id: "m-3", name: "Linh Trần", initials: "L" },
+      { id: "m-4", name: "Tuấn Anh", initials: "T" },
+      { id: "m-5", name: "Hương Giang", initials: "H" },
+      { id: "m-6", name: "Quang Hải", initials: "Q" },
+    ],
+    updatedAt: "2026-10-05T09:30:00.000Z",
+    createdAt: "2026-08-10T08:00:00.000Z",
+  },
+  {
+    id: "board-mobile-application",
+    workspaceId: "ws-core-platform",
+    title: "Mobile Application",
+    description:
+      "iOS & Android rollout with offline-first local cache synchronization",
+    status: "active",
+    openTasksCount: 24,
+    completedPercent: 48,
+    members: [
+      { id: "m-1", name: "Đạt Phan", initials: "Đ" },
+      { id: "m-7", name: "Hải Nguyễn", initials: "H" },
+      { id: "m-8", name: "An Bùi", initials: "A" },
+      { id: "m-9", name: "Khoa Lê", initials: "K" },
+      { id: "m-10", name: "Nam Đỗ", initials: "N" },
+      { id: "m-11", name: "Phúc Hoàng", initials: "P" },
+      { id: "m-12", name: "Trí Đặng", initials: "T" },
+      { id: "m-13", name: "Duy Phạm", initials: "D" },
+    ],
+    updatedAt: "2026-10-05T08:15:00.000Z",
+    createdAt: "2026-08-15T08:00:00.000Z",
+  },
+  {
+    id: "board-marketing-campaign",
+    workspaceId: "ws-core-platform",
+    title: "Marketing Campaign",
+    description:
+      "Product launch, executive messaging, and developer relations documentation",
+    status: "active",
+    openTasksCount: 11,
+    completedPercent: 85,
+    members: [
+      { id: "m-2", name: "Minh Vũ", initials: "M" },
+      { id: "m-3", name: "Linh Trần", initials: "L" },
+      { id: "m-4", name: "Tuấn Anh", initials: "T" },
+      { id: "m-14", name: "Yến Mai", initials: "Y" },
+    ],
+    updatedAt: "2026-10-04T16:45:00.000Z",
+    createdAt: "2026-09-01T08:00:00.000Z",
+  },
+  {
+    id: "board-customer-portal",
+    workspaceId: "ws-core-platform",
+    title: "Customer Portal",
+    description:
+      "Customer account experience, self-serve billing, and audit logs",
+    status: "active",
+    openTasksCount: 9,
+    completedPercent: 61,
+    members: [
+      { id: "m-1", name: "Đạt Phan", initials: "Đ" },
+      { id: "m-3", name: "Linh Trần", initials: "L" },
+      { id: "m-15", name: "Bảo Trương", initials: "B" },
+      { id: "m-16", name: "Cường Ngô", initials: "C" },
+    ],
+    maxVisibleAvatars: 2,
+    updatedAt: "2026-10-03T11:20:00.000Z",
+    createdAt: "2026-09-10T08:00:00.000Z",
+  },
+  {
+    id: "board-legacy-website",
+    workspaceId: "ws-core-platform",
+    title: "Legacy Website",
+    description:
+      "Old marketing site and archived documentation for v1 platform",
+    status: "archived",
+    openTasksCount: 0,
+    completedPercent: 100,
+    members: [
+      { id: "m-1", name: "Đạt Phan", initials: "Đ" },
+      { id: "m-2", name: "Minh Vũ", initials: "M" },
+    ],
+    updatedAt: "2026-09-15T10:00:00.000Z",
+    createdAt: "2026-01-01T08:00:00.000Z",
+  },
+  {
+    id: "board-old-marketing-campaign",
+    workspaceId: "ws-core-platform",
+    title: "Old Marketing Campaign",
+    description:
+      "Q1 Campaign assets, raw video edits, and obsolete collateral",
+    status: "archived",
+    openTasksCount: 0,
+    completedPercent: 100,
+    members: [{ id: "m-2", name: "Minh Vũ", initials: "M" }],
+    updatedAt: "2026-08-20T14:30:00.000Z",
+    createdAt: "2026-02-15T08:00:00.000Z",
+  },
+];

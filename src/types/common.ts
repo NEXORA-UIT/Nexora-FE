@@ -10,6 +10,10 @@ export interface AuthLayoutProps {
   children?: React.ReactNode;
 }
 
+export interface AppLayoutProps {
+  children?: React.ReactNode;
+}
+
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
   className?: string;
   size?: number;

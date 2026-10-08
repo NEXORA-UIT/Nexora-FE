@@ -222,6 +222,31 @@
    Typography Utility Classes (Design System Section 2)
    ----------------------------------------------------------------------------- */
 @layer utilities {
+  /* Clean subtle scrollbars for Kanban canvas and columns */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-neutral-300) var(--color-neutral-100);
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 7px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: rgba(241, 245, 249, 0.7);
+    border-radius: var(--radius-full);
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: var(--color-neutral-300);
+    border-radius: var(--radius-full);
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: var(--color-neutral-400);
+  }
+
   .text-display {
     font-size: 32px;
     line-height: 40px;

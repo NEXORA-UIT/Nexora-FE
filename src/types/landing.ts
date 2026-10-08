@@ -54,9 +54,18 @@ export interface TestimonialItem {
   badgeBg: string;
 }
 
+export interface MockKanbanBoardProps {
+  customColumns?: MockBoardColumn[];
+  boardTitle?: string;
+}
+
 export interface IntegrationItem {
-  id: string;
+  id?: string;
   name: string;
   category: string;
   description: string;
+  iconBg?: string;
+  badgeText?: string;
+  icon?: React.ReactNode;
+  docsUrl?: string;
 }

@@ -89,3 +89,73 @@ export interface ResetPasswordFormProps {
 export interface ResetPasswordSuccessProps {
   onBackToSignIn: () => void;
 }
+
+// ==========================================
+// API Contract Types (from OpenAPI Spec)
+// ==========================================
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  fullName: string;
+  avatarUrl: string | null;
+  status: "ACTIVE" | "LOCKED" | string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+  user: UserProfile;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  fullName: string;
+}
+
+export interface RegisterResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface VerifyRegistrationRequest {
+  token: string;
+}
+
+export interface RefreshTokenRequest {
+  refreshToken: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  newPassword: string;
+}
+
+// ==========================================
+// Auth Store State Interface
+// ==========================================
+
+export interface AuthState {
+  accessToken: string | null;
+  refreshToken: string | null;
+  user: UserProfile | null;
+  isAuthenticated: boolean;
+  setAuth: (tokens: AuthTokens) => void;
+  setUser: (user: UserProfile) => void;
+  setAccessToken: (accessToken: string) => void;
+  clearAuth: () => void;
+}
+
