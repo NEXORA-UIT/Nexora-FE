@@ -16,6 +16,9 @@ export const ROUTES = {
   PROFILE: "/profile",
   HELP: "/help",
   UNDER_DEVELOPMENT: "/under-development",
+  OAUTH_CALLBACK: "/oauth/callback/:provider",
+  OAUTH_CALLBACK_GOOGLE: "/oauth/callback/google",
+  OAUTH_CALLBACK_GITHUB: "/oauth/callback/github",
 } as const;
 
 export const getBoardDetailRoute = (boardId: string) => `/boards/${boardId}`;

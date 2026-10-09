@@ -1,19 +1,27 @@
 import * as React from "react";
 import { toast } from "sonner";
-import { workspaceApi } from "@/apis/workspace.api";
 import { boardApi } from "@/apis/board.api";
+import { useWorkspaceStore } from "@/stores/workspace.store";
 import type {
-  Workspace,
   Board,
   BoardFilterTab,
   BoardSortOption,
   CreateBoardInput,
 } from "@/types";
 
-export function useWorkspaceBoards(workspaceId: string = "ws-core-platform") {
-  const [workspace, setWorkspace] = React.useState<Workspace | null>(null);
+export function useWorkspaceBoards(customWorkspaceId?: string) {
+  const storeWorkspaces = useWorkspaceStore((state) => state.workspaces);
+  const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
+
+  const resolvedWorkspaceId = customWorkspaceId || activeWorkspaceId || "";
+
+  const workspace = React.useMemo(() => {
+    if (!resolvedWorkspaceId) return null;
+    return storeWorkspaces.find((w) => w.id === resolvedWorkspaceId) || null;
+  }, [storeWorkspaces, resolvedWorkspaceId]);
+
   const [boards, setBoards] = React.useState<Board[]>([]);
-  const [isLoading, setIsLoading] = React.useState<boolean>(true);
+  const [isLoading, setIsLoading] = React.useState<boolean>(Boolean(resolvedWorkspaceId));
   const [error, setError] = React.useState<string | null>(null);
 
   // Filter & Search Controls
@@ -27,16 +35,19 @@ export function useWorkspaceBoards(workspaceId: string = "ws-core-platform") {
   const [deleteTargetBoard, setDeleteTargetBoard] = React.useState<Board | null>(null);
   const [isDeleting, setIsDeleting] = React.useState<boolean>(false);
 
-  // Load Initial Data
+  // Load Boards Data for the Resolved Workspace
   const loadData = React.useCallback(async () => {
+    if (!resolvedWorkspaceId) {
+      setBoards([]);
+      setIsLoading(false);
+      setError(null);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
-      const [wsData, boardsData] = await Promise.all([
-        workspaceApi.getWorkspace(workspaceId),
-        boardApi.getBoards(workspaceId),
-      ]);
-      setWorkspace(wsData);
+      const boardsData = await boardApi.getBoards(resolvedWorkspaceId);
       setBoards(boardsData);
     } catch (err) {
       setError(
@@ -45,7 +56,7 @@ export function useWorkspaceBoards(workspaceId: string = "ws-core-platform") {
     } finally {
       setIsLoading(false);
     }
-  }, [workspaceId]);
+  }, [resolvedWorkspaceId]);
 
   React.useEffect(() => {
     void loadData();
@@ -105,14 +116,6 @@ export function useWorkspaceBoards(workspaceId: string = "ws-core-platform") {
     try {
       const newBoard = await boardApi.createBoard(input);
       setBoards((prev) => [newBoard, ...prev]);
-      setWorkspace((prev) =>
-        prev
-          ? {
-              ...prev,
-              activeBoardCount: prev.activeBoardCount + 1,
-            }
-          : prev
-      );
       toast.success(`Board "${newBoard.title || newBoard.name}" created successfully.`);
       setIsCreateOpen(false);
     } catch (err) {
@@ -131,14 +134,6 @@ export function useWorkspaceBoards(workspaceId: string = "ws-core-platform") {
       setBoards((prev) =>
         prev.map((b) => (b.id === boardId ? updated : b))
       );
-      setWorkspace((prev) =>
-        prev
-          ? {
-              ...prev,
-              activeBoardCount: Math.max(0, prev.activeBoardCount - 1),
-            }
-          : prev
-      );
       toast.success(`Board "${target?.title || target?.name || "Board"}" archived.`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Archive board failed");
@@ -153,14 +148,6 @@ export function useWorkspaceBoards(workspaceId: string = "ws-core-platform") {
       const updated = await boardApi.restoreBoard(boardId);
       setBoards((prev) =>
         prev.map((b) => (b.id === boardId ? updated : b))
-      );
-      setWorkspace((prev) =>
-        prev
-          ? {
-              ...prev,
-              activeBoardCount: prev.activeBoardCount + 1,
-            }
-          : prev
       );
       toast.success(`Board "${target?.title || target?.name || "Board"}" restored to Active.`);
     } catch (err) {
@@ -183,14 +170,6 @@ export function useWorkspaceBoards(workspaceId: string = "ws-core-platform") {
     try {
       await boardApi.deleteBoard(boardId, confirmationName);
       setBoards((prev) => prev.filter((b) => b.id !== boardId));
-      setWorkspace((prev) =>
-        prev
-          ? {
-              ...prev,
-              activeBoardCount: Math.max(0, prev.activeBoardCount - 1),
-            }
-          : prev
-      );
       toast.success("Board deleted permanently.");
       setDeleteTargetBoard(null);
     } catch (err) {
@@ -237,4 +216,3 @@ export function useWorkspaceBoards(workspaceId: string = "ws-core-platform") {
     handleConfirmDelete,
   };
 }
-

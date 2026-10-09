@@ -6,7 +6,7 @@ import { useAuthStore } from "@/stores/auth.store";
 
 export const HomeGreeting: React.FC = () => {
   const user = useAuthStore((state) => state.user);
-  const displayName = user?.fullName || "Đạt";
+  const displayName = user?.fullName || user?.email?.split("@")[0] || "there";
 
   return (
     <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">

@@ -9,3 +9,5 @@ export * from "./ForgotPasswordForm";
 export * from "./ForgotPasswordSuccess";
 export * from "./ResetPasswordForm";
 export * from "./ResetPasswordSuccess";
+export * from "./ProtectedRoute";
+export * from "./PublicOnlyRoute";

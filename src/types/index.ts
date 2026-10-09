@@ -8,6 +8,7 @@ export * from "./landing";
 export * from "./api";
 export * from "./profile";
 export * from "./workspace";
+export * from "./workspace.dto";
 export * from "./board";
 export * from "./kanban";
 export * from "./task";

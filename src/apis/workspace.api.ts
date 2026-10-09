@@ -1,23 +1,104 @@
-import type { Workspace } from "@/types";
-import { MOCK_CORE_PLATFORM_WORKSPACE, MOCK_WORKSPACES } from "@/mocks/data/workspaces.mock";
+import { apiClient } from "@/apis/client";
+import { mapWorkspaceDtoToDomain } from "@/mappers/workspace.mapper";
+import type {
+  Workspace,
+  WorkspaceDto,
+  CreateWorkspaceRequest,
+  UpdateWorkspaceRequest,
+  WorkspacePaginationMeta,
+  ApiSuccessResponse,
+} from "@/types";
+
+export interface ListWorkspacesResponse {
+  items: Workspace[];
+  meta?: WorkspacePaginationMeta;
+}
 
 export const workspaceApi = {
   /**
-   * Retrieves workspace details by workspace ID or slug
-   * (Mock implementation ready for GET /api/v1/workspaces/:id)
+   * Retrieves list of all workspaces accessible to the authenticated user
+   * GET /api/v1/workspaces
    */
-  async getWorkspace(idOrSlug: string = "ws-core-platform"): Promise<Workspace> {
-    const found = MOCK_WORKSPACES.find(
-      (ws) => ws.id === idOrSlug || ws.slug === idOrSlug
+  async listWorkspaces(params?: {
+    page?: number;
+    limit?: number;
+  }): Promise<ListWorkspacesResponse> {
+    const response = await apiClient.get<
+      ApiSuccessResponse<WorkspaceDto[]> & { meta?: WorkspacePaginationMeta }
+    >("/workspaces", {
+      params: {
+        page: params?.page ?? 1,
+        limit: params?.limit ?? 50,
+      },
+    });
+
+    const items = (response.data.data || []).map((dto) =>
+      mapWorkspaceDtoToDomain(dto)
     );
-    return found || MOCK_CORE_PLATFORM_WORKSPACE;
+
+    return {
+      items,
+      meta: response.data.meta,
+    };
   },
 
   /**
-   * Retrieves list of all workspaces accessible to the user
-   * (Mock implementation ready for GET /api/v1/workspaces)
+   * Retrieves workspace details by workspace ID
+   * GET /api/v1/workspaces/:id
    */
-  async listWorkspaces(): Promise<Workspace[]> {
-    return MOCK_WORKSPACES;
+  async getWorkspace(id: string): Promise<Workspace> {
+    const response = await apiClient.get<ApiSuccessResponse<WorkspaceDto>>(
+      `/workspaces/${id}`
+    );
+    return mapWorkspaceDtoToDomain(response.data.data);
+  },
+
+  /**
+   * Creates a new workspace
+   * POST /api/v1/workspaces
+   */
+  async createWorkspace(data: CreateWorkspaceRequest): Promise<Workspace> {
+    const response = await apiClient.post<ApiSuccessResponse<WorkspaceDto>>(
+      "/workspaces",
+      data
+    );
+    return mapWorkspaceDtoToDomain(response.data.data);
+  },
+
+  /**
+   * Updates existing workspace metadata (Owner only)
+   * PATCH /api/v1/workspaces/:id
+   */
+  async updateWorkspace(
+    id: string,
+    data: UpdateWorkspaceRequest
+  ): Promise<Workspace> {
+    const response = await apiClient.patch<ApiSuccessResponse<WorkspaceDto>>(
+      `/workspaces/${id}`,
+      data
+    );
+    return mapWorkspaceDtoToDomain(response.data.data);
+  },
+
+  /**
+   * Archives a workspace (Owner only)
+   * PATCH /api/v1/workspaces/:id/archive
+   */
+  async archiveWorkspace(id: string): Promise<Workspace> {
+    const response = await apiClient.patch<ApiSuccessResponse<WorkspaceDto>>(
+      `/workspaces/${id}/archive`
+    );
+    return mapWorkspaceDtoToDomain(response.data.data);
+  },
+
+  /**
+   * Unarchives/restores a workspace (Owner only)
+   * PATCH /api/v1/workspaces/:id/unarchive
+   */
+  async unarchiveWorkspace(id: string): Promise<Workspace> {
+    const response = await apiClient.patch<ApiSuccessResponse<WorkspaceDto>>(
+      `/workspaces/${id}/unarchive`
+    );
+    return mapWorkspaceDtoToDomain(response.data.data);
   },
 };

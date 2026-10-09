@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
   CheckCircle2,
@@ -16,10 +16,53 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ROUTES } from "@/constants/routes";
+import { useWorkspaceStore } from "@/stores/workspace.store";
+import { CreateWorkspaceModal } from "@/components/workspace";
 
 export const Sidebar: React.FC = () => {
   const location = useLocation();
-  const [corePlatformExpanded, setCorePlatformExpanded] = React.useState(true);
+  const navigate = useNavigate();
+
+  const {
+    workspaces,
+    activeWorkspaceId,
+    isLoading,
+    isInitialized,
+    fetchWorkspaces,
+    setActiveWorkspaceId,
+  } = useWorkspaceStore();
+
+  const [expandedWorkspaces, setExpandedWorkspaces] = React.useState<Record<string, boolean>>({});
+  const [isCreateOpen, setIsCreateOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isInitialized) {
+      void fetchWorkspaces();
+    }
+  }, [isInitialized, fetchWorkspaces]);
+
+  // Ensure active workspace is expanded by default
+  React.useEffect(() => {
+    if (activeWorkspaceId) {
+      setExpandedWorkspaces((prev) => ({
+        ...prev,
+        [activeWorkspaceId]: prev[activeWorkspaceId] ?? true,
+      }));
+    }
+  }, [activeWorkspaceId]);
+
+  const toggleWorkspaceExpanded = (id: string) => {
+    setExpandedWorkspaces((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  const handleSelectWorkspace = (id: string) => {
+    setActiveWorkspaceId(id);
+    setExpandedWorkspaces((prev) => ({ ...prev, [id]: true }));
+    navigate(ROUTES.BOARDS);
+  };
 
   const isHomeActive = location.pathname === ROUTES.HOME;
   const isBoardsActive = location.pathname === ROUTES.BOARDS;
@@ -79,57 +122,115 @@ export const Sidebar: React.FC = () => {
             Workspaces
           </span>
           <div className="mt-2 space-y-1">
-            {/* Core Platform Accordion */}
-            <div>
-              <button
-                type="button"
-                onClick={() => setCorePlatformExpanded(!corePlatformExpanded)}
-                className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-100 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <FolderKanban className="h-3.5 w-3.5 text-primary-600" />
-                  <span>Core Platform</span>
-                </div>
-                {corePlatformExpanded ? (
-                  <ChevronDown className="h-3 w-3 text-neutral-400" />
-                ) : (
-                  <ChevronRight className="h-3 w-3 text-neutral-400" />
-                )}
-              </button>
+            {isLoading && workspaces.length === 0 ? (
+              <div className="space-y-1 px-2.5 py-1">
+                <div className="h-6 w-full animate-pulse rounded-md bg-neutral-100" />
+                <div className="h-6 w-3/4 animate-pulse rounded-md bg-neutral-100" />
+              </div>
+            ) : workspaces.length === 0 ? (
+              <div className="px-2.5 py-1 text-[11px] text-neutral-400">
+                No workspaces found
+              </div>
+            ) : (
+              workspaces.map((ws) => {
+                const isActive = ws.id === activeWorkspaceId;
+                const isExpanded = Boolean(expandedWorkspaces[ws.id]);
+                const isArchived = ws.status === "archived";
 
-              {corePlatformExpanded && (
-                <div className="mt-1 pl-4 space-y-0.5">
-                  <Link
-                    to={ROUTES.BOARDS}
-                    className={cn(
-                      "flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors",
-                      isBoardsActive
-                        ? "bg-primary-50 font-semibold text-primary-700"
-                        : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
-                    )}
-                  >
-                    <Kanban
+                return (
+                  <div key={ws.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isActive) {
+                          toggleWorkspaceExpanded(ws.id);
+                        } else {
+                          handleSelectWorkspace(ws.id);
+                        }
+                      }}
                       className={cn(
-                        "h-3.5 w-3.5",
-                        isBoardsActive ? "text-primary-600" : "text-neutral-400"
+                        "flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors",
+                        isActive
+                          ? "bg-neutral-100 text-neutral-900 font-bold"
+                          : "text-neutral-700 hover:bg-neutral-50"
                       )}
-                    />
-                    <span>Boards</span>
-                  </Link>
-                </div>
-              )}
-            </div>
+                      title={ws.name}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <FolderKanban
+                          className={cn(
+                            "h-3.5 w-3.5 shrink-0",
+                            isActive ? "text-primary-600" : "text-neutral-400"
+                          )}
+                        />
+                        <span className="truncate">{ws.name}</span>
+                        {isArchived && (
+                          <span className="shrink-0 text-[9px] font-normal text-neutral-400">
+                            (Archived)
+                          </span>
+                        )}
+                      </div>
+                      {isExpanded ? (
+                        <ChevronDown className="h-3 w-3 shrink-0 text-neutral-400" />
+                      ) : (
+                        <ChevronRight className="h-3 w-3 shrink-0 text-neutral-400" />
+                      )}
+                    </button>
 
-            {/* Add Workspace */}
-            <Link
-              to={ROUTES.UNDER_DEVELOPMENT}
+                    {isExpanded && (
+                      <div className="mt-1 pl-4 space-y-0.5">
+                        <Link
+                          to={ROUTES.BOARDS}
+                          onClick={() => {
+                            if (!isActive) {
+                              setActiveWorkspaceId(ws.id);
+                            }
+                          }}
+                          className={cn(
+                            "flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors",
+                            isActive && isBoardsActive
+                              ? "bg-primary-50 font-semibold text-primary-700"
+                              : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+                          )}
+                        >
+                          <Kanban
+                            className={cn(
+                              "h-3.5 w-3.5",
+                              isActive && isBoardsActive
+                                ? "text-primary-600"
+                                : "text-neutral-400"
+                            )}
+                          />
+                          <span>Boards</span>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+
+            {/* Add Workspace Action Button */}
+            <button
+              type="button"
+              onClick={() => setIsCreateOpen(true)}
               className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
             >
               <Plus className="h-3.5 w-3.5 text-neutral-400" />
               <span>Add Workspace</span>
-            </Link>
+            </button>
           </div>
         </div>
+
+        {/* Create Workspace Modal */}
+        <CreateWorkspaceModal
+          isOpen={isCreateOpen}
+          onClose={() => setIsCreateOpen(false)}
+          onSuccess={(newId) => {
+            navigate(ROUTES.BOARDS);
+            setExpandedWorkspaces((prev) => ({ ...prev, [newId]: true }));
+          }}
+        />
 
         {/* Section 3: TOOLS */}
         <div>

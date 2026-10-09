@@ -6,16 +6,19 @@ export interface Workspace {
   slug: string;
   status: WorkspaceStatus;
   description: string;
-  memberCount: number;
-  activeBoardCount: number;
+  memberCount?: number;
+  activeBoardCount?: number;
   teamType: string;
   initials: string;
+  isFrozen?: boolean;
 }
 
 export interface WorkspaceHeaderProps {
   workspace: Workspace;
   onCreateBoardClick: () => void;
   onMoreActionsClick?: () => void;
+  onArchiveClick?: () => void;
+  onRestoreClick?: () => void;
 }
 
 export type WorkspaceTabId = "overview" | "boards" | "members" | "settings";
@@ -23,6 +26,6 @@ export type WorkspaceTabId = "overview" | "boards" | "members" | "settings";
 export interface WorkspaceTabsProps {
   activeTab: WorkspaceTabId;
   onTabChange: (tab: WorkspaceTabId) => void;
-  boardCount: number;
-  memberCount: number;
+  boardCount?: number;
+  memberCount?: number;
 }

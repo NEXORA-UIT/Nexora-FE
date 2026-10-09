@@ -93,6 +93,7 @@ apiClient.interceptors.response.use(
       }
 
       if (isRefreshing) {
+        originalRequest._retry = true;
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
@@ -102,8 +103,7 @@ apiClient.interceptors.response.use(
               originalRequest.headers.Authorization = `Bearer ${token}`;
             }
             return apiClient(originalRequest);
-          })
-          .catch((err) => Promise.reject(err));
+          });
       }
 
       originalRequest._retry = true;
@@ -122,9 +122,13 @@ apiClient.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
         return apiClient(originalRequest);
       } catch (refreshErr) {
-        processQueue(refreshErr);
+        const transformedError =
+          axios.isAxiosError(refreshErr)
+            ? transformAxiosError(refreshErr as AxiosError<ApiErrorResponse>)
+            : transformAxiosError(error);
+        processQueue(transformedError);
         useAuthStore.getState().clearAuth();
-        return Promise.reject(transformAxiosError(error));
+        return Promise.reject(transformedError);
       } finally {
         isRefreshing = false;
       }

@@ -1,11 +1,10 @@
 import * as React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { AuthCard, OAuthButtons, RegisterForm } from "@/components/auth";
 import { NexoraLogo } from "@/components/common/NexoraLogo";
 import { ROUTES } from "@/constants/routes";
 
 export const RegisterPage: React.FC = () => {
-  const navigate = useNavigate();
 
   return (
     <AuthCard className="p-6 sm:p-8">
@@ -23,7 +22,7 @@ export const RegisterPage: React.FC = () => {
       </div>
 
       {/* Register Form */}
-      <RegisterForm onSuccess={() => navigate(ROUTES.HOME)} />
+      <RegisterForm onSuccess={() => {}} />
 
       {/* Social OAuth Buttons */}
       <OAuthButtons />
