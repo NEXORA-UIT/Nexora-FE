@@ -13,11 +13,11 @@ export interface Board {
   workspaceId: string;
   name?: string;
   title: string;
-  description: string;
+  description?: string | null;
   status: BoardStatus;
-  openTasksCount: number;
-  completedPercent: number;
-  members: BoardMember[];
+  openTasksCount?: number;
+  completedPercent?: number;
+  members?: BoardMember[];
   maxVisibleAvatars?: number;
   coverColor?: string | null;
   coverUrl?: string | null;

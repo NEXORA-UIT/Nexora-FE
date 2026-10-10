@@ -10,6 +10,7 @@ export * from "./profile";
 export * from "./workspace";
 export * from "./workspace.dto";
 export * from "./board";
+export * from "./board.dto";
 export * from "./kanban";
 export * from "./task";
 export * from "./planning";

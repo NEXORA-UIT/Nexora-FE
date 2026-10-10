@@ -56,7 +56,7 @@ export const BoardDetailPage: React.FC = () => {
   // Authoritative role-based permission for card dependencies (PM & Owner only)
   const canManageDependencies = React.useMemo(() => {
     if (!board) return false;
-    const member = board.members.find(
+    const member = (board.members || []).find(
       (m) =>
         (currentUser && m.id === currentUser.id) ||
         (currentUser && m.name === currentUser.fullName) ||

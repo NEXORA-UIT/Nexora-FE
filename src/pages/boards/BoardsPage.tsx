@@ -263,7 +263,6 @@ export const BoardsPage: React.FC = () => {
                         key={board.id}
                         board={board}
                         onArchive={isArchived ? undefined : handleArchiveBoard}
-                        onDelete={isArchived ? undefined : handleDeleteBoard}
                         onClick={(b) => navigate(getBoardDetailRoute(b.id))}
                       />
                     ))}
