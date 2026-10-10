@@ -8,12 +8,22 @@ import type {
   CardActivity,
   CardDependency,
   CreateDependencyRequest,
+  CardDto,
+  CreateCardRequest,
+  UpdateCardRequest,
+  MoveCardRequest,
+  ListCardsQuery,
+  ApiSuccessResponse,
 } from "@/types";
+import { apiClient } from "./client";
+import {
+  mapCardDtoToKanbanCard,
+  mapCardDtosToKanbanCards,
+} from "@/mappers/card.mapper";
 import { wouldCreateCycle } from "@/utils/planning.utils";
 import {
   MOCK_BOARD_DETAIL,
   MOCK_BOARD_MEMBERS,
-  MOCK_BOARD_LABELS,
 } from "@/mocks/data/kanban.mock";
 
 // In-memory working store for cards, indexed by listId
@@ -21,119 +31,108 @@ const inMemoryLists = [...MOCK_BOARD_DETAIL.lists];
 
 export const cardApi = {
   /**
-   * Creates a new work card in a specified list
-   * (Mirrors POST /api/v1/lists/{id}/cards -> CardResponse)
+   * Retrieves all cards for a given board
+   * GET /api/v1/boards/:boardId/cards
    */
-  async createCard(listId: string, payload: CreateCardInput): Promise<KanbanCard> {
-    const targetList = inMemoryLists.find((l) => l.id === listId);
-    if (!targetList) {
-      throw new Error(`List not found: ${listId}`);
+  async getBoardCards(
+    boardId: string,
+    options?: ListCardsQuery
+  ): Promise<KanbanCard[]> {
+    const params: Record<string, string> = {};
+    if (options?.includeArchived !== undefined) {
+      params.includeArchived = options.includeArchived ? "true" : "false";
     }
 
-    const maxPosition = targetList.cards.reduce((max, c) => Math.max(max, c.position), 0);
-    const newPosition = maxPosition + 1024;
-    const cardNum = Math.floor(100 + Math.random() * 900);
+    const response = await apiClient.get<ApiSuccessResponse<CardDto[]>>(
+      `/boards/${boardId}/cards`,
+      {
+        params: Object.keys(params).length > 0 ? params : undefined,
+      }
+    );
 
-    const newCard: KanbanCard = {
-      id: `card-${Date.now()}`,
-      listId,
-      boardId: targetList.boardId,
-      code: `NEX-${cardNum}`,
+    return mapCardDtosToKanbanCards(response.data.data || []);
+  },
+
+  /**
+   * Creates a new work card in a specified list
+   * POST /api/v1/lists/:listId/cards
+   */
+  async createCard(listId: string, payload: CreateCardInput): Promise<KanbanCard> {
+    const body: CreateCardRequest = {
       title: payload.title.trim(),
-      description: payload.description || "",
-      priority: payload.priority || "MEDIUM",
-      position: newPosition,
-      status: "ACTIVE",
-      dueDate: payload.dueDate || null,
-      assignees: [MOCK_BOARD_MEMBERS[0]], // Default to current user
-      labels: [],
-      tasksCount: 0,
-      completedTasksCount: 0,
-      checklist: [],
-      dependencies: [],
-      attachments: [],
-      comments: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     };
+    if (payload.description !== undefined) {
+      body.description = payload.description;
+    }
+    if (payload.priority !== undefined) {
+      body.priority = payload.priority;
+    }
+    if (payload.startDate !== undefined) {
+      body.startDate = payload.startDate ? payload.startDate : null;
+    }
+    if (payload.dueDate !== undefined) {
+      body.dueDate = payload.dueDate ? payload.dueDate : null;
+    }
 
-    targetList.cards = [...targetList.cards, newCard];
-    return newCard;
+    const response = await apiClient.post<ApiSuccessResponse<CardDto>>(
+      `/lists/${listId}/cards`,
+      body
+    );
+
+    return mapCardDtoToKanbanCard(response.data.data);
   },
 
   /**
    * Updates card properties with Optimistic Concurrency Control (OCC)
-   * (Mirrors PATCH /api/v1/cards/{id} -> CardResponse)
+   * PATCH /api/v1/cards/:id
    */
   async updateCard(cardId: string, payload: UpdateCardInput): Promise<KanbanCard> {
-    for (const list of inMemoryLists) {
-      const idx = list.cards.findIndex((c) => c.id === cardId);
-      if (idx !== -1) {
-        const card = list.cards[idx];
-
-        // Enforce OCC check
-        if (card.updatedAt !== payload.updatedAt) {
-          throw new Error("CARD_CONFLICT: Card was modified by another session.");
-        }
-
-        const updatedCard: KanbanCard = {
-          ...card,
-          title: payload.title !== undefined ? payload.title.trim() : card.title,
-          description: payload.description !== undefined ? payload.description : card.description,
-          startDate: payload.startDate !== undefined ? payload.startDate : card.startDate,
-          dueDate: payload.dueDate !== undefined ? payload.dueDate : card.dueDate,
-          priority: payload.priority !== undefined ? payload.priority : card.priority,
-          assignees:
-            payload.assigneeIds !== undefined
-              ? MOCK_BOARD_MEMBERS.filter((m) => payload.assigneeIds?.includes(m.id))
-              : card.assignees,
-          labels:
-            payload.labelIds !== undefined
-              ? MOCK_BOARD_LABELS.filter((l) => payload.labelIds?.includes(l.id))
-              : card.labels,
-          updatedAt: new Date().toISOString(),
-        };
-
-        list.cards[idx] = updatedCard;
-        return { ...updatedCard };
-      }
+    const body: UpdateCardRequest = {
+      updatedAt: payload.updatedAt,
+    };
+    if (payload.title !== undefined) {
+      body.title = payload.title.trim();
     }
-    throw new Error(`Card not found: ${cardId}`);
+    if (payload.description !== undefined) {
+      body.description = payload.description;
+    }
+    if (payload.priority !== undefined) {
+      body.priority = payload.priority;
+    }
+    if (payload.startDate !== undefined) {
+      body.startDate = payload.startDate ? payload.startDate : null;
+    }
+    if (payload.dueDate !== undefined) {
+      body.dueDate = payload.dueDate ? payload.dueDate : null;
+    }
+
+    const response = await apiClient.patch<ApiSuccessResponse<CardDto>>(
+      `/cards/${cardId}`,
+      body
+    );
+
+    return mapCardDtoToKanbanCard(response.data.data);
   },
 
   /**
-   * Moves a card position or transfers to another list
-   * (Mirrors PATCH /api/v1/cards/{id}/move -> EmptySuccessResponse)
+   * Moves a card position or transfers to another list with OCC
+   * PATCH /api/v1/cards/:id/move
    */
-  async moveCard(cardId: string, payload: MoveCardInput): Promise<void> {
-    let foundCard: KanbanCard | null = null;
+  async moveCard(cardId: string, payload: MoveCardInput): Promise<KanbanCard> {
+    const body: MoveCardRequest = {
+      targetListId: payload.targetListId,
+      position: payload.position,
+      updatedAt: payload.updatedAt,
+    };
 
-    // Find and remove card from current list
-    for (const list of inMemoryLists) {
-      const idx = list.cards.findIndex((c) => c.id === cardId);
-      if (idx !== -1) {
-        foundCard = { ...list.cards[idx] };
-        list.cards = list.cards.filter((c) => c.id !== cardId);
-        break;
-      }
-    }
+    const response = await apiClient.patch<ApiSuccessResponse<CardDto>>(
+      `/cards/${cardId}/move`,
+      body
+    );
 
-    if (!foundCard) {
-      throw new Error(`Card not found: ${cardId}`);
-    }
-
-    // Insert into target list
-    const targetList = inMemoryLists.find((l) => l.id === payload.targetListId);
-    if (!targetList) {
-      throw new Error(`Target list not found: ${payload.targetListId}`);
-    }
-
-    foundCard.listId = payload.targetListId;
-    foundCard.position = payload.position;
-    foundCard.updatedAt = new Date().toISOString(); // Updated OCC timestamp
-
-    targetList.cards = [...targetList.cards, foundCard].sort((a, b) => a.position - b.position);
+    return mapCardDtoToKanbanCard(response.data.data);
   },
+
 
   /**
    * Retrieves single card detail
@@ -175,7 +174,7 @@ export const cardApi = {
         return newItem;
       }
     }
-    throw new Error(`Card not found: ${cardId}`);
+    throw new Error("Checklist tasks are not supported for live cards yet.");
   },
 
   /**
@@ -207,7 +206,7 @@ export const cardApi = {
         }
       }
     }
-    throw new Error(`Checklist item not found: ${taskId}`);
+    throw new Error("Checklist tasks are not supported for live cards yet.");
   },
 
   /**
@@ -228,7 +227,7 @@ export const cardApi = {
         }
       }
     }
-    throw new Error(`Checklist item not found: ${taskId}`);
+    throw new Error("Checklist tasks are not supported for live cards yet.");
   },
 
   /**
@@ -253,7 +252,7 @@ export const cardApi = {
         return newComment;
       }
     }
-    throw new Error(`Card not found: ${cardId}`);
+    throw new Error("Comments are not supported for live cards yet.");
   },
 
   /**
@@ -261,7 +260,10 @@ export const cardApi = {
    * (Mirrors GET /api/v1/cards/{id}/activities -> PaginatedCardActivityResponse)
    */
   async getActivities(cardId: string): Promise<CardActivity[]> {
-    const card = await this.getCardById(cardId);
+    const card = inMemoryLists.flatMap((l) => l.cards).find((c) => c.id === cardId);
+    if (!card) {
+      throw new Error("Activity logs are not available for live cards yet.");
+    }
     return [
       {
         id: `act-${cardId}-1`,
@@ -281,18 +283,33 @@ export const cardApi = {
   },
 
   /**
+   * Archives a card
+   * PATCH /api/v1/cards/:id/archive
+   */
+  async archiveCard(cardId: string): Promise<void> {
+    await apiClient.patch<ApiSuccessResponse<Record<string, never>>>(
+      `/cards/${cardId}/archive`
+    );
+  },
+
+  /**
+   * Restores an archived card
+   * PATCH /api/v1/cards/:id/restore
+   */
+  async restoreCard(cardId: string): Promise<void> {
+    await apiClient.patch<ApiSuccessResponse<Record<string, never>>>(
+      `/cards/${cardId}/restore`
+    );
+  },
+
+  /**
    * Soft deletes a card
-   * (Mirrors DELETE /api/v1/cards/{id} -> EmptySuccessResponse)
+   * DELETE /api/v1/cards/:id
    */
   async deleteCard(cardId: string): Promise<void> {
-    for (const list of inMemoryLists) {
-      const idx = list.cards.findIndex((c) => c.id === cardId);
-      if (idx !== -1) {
-        list.cards = list.cards.filter((c) => c.id !== cardId);
-        return;
-      }
-    }
-    throw new Error(`Card not found: ${cardId}`);
+    await apiClient.delete<ApiSuccessResponse<Record<string, never>>>(
+      `/cards/${cardId}`
+    );
   },
 
   /**
@@ -320,11 +337,8 @@ export const cardApi = {
       }
     }
 
-    if (!targetCard) {
-      throw new Error(`Target card not found: ${cardId}`);
-    }
-    if (!prereqCard) {
-      throw new Error(`Prerequisite card not found: ${payload.dependsOnCardId}`);
+    if (!targetCard || !prereqCard) {
+      throw new Error("Dependencies are not supported for live cards yet.");
     }
 
     if (targetCard.dependencies?.some((d) => d.prerequisiteCardId === payload.dependsOnCardId)) {
@@ -364,6 +378,6 @@ export const cardApi = {
         return;
       }
     }
-    throw new Error(`Card not found: ${cardId}`);
+    throw new Error("Dependencies are not supported for live cards yet.");
   },
 };

@@ -2,10 +2,13 @@ import { apiClient } from "@/apis/client";
 import {
   mapBoardDtoToBoard,
   mapBoardDtosToBoards,
+  mapBoardMemberDtoToBoardMember,
 } from "@/mappers/board.mapper";
 import type {
   Board,
   BoardDto,
+  BoardMember,
+  BoardMemberDto,
   BoardDetail,
   CreateBoardInput,
   CreateBoardRequest,
@@ -60,6 +63,18 @@ export const boardApi = {
     );
 
     return mapBoardDtoToBoard(response.data.data);
+  },
+
+  /**
+   * Retrieves all members of a board
+   * GET /api/v1/boards/:id/members
+   */
+  async getBoardMembers(boardId: string): Promise<BoardMember[]> {
+    const response = await apiClient.get<ApiSuccessResponse<BoardMemberDto[]>>(
+      `/boards/${boardId}/members`
+    );
+
+    return (response.data.data || []).map(mapBoardMemberDtoToBoardMember);
   },
 
   /**

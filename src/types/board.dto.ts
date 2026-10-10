@@ -14,6 +14,21 @@ export interface BoardDto {
   updatedAt: string;
 }
 
+export interface BoardMemberDto {
+  id: string;
+  boardId: string;
+  userId: string;
+  role: "PM" | "MEMBER";
+  appointedBy?: string | null;
+  createdAt: string;
+  user: {
+    id: string;
+    email: string;
+    fullName: string;
+    avatarUrl?: string | null;
+  };
+}
+
 export interface ListBoardsQuery {
   includeArchived?: boolean;
 }

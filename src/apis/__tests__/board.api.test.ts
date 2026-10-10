@@ -148,6 +148,64 @@ describe("boardApi Suite", () => {
     });
   });
 
+  describe("boardApi.getBoardMembers", () => {
+    const mockMemberDto = {
+      id: "mem-uuid-1",
+      boardId: "board-uuid-1",
+      userId: "user-uuid-1",
+      role: "PM" as const,
+      createdAt: "2026-10-09T08:00:00.000Z",
+      user: {
+        id: "user-uuid-1",
+        email: "alice@example.com",
+        fullName: "Alice Wonderland",
+        avatarUrl: "https://example.com/avatar.png",
+      },
+    };
+
+    it("requests GET /boards/:id/members and maps response DTOs to BoardMember models", async () => {
+      vi.spyOn(apiClient, "get").mockResolvedValueOnce({
+        data: {
+          success: true,
+          data: [mockMemberDto],
+        },
+      });
+
+      const result = await boardApi.getBoardMembers("board-uuid-1");
+
+      expect(apiClient.get).toHaveBeenCalledWith("/boards/board-uuid-1/members");
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        id: "user-uuid-1",
+        name: "Alice Wonderland",
+        initials: "AW",
+        avatarUrl: "https://example.com/avatar.png",
+        role: "PM",
+      });
+    });
+
+    it("handles empty member list gracefully", async () => {
+      vi.spyOn(apiClient, "get").mockResolvedValueOnce({
+        data: {
+          success: true,
+          data: [],
+        },
+      });
+
+      const result = await boardApi.getBoardMembers("board-uuid-1");
+      expect(result).toEqual([]);
+    });
+
+    it("re-throws error without returning fake mock data or empty array on failure", async () => {
+      const apiError = new ApiError("Forbidden", "FORBIDDEN", 403);
+      vi.spyOn(apiClient, "get").mockRejectedValueOnce(apiError);
+
+      await expect(boardApi.getBoardMembers("board-uuid-1")).rejects.toThrow(
+        apiError
+      );
+    });
+  });
+
   describe("boardApi.createBoard", () => {
     it("sends POST /workspaces/:workspaceId/boards with sanitized payload and maps created board", async () => {
       vi.spyOn(apiClient, "post").mockResolvedValueOnce({

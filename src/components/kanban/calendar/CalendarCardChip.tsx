@@ -31,9 +31,9 @@ export const CalendarCardChip: React.FC<CalendarCardChipProps> = ({
         className={`h-1.5 w-1.5 shrink-0 rounded-full ${
           card.isBlocked
             ? "bg-error-500"
-            : card.listId.includes("done")
+            : card.statusGroup === "DONE"
             ? "bg-emerald-500"
-            : card.listId.includes("progress")
+            : card.statusGroup === "IN_PROGRESS"
             ? "bg-primary-500"
             : "bg-neutral-400"
         }`}

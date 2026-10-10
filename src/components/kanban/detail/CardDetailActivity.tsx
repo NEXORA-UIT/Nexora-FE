@@ -22,6 +22,7 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
   // Lazy-loaded activity state
   const [activities, setActivities] = React.useState<CardActivity[] | null>(null);
   const [isLoadingActivities, setIsLoadingActivities] = React.useState(false);
+  const [activityError, setActivityError] = React.useState<string | null>(null);
 
   const comments = card.comments || [];
 
@@ -29,15 +30,19 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
   React.useEffect(() => {
     setActivities(null);
     setIsLoadingActivities(false);
+    setActivityError(null);
   }, [card.id]);
 
   const handleTabChange = async (tab: string) => {
     setActiveTab(tab);
     if (tab === "activity" && activities === null && !isLoadingActivities) {
       setIsLoadingActivities(true);
+      setActivityError(null);
       try {
         const data = await onFetchActivities(card.id);
         setActivities(data);
+      } catch (err) {
+        setActivityError(err instanceof Error ? err.message : "Failed to load activity logs");
       } finally {
         setIsLoadingActivities(false);
       }
@@ -163,6 +168,10 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
                   </div>
                 </div>
               ))}
+            </div>
+          ) : activityError ? (
+            <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 p-3 text-xs text-neutral-500 italic">
+              {activityError}
             </div>
           ) : activities && activities.length > 0 ? (
             <div className="space-y-3">

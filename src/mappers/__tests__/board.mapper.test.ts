@@ -3,8 +3,9 @@ import {
   deriveBoardStatus,
   mapBoardDtoToBoard,
   mapBoardDtosToBoards,
+  mapBoardMemberDtoToBoardMember,
 } from "../board.mapper";
-import type { BoardDto } from "@/types";
+import type { BoardDto, BoardMemberDto } from "@/types";
 
 describe("board.mapper Suite", () => {
   const mockActiveDto: BoardDto = {
@@ -136,6 +137,56 @@ describe("board.mapper Suite", () => {
       expect(mapBoardDtosToBoards(null)).toEqual([]);
       // @ts-expect-error Testing runtime resilience
       expect(mapBoardDtosToBoards(undefined)).toEqual([]);
+    });
+  });
+
+  describe("mapBoardMemberDtoToBoardMember", () => {
+    it("maps member DTO with user fullName and computes initials correctly", () => {
+      const dto: BoardMemberDto = {
+        id: "mem-1",
+        boardId: "board-1",
+        userId: "user-1",
+        role: "PM",
+        createdAt: "2026-10-09T08:00:00.000Z",
+        user: {
+          id: "user-1",
+          email: "dat.phan@example.com",
+          fullName: "Phan Gia Dat",
+          avatarUrl: "https://example.com/avatar.png",
+        },
+      };
+
+      const result = mapBoardMemberDtoToBoardMember(dto);
+      expect(result).toEqual({
+        id: "user-1",
+        name: "Phan Gia Dat",
+        initials: "PG",
+        avatarUrl: "https://example.com/avatar.png",
+        role: "PM",
+      });
+    });
+
+    it("falls back to email when fullName is empty", () => {
+      const dto: BoardMemberDto = {
+        id: "mem-2",
+        boardId: "board-1",
+        userId: "user-2",
+        role: "MEMBER",
+        createdAt: "2026-10-09T08:00:00.000Z",
+        user: {
+          id: "user-2",
+          email: "member@example.com",
+          fullName: "",
+          avatarUrl: null,
+        },
+      };
+
+      const result = mapBoardMemberDtoToBoardMember(dto);
+      expect(result.id).toBe("user-2");
+      expect(result.name).toBe("member@example.com");
+      expect(result.initials).toBe("M");
+      expect(result.avatarUrl).toBeUndefined();
+      expect(result.role).toBe("MEMBER");
     });
   });
 });

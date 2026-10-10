@@ -11,6 +11,8 @@ export * from "./workspace";
 export * from "./workspace.dto";
 export * from "./board";
 export * from "./board.dto";
+export * from "./list.dto";
+export * from "./card.dto";
 export * from "./kanban";
 export * from "./task";
 export * from "./planning";

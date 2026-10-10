@@ -1,6 +1,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { boardApi, cardApi, listApi } from "@/apis";
+import { associateCardsWithLists } from "@/mappers/card.mapper";
 import { filterCardsByQuery, canMoveCardToDone, isCardBlocked } from "@/utils";
 import type {
   BoardDetail,
@@ -34,9 +35,33 @@ export function useBoardDetail(boardId?: string) {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await boardApi.getBoardDetail(boardId);
-      setBoard(data);
+      const [boardData, allLists, allCards, members] = await Promise.all([
+        boardApi.getBoard(boardId),
+        listApi.getBoardLists(boardId, { includeArchived: true }),
+        cardApi.getBoardCards(boardId),
+        boardApi.getBoardMembers(boardId),
+      ]);
+
+      const activeLists = allLists.filter((l) => l.status === "ACTIVE");
+      const archivedListsCount = allLists.filter((l) => l.status === "ARCHIVED").length;
+
+      const { lists: populatedLists } = associateCardsWithLists(activeLists, allCards);
+
+      setBoard({
+        id: boardData.id,
+        workspaceId: boardData.workspaceId,
+        name: boardData.name || boardData.title,
+        description: boardData.description,
+        status: boardData.status === "active" ? "ACTIVE" : "ARCHIVED",
+        members,
+        labels: [],
+        lists: populatedLists,
+        archivedListsCount,
+        createdAt: boardData.createdAt,
+        updatedAt: boardData.updatedAt,
+      });
     } catch (err) {
+      setBoard(null);
       setError(err instanceof Error ? err.message : "Failed to load board");
     } finally {
       setIsLoading(false);
@@ -86,7 +111,16 @@ export function useBoardDetail(boardId?: string) {
           ...prev,
           lists: prev.lists.map((list) =>
             list.id === listId
-              ? { ...list, cards: [...list.cards, newCard] }
+              ? {
+                  ...list,
+                  cards: [
+                    ...list.cards,
+                    {
+                      ...newCard,
+                      statusGroup: newCard.statusGroup ?? list.category,
+                    },
+                  ],
+                }
               : list
           ),
         };
@@ -137,28 +171,30 @@ export function useBoardDetail(boardId?: string) {
     }
 
     try {
-      await cardApi.moveCard(cardId, payload);
-      // Synchronize persistent board state
+      const serverMovedCard = await cardApi.moveCard(cardId, payload);
+      // Synchronize persistent board state using the server response
       setBoard((prev) => {
         if (!prev) return prev;
 
-        let movedCard = prev.lists
+        const foundCard = prev.lists
           .flatMap((l) => l.cards)
           .find((c) => c.id === cardId);
 
-        if (!movedCard) return prev;
+        if (!foundCard) return prev;
 
-        movedCard = {
-          ...movedCard,
+        const movedCard: KanbanCard = {
+          ...foundCard,
+          ...serverMovedCard,
           listId: payload.targetListId,
           position: payload.position,
-          updatedAt: new Date().toISOString(),
+          statusGroup: targetList?.category ?? serverMovedCard.statusGroup ?? foundCard.statusGroup,
+          updatedAt: serverMovedCard.updatedAt,
         };
 
         const updatedLists = prev.lists.map((list) => {
           if (list.id === payload.targetListId) {
             const cardsWithout = list.cards.filter((c) => c.id !== cardId);
-            const newCards = [...cardsWithout, movedCard!].sort(
+            const newCards = [...cardsWithout, movedCard].sort(
               (a, b) => a.position - b.position
             );
             return { ...list, cards: newCards };
@@ -220,13 +256,21 @@ export function useBoardDetail(boardId?: string) {
           ...prev,
           lists: prev.lists.map((list) => ({
             ...list,
-            cards: list.cards.map((c) => (c.id === cardId ? updatedCard : c)),
+            cards: list.cards.map((c) =>
+              c.id === cardId
+                ? {
+                    ...c,
+                    ...updatedCard,
+                    statusGroup: updatedCard.statusGroup ?? c.statusGroup ?? list.category,
+                  }
+                : c
+            ),
           })),
         };
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to update card";
-      if (msg.includes("CARD_CONFLICT")) {
+      if (msg.includes("CARD_CONFLICT") || msg.includes("409")) {
         toast.error("Card was modified by another session. Refreshing...");
         void loadBoard();
       } else {

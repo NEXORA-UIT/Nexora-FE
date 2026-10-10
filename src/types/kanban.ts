@@ -28,6 +28,7 @@ export interface KanbanCard {
   priority: CardPriority;
   position: number;
   status: "ACTIVE" | "ARCHIVED";
+  statusGroup?: ListCategory;
   assignees: BoardMember[];
   labels: BoardLabel[];
   tasksCount: number;
@@ -70,9 +71,10 @@ export interface BoardDetail {
 
 export interface CreateCardInput {
   title: string;
-  description?: string;
+  description?: string | null;
   priority?: CardPriority;
-  dueDate?: string;
+  startDate?: string | null;
+  dueDate?: string | null;
   assigneeIds?: string[];
   labelIds?: string[];
 }
@@ -90,4 +92,9 @@ export interface CreateListInput {
 
 export interface ReorderListInput {
   position: number;
+}
+
+export interface UpdateListInput {
+  name?: string;
+  category?: ListCategory;
 }

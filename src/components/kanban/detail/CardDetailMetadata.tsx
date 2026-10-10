@@ -64,7 +64,7 @@ const CATEGORIES: { value: ListCategory; label: string; badgeStyle: string }[] =
 export const CardDetailMetadata: React.FC<CardDetailMetadataProps> = ({
   card,
   lists,
-  members,
+  members: _members,
   onStatusChange,
   onUpdate,
 }) => {
@@ -84,13 +84,6 @@ export const CardDetailMetadata: React.FC<CardDetailMetadataProps> = ({
     if (p === card.priority) return;
     await onUpdate({
       priority: p,
-      updatedAt: card.updatedAt,
-    });
-  };
-
-  const handleSelectAssignee = async (memberId: string) => {
-    await onUpdate({
-      assigneeIds: [memberId],
       updatedAt: card.updatedAt,
     });
   };
@@ -194,37 +187,22 @@ export const CardDetailMetadata: React.FC<CardDetailMetadataProps> = ({
             <UserIcon className="h-3.5 w-3.5" />
             <span>Assignee</span>
           </span>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 rounded-md border border-neutral-200/80 bg-white px-2 py-1 text-xs font-medium text-neutral-800 transition-colors hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-              >
-                {primaryAssignee ? (
-                  <>
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-100 text-[10px] font-semibold text-primary-700">
-                      {primaryAssignee.initials || primaryAssignee.name.charAt(0)}
-                    </span>
-                    <span>{primaryAssignee.name}</span>
-                  </>
-                ) : (
-                  <span className="text-neutral-400">Unassigned</span>
-                )}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuLabel>Assign Member</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {members.map((m) => (
-                <DropdownMenuItem key={m.id} onClick={() => void handleSelectAssignee(m.id)}>
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-100 text-[10px] font-semibold text-primary-700">
-                    {m.initials || m.name.charAt(0)}
-                  </span>
-                  <span>{m.name}</span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div
+            className="inline-flex items-center gap-2 rounded-md border border-neutral-200/80 bg-neutral-50/80 px-2 py-1 text-xs font-medium text-neutral-700 cursor-not-allowed select-none"
+            title="Card assignment coming soon"
+          >
+            {primaryAssignee ? (
+              <>
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-100 text-[10px] font-semibold text-primary-700">
+                  {primaryAssignee.initials || primaryAssignee.name.charAt(0)}
+                </span>
+                <span>{primaryAssignee.name}</span>
+              </>
+            ) : (
+              <span className="text-neutral-400">Unassigned</span>
+            )}
+            <HelpCircle className="h-2.5 w-2.5 text-neutral-400" />
+          </div>
         </div>
       </div>
 

@@ -130,4 +130,47 @@ describe("CardDetailDrawer Component", () => {
 
     expect(screen.getByRole("button", { name: /Add dependency/i })).toBeDefined();
   });
+
+  it("renders live UUID card with coming soon indicator for assignees and labels", () => {
+    const liveCard = {
+      id: "9c3f4e12-8a7b-4d6c-b3a1-123456789abc",
+      listId: "2b1c4e12-8a7b-4d6c-b3a1-123456789abc",
+      boardId: "1a1c4e12-8a7b-4d6c-b3a1-123456789abc",
+      code: "NEX-999",
+      title: "Live card from backend",
+      priority: "MEDIUM" as const,
+      position: 1024,
+      status: "ACTIVE" as const,
+      statusGroup: "TODO" as const,
+      assignees: [],
+      labels: [],
+      tasksCount: 0,
+      completedTasksCount: 0,
+      createdAt: "2026-10-09T00:00:00.000Z",
+      updatedAt: "2026-10-09T00:00:00.000Z",
+    };
+
+    render(
+      <CardDetailDrawer
+        card={liveCard}
+        isOpen={true}
+        lists={[]}
+        members={[]}
+        onClose={vi.fn()}
+        onUpdate={vi.fn()}
+        onStatusChange={vi.fn()}
+        onDelete={vi.fn()}
+        onAddChecklistItem={vi.fn()}
+        onToggleChecklistItem={vi.fn()}
+        onDeleteChecklistItem={vi.fn()}
+        onAddComment={vi.fn()}
+        onFetchActivities={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("NEX-999")).toBeDefined();
+    expect(screen.getByText("Live card from backend")).toBeDefined();
+    expect(screen.getByTitle("Card assignment coming soon")).toBeDefined();
+    expect(screen.getByTitle("Label management coming soon")).toBeDefined();
+  });
 });
