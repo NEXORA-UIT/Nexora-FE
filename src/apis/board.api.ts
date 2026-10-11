@@ -27,7 +27,7 @@ export const boardApi = {
    * GET /api/v1/workspaces/:workspaceId/boards
    */
   async getBoards(
-    workspaceId: string = "ws-core-platform",
+    workspaceId: string,
     options?: ListBoardsQuery
   ): Promise<Board[]> {
     const params: Record<string, string> = {};

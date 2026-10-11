@@ -14,29 +14,58 @@ export function useSession() {
   const refreshToken = useAuthStore((state) => state.refreshToken);
   const setUser = useAuthStore((state) => state.setUser);
   const clearAuth = useAuthStore((state) => state.clearAuth);
-  const hasRestored = React.useRef(false);
+  const validatedSessionRef = React.useRef<string | null>(null);
 
   React.useEffect(() => {
-    if (hasRestored.current) return;
-    if (!accessToken && !refreshToken) return;
+    // If credentials are completely cleared (e.g. on logout), reset tracked session
+    if (!accessToken && !refreshToken) {
+      validatedSessionRef.current = null;
+      return;
+    }
 
-    hasRestored.current = true;
+    const currentSessionIdentity = refreshToken || accessToken;
+
+    // Skip validation if this exact credential pair has already been validated
+    if (validatedSessionRef.current === currentSessionIdentity) {
+      return;
+    }
+
     let isMounted = true;
 
     async function restoreSession() {
       setIsValidating(true);
       try {
         const profile = await authApi.getMe();
-        if (isMounted) {
+        if (!isMounted) return;
+
+        // Race-condition guard: Only commit profile if current store credentials still match
+        const activeIdentity =
+          useAuthStore.getState().refreshToken || useAuthStore.getState().accessToken;
+
+        if (activeIdentity === currentSessionIdentity && activeIdentity !== null) {
+          validatedSessionRef.current = currentSessionIdentity;
           setUser(profile);
         }
       } catch {
-        if (isMounted) {
+        if (!isMounted) return;
+
+        // Only clear auth if the failed request still belongs to the active session
+        const activeIdentity =
+          useAuthStore.getState().refreshToken || useAuthStore.getState().accessToken;
+
+        if (activeIdentity === currentSessionIdentity && activeIdentity !== null) {
+          validatedSessionRef.current = null;
           clearAuth();
         }
       } finally {
         if (isMounted) {
-          setIsValidating(false);
+          const activeIdentity =
+            useAuthStore.getState().refreshToken || useAuthStore.getState().accessToken;
+
+          // Clear loading indicator if this was the active request or credentials cleared
+          if (activeIdentity === currentSessionIdentity || !activeIdentity) {
+            setIsValidating(false);
+          }
         }
       }
     }

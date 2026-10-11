@@ -18,11 +18,16 @@ export interface ListWorkspacesResponse {
 
 import { registerOnClearAuth } from "@/stores/auth.store";
 
+export const MAX_WORKSPACE_MEMBERS_CACHE_ENTRIES = 50;
 const workspaceMembersCache = new Map<string, { timestamp: number; data: ListWorkspaceMembersResponse }>();
 const CACHE_TTL_MS = 60 * 1000; // 1 minute TTL
 
 export function clearWorkspaceMembersCache(): void {
   workspaceMembersCache.clear();
+}
+
+export function getWorkspaceMembersCacheSize(): number {
+  return workspaceMembersCache.size;
 }
 
 // Auto-register cache cleanup whenever user session is cleared
@@ -130,8 +135,15 @@ export const workspaceApi = {
 
     if (!params?.bypassCache) {
       const cached = workspaceMembersCache.get(cacheKey);
-      if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-        return cached.data;
+      if (cached) {
+        if (Date.now() - cached.timestamp < CACHE_TTL_MS) {
+          // Touch-on-read: re-insert into Map to move to newest position in LRU order
+          workspaceMembersCache.delete(cacheKey);
+          workspaceMembersCache.set(cacheKey, cached);
+          return cached.data;
+        }
+        // Entry expired: evict stale entry
+        workspaceMembersCache.delete(cacheKey);
       }
     }
 
@@ -145,6 +157,17 @@ export const workspaceApi = {
       items: response.data.data || [],
       meta: response.data.meta,
     };
+
+    // If key already exists, delete first to move to newest position
+    if (workspaceMembersCache.has(cacheKey)) {
+      workspaceMembersCache.delete(cacheKey);
+    } else if (workspaceMembersCache.size >= MAX_WORKSPACE_MEMBERS_CACHE_ENTRIES) {
+      // Evict least-recently-used entry (first key in Map)
+      const oldestKey = workspaceMembersCache.keys().next().value;
+      if (oldestKey !== undefined) {
+        workspaceMembersCache.delete(oldestKey);
+      }
+    }
 
     workspaceMembersCache.set(cacheKey, { timestamp: Date.now(), data: result });
     return result;

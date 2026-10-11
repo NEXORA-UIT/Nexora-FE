@@ -221,7 +221,6 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
       } else {
         toast.error(err instanceof Error ? err.message : "Archive board failed");
       }
-      console.error("Archive board failed:", err);
     }
   };
 
@@ -259,7 +258,6 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
       } else {
         toast.error(err instanceof Error ? err.message : "Restore board failed");
       }
-      console.error("Restore board failed:", err);
     }
   };
 
