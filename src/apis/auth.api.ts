@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { clearWorkspaceMembersCache } from "./workspace.api";
 import type {
   AuthTokens,
   LoginRequest,
@@ -74,6 +75,7 @@ export const authApi = {
     await apiClient.post<ApiSuccessResponse<Record<string, never>>>(
       "/auth/logout"
     );
+    clearWorkspaceMembersCache();
   },
 
   /**
@@ -84,6 +86,7 @@ export const authApi = {
     await apiClient.post<ApiSuccessResponse<Record<string, never>>>(
       "/auth/logout-all"
     );
+    clearWorkspaceMembersCache();
   },
 
   /**

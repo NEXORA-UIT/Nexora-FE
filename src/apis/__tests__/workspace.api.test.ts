@@ -1,11 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { workspaceApi } from "../workspace.api";
+import { workspaceApi, clearWorkspaceMembersCache } from "../workspace.api";
 import { apiClient, ApiError } from "../client";
-import type { WorkspaceDto } from "@/types";
+import { useAuthStore, registerOnClearAuth } from "@/stores/auth.store";
+import { authApi } from "../auth.api";
+import type { WorkspaceDto, WorkspaceMemberDto } from "@/types";
 
 describe("workspaceApi Suite", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearWorkspaceMembersCache();
   });
 
   const mockWorkspaceDto: WorkspaceDto = {
@@ -143,6 +146,188 @@ describe("workspaceApi Suite", () => {
     });
   });
 
+  describe("workspaceApi.listWorkspaceMembers", () => {
+    const mockMember: WorkspaceMemberDto = {
+      id: "membership-1",
+      workspaceId: "ws-uuid-1",
+      userId: "user-owner-1",
+      role: "OWNER",
+      createdAt: "2026-10-09T00:00:00.000Z",
+      updatedAt: "2026-10-09T00:00:00.000Z",
+      endedAt: null,
+      user: {
+        id: "user-owner-1",
+        email: "owner@nexora.app",
+        fullName: "Workspace Owner",
+        status: "ACTIVE",
+      },
+    };
+
+    it("requests GET /workspaces/:id/members with pagination and caches response", async () => {
+      const mockEnvelope = {
+        data: {
+          success: true,
+          data: [mockMember],
+          meta: { page: 1, limit: 100, total: 1, totalPages: 1 },
+        },
+      };
+
+      vi.spyOn(apiClient, "get").mockResolvedValueOnce(mockEnvelope);
+
+      const result = await workspaceApi.listWorkspaceMembers("ws-uuid-1");
+
+      expect(apiClient.get).toHaveBeenCalledWith("/workspaces/ws-uuid-1/members", {
+        params: { page: 1, limit: 100 },
+      });
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].role).toBe("OWNER");
+      expect(result.items[0].userId).toBe("user-owner-1");
+
+      // Verify second call within TTL uses in-memory cache without hitting apiClient.get
+      const cachedResult = await workspaceApi.listWorkspaceMembers("ws-uuid-1");
+      expect(apiClient.get).toHaveBeenCalledTimes(1);
+      expect(cachedResult.items).toEqual(result.items);
+    });
+
+    it("bypasses cache when bypassCache is true", async () => {
+      const mockEnvelope = {
+        data: {
+          success: true,
+          data: [mockMember],
+        },
+      };
+
+      vi.spyOn(apiClient, "get").mockResolvedValue(mockEnvelope);
+
+      await workspaceApi.listWorkspaceMembers("ws-uuid-1");
+      await workspaceApi.listWorkspaceMembers("ws-uuid-1", { bypassCache: true });
+
+      expect(apiClient.get).toHaveBeenCalledTimes(2);
+    });
+
+    it("clears cache and refetches fresh data when useAuthStore.clearAuth() is called", async () => {
+      const mockEnvelope = {
+        data: {
+          success: true,
+          data: [mockMember],
+          meta: { page: 1, limit: 100, total: 1, totalPages: 1 },
+        },
+      };
+
+      vi.spyOn(apiClient, "get").mockResolvedValue(mockEnvelope);
+
+      // Initial fetch populates cache
+      await workspaceApi.listWorkspaceMembers("ws-uuid-1");
+      expect(apiClient.get).toHaveBeenCalledTimes(1);
+
+      // Cached call does not trigger apiClient.get
+      await workspaceApi.listWorkspaceMembers("ws-uuid-1");
+      expect(apiClient.get).toHaveBeenCalledTimes(1);
+
+      // Trigger clearAuth (logout lifecycle)
+      useAuthStore.getState().clearAuth();
+
+      // Subsequent call must fetch fresh data from network
+      await workspaceApi.listWorkspaceMembers("ws-uuid-1");
+      expect(apiClient.get).toHaveBeenCalledTimes(2);
+    });
+
+    it("clears cache and refetches fresh data when authApi.logout() is invoked", async () => {
+      const mockEnvelope = {
+        data: {
+          success: true,
+          data: [mockMember],
+          meta: { page: 1, limit: 100, total: 1, totalPages: 1 },
+        },
+      };
+
+      vi.spyOn(apiClient, "get").mockResolvedValue(mockEnvelope);
+      vi.spyOn(apiClient, "post").mockResolvedValue({
+        data: { success: true, data: {} },
+      });
+
+      // Populate cache
+      await workspaceApi.listWorkspaceMembers("ws-uuid-1");
+      expect(apiClient.get).toHaveBeenCalledTimes(1);
+
+      // Call authApi.logout()
+      await authApi.logout();
+
+      // Subsequent call must fetch fresh data from network
+      await workspaceApi.listWorkspaceMembers("ws-uuid-1");
+      expect(apiClient.get).toHaveBeenCalledTimes(2);
+    });
+
+    it("clears cache and refetches fresh data when authApi.logoutAll() is invoked", async () => {
+      const mockEnvelope = {
+        data: {
+          success: true,
+          data: [mockMember],
+          meta: { page: 1, limit: 100, total: 1, totalPages: 1 },
+        },
+      };
+
+      vi.spyOn(apiClient, "get").mockResolvedValue(mockEnvelope);
+      vi.spyOn(apiClient, "post").mockResolvedValue({
+        data: { success: true, data: {} },
+      });
+
+      // Populate cache
+      await workspaceApi.listWorkspaceMembers("ws-uuid-1");
+      expect(apiClient.get).toHaveBeenCalledTimes(1);
+
+      // Call authApi.logoutAll()
+      await authApi.logoutAll();
+
+      // Subsequent call must fetch fresh data from network
+      await workspaceApi.listWorkspaceMembers("ws-uuid-1");
+      expect(apiClient.get).toHaveBeenCalledTimes(2);
+    });
+
+    it("propagates API rejection when authApi.logout() fails on server", async () => {
+      const networkError = new ApiError("Network Error during logout", "NETWORK_ERROR", 500);
+      vi.spyOn(apiClient, "post").mockRejectedValueOnce(networkError);
+
+      await expect(authApi.logout()).rejects.toThrow(networkError);
+    });
+
+    it("maintains unique callbacks in registerOnClearAuth without duplicate accumulation", () => {
+      let callCount = 0;
+      const testCleanup = () => {
+        callCount += 1;
+      };
+
+      // Register same callback twice
+      const unregister1 = registerOnClearAuth(testCleanup);
+      const unregister2 = registerOnClearAuth(testCleanup);
+
+      useAuthStore.getState().clearAuth();
+
+      // Because Set stores unique references, it must be called exactly once
+      expect(callCount).toBe(1);
+
+      unregister1();
+      unregister2();
+    });
+
+    it("ensures clearAuth succeeds even if a registered callback throws an error", () => {
+      const faultyCleanup = () => {
+        throw new Error("Cleanup crash");
+      };
+
+      const unregister = registerOnClearAuth(faultyCleanup);
+
+      // Must not throw exception
+      expect(() => {
+        useAuthStore.getState().clearAuth();
+      }).not.toThrow();
+
+      expect(useAuthStore.getState().isAuthenticated).toBe(false);
+
+      unregister();
+    });
+  });
+
   describe("Error Propagation", () => {
     it("re-throws ApiError without falling back to mock data", async () => {
       const apiError = new ApiError("Only owner can archive", "FORBIDDEN", 403);
@@ -152,3 +337,4 @@ describe("workspaceApi Suite", () => {
     });
   });
 });
+

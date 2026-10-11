@@ -3,6 +3,8 @@ import { mapWorkspaceDtoToDomain } from "@/mappers/workspace.mapper";
 import type {
   Workspace,
   WorkspaceDto,
+  WorkspaceMemberDto,
+  ListWorkspaceMembersResponse,
   CreateWorkspaceRequest,
   UpdateWorkspaceRequest,
   WorkspacePaginationMeta,
@@ -13,6 +15,18 @@ export interface ListWorkspacesResponse {
   items: Workspace[];
   meta?: WorkspacePaginationMeta;
 }
+
+import { registerOnClearAuth } from "@/stores/auth.store";
+
+const workspaceMembersCache = new Map<string, { timestamp: number; data: ListWorkspaceMembersResponse }>();
+const CACHE_TTL_MS = 60 * 1000; // 1 minute TTL
+
+export function clearWorkspaceMembersCache(): void {
+  workspaceMembersCache.clear();
+}
+
+// Auto-register cache cleanup whenever user session is cleared
+registerOnClearAuth(clearWorkspaceMembersCache);
 
 export const workspaceApi = {
   /**
@@ -101,4 +115,39 @@ export const workspaceApi = {
     );
     return mapWorkspaceDtoToDomain(response.data.data);
   },
+
+  /**
+   * Retrieves members of a workspace
+   * GET /api/v1/workspaces/:id/members
+   */
+  async listWorkspaceMembers(
+    workspaceId: string,
+    params?: { page?: number; limit?: number; bypassCache?: boolean }
+  ): Promise<ListWorkspaceMembersResponse> {
+    const page = params?.page ?? 1;
+    const limit = params?.limit ?? 100;
+    const cacheKey = `${workspaceId}_${page}_${limit}`;
+
+    if (!params?.bypassCache) {
+      const cached = workspaceMembersCache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+        return cached.data;
+      }
+    }
+
+    const response = await apiClient.get<
+      ApiSuccessResponse<WorkspaceMemberDto[]> & { meta?: WorkspacePaginationMeta }
+    >(`/workspaces/${workspaceId}/members`, {
+      params: { page, limit },
+    });
+
+    const result: ListWorkspaceMembersResponse = {
+      items: response.data.data || [],
+      meta: response.data.meta,
+    };
+
+    workspaceMembersCache.set(cacheKey, { timestamp: Date.now(), data: result });
+    return result;
+  },
 };
+
