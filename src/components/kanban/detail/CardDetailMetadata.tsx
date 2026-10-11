@@ -7,7 +7,8 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
-  HelpCircle,
+  Check,
+  Loader2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -26,6 +27,7 @@ import type {
   ListCategory,
   CardPriority,
   UpdateCardInput,
+  BoardLabel,
 } from "@/types";
 
 export interface CardDetailMetadataProps {
@@ -34,6 +36,17 @@ export interface CardDetailMetadataProps {
   members: BoardMember[];
   onStatusChange: (card: KanbanCard, targetCategory: ListCategory) => Promise<boolean>;
   onUpdate: (payload: UpdateCardInput) => Promise<void>;
+  onAssignMember?: (cardId: string, userId: string) => Promise<void>;
+  onUnassignMember?: (cardId: string, userId: string) => Promise<void>;
+  isLoadingAssignments?: boolean;
+  assignmentsError?: string | null;
+  onRetryAssignments?: () => void;
+  boardLabels?: BoardLabel[];
+  onAttachLabel?: (cardId: string, labelId: string) => Promise<void>;
+  onDetachLabel?: (cardId: string, labelId: string) => Promise<void>;
+  isLoadingLabels?: boolean;
+  labelsError?: string | null;
+  onRetryLabels?: () => void;
 }
 
 const PRIORITIES: { value: CardPriority; label: string }[] = [
@@ -67,7 +80,20 @@ export const CardDetailMetadata: React.FC<CardDetailMetadataProps> = ({
   members,
   onStatusChange,
   onUpdate,
+  onAssignMember,
+  onUnassignMember,
+  isLoadingAssignments = false,
+  assignmentsError = null,
+  onRetryAssignments,
+  boardLabels = [],
+  onAttachLabel,
+  onDetachLabel,
+  isLoadingLabels = false,
+  labelsError = null,
+  onRetryLabels,
 }) => {
+  const [pendingUserId, setPendingUserId] = React.useState<string | null>(null);
+  const [pendingLabelId, setPendingLabelId] = React.useState<string | null>(null);
   // Determine current list and category
   const currentList = lists.find((l) => l.id === card.listId);
   const currentCategory: ListCategory = currentList?.category || "TODO";
@@ -88,11 +114,44 @@ export const CardDetailMetadata: React.FC<CardDetailMetadataProps> = ({
     });
   };
 
-  const handleSelectAssignee = async (memberId: string) => {
-    await onUpdate({
-      assigneeIds: [memberId],
-      updatedAt: card.updatedAt,
-    });
+  const handleToggleAssignee = async (member: BoardMember, isAssigned: boolean) => {
+    if (pendingUserId) return;
+    setPendingUserId(member.id);
+    try {
+      if (isAssigned) {
+        if (onUnassignMember) {
+          await onUnassignMember(card.id, member.id);
+        }
+      } else {
+        if (onAssignMember) {
+          await onAssignMember(card.id, member.id);
+        }
+      }
+    } catch {
+      // Error is surfaced via hook notification / assignmentsError
+    } finally {
+      setPendingUserId(null);
+    }
+  };
+
+  const handleToggleLabel = async (boardLabel: BoardLabel, isAttached: boolean) => {
+    if (pendingLabelId) return;
+    setPendingLabelId(boardLabel.id);
+    try {
+      if (isAttached) {
+        if (onDetachLabel) {
+          await onDetachLabel(card.id, boardLabel.id);
+        }
+      } else {
+        if (onAttachLabel) {
+          await onAttachLabel(card.id, boardLabel.id);
+        }
+      }
+    } catch {
+      // Error is surfaced via hook notification / labelsError
+    } finally {
+      setPendingLabelId(null);
+    }
   };
 
   const handleDateChange = async (field: "startDate" | "dueDate", value: string) => {
@@ -189,42 +248,135 @@ export const CardDetailMetadata: React.FC<CardDetailMetadataProps> = ({
         </div>
 
         {/* ASSIGNEE */}
-        <div className="flex items-center">
-          <span className="flex w-28 items-center gap-1.5 font-medium text-neutral-500">
-            <UserIcon className="h-3.5 w-3.5" />
-            <span>Assignee</span>
-          </span>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 rounded-md border border-neutral-200/80 bg-white px-2 py-1 text-xs font-medium text-neutral-800 transition-colors hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-              >
-                {primaryAssignee ? (
-                  <>
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-100 text-[10px] font-semibold text-primary-700">
-                      {primaryAssignee.initials || primaryAssignee.name.charAt(0)}
-                    </span>
-                    <span>{primaryAssignee.name}</span>
-                  </>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center">
+            <span className="flex w-28 items-center gap-1.5 font-medium text-neutral-500">
+              <UserIcon className="h-3.5 w-3.5" />
+              <span>Assignee</span>
+            </span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  disabled={isLoadingAssignments}
+                  aria-label="Assign member"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200/80 bg-neutral-50/80 px-2 py-1 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-100 hover:text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:opacity-60"
+                >
+                  {isLoadingAssignments ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-neutral-400" />
+                  ) : card.assignees.length === 0 ? (
+                    <>
+                      <UserIcon className="h-3.5 w-3.5 text-neutral-400" />
+                      <span className="text-neutral-500">Unassigned</span>
+                    </>
+                  ) : card.assignees.length === 1 ? (
+                    <>
+                      {primaryAssignee.avatarUrl ? (
+                        <img
+                          src={primaryAssignee.avatarUrl}
+                          alt={primaryAssignee.name}
+                          className="h-4 w-4 rounded-full object-cover shrink-0"
+                        />
+                      ) : (
+                        <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary-100 text-[9px] font-semibold text-primary-700">
+                          {primaryAssignee.initials || primaryAssignee.name.charAt(0)}
+                        </span>
+                      )}
+                      <span className="truncate max-w-[120px]">{primaryAssignee.name}</span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex -space-x-1.5 items-center shrink-0">
+                        {card.assignees.slice(0, 2).map((a) => (
+                          <span
+                            key={a.id}
+                            className="flex h-4 w-4 items-center justify-center rounded-full border border-white bg-primary-100 text-[8px] font-semibold text-primary-700"
+                          >
+                            {a.initials || a.name.charAt(0)}
+                          </span>
+                        ))}
+                      </div>
+                      <span className="truncate max-w-[100px]">{primaryAssignee.name}</span>
+                      <span className="text-[10px] text-neutral-500 font-medium">+{card.assignees.length - 1}</span>
+                    </>
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-60 max-h-72 overflow-y-auto">
+                <DropdownMenuLabel className="text-xs text-neutral-500 font-normal">
+                  Assign Members
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {members.length === 0 ? (
+                  <div className="px-2 py-3 text-center text-xs text-neutral-400">
+                    No board members available
+                  </div>
                 ) : (
-                  <span className="text-neutral-400">Unassigned</span>
+                  members.map((m) => {
+                    const isAssigned = card.assignees.some((a) => a.id === m.id);
+                    const isPending = pendingUserId === m.id;
+                    return (
+                      <DropdownMenuItem
+                        key={m.id}
+                        disabled={Boolean(pendingUserId)}
+                        onSelect={(e) => {
+                          e.preventDefault();
+                          void handleToggleAssignee(m, isAssigned);
+                        }}
+                        className="flex items-center justify-between gap-2 px-2 py-1.5 cursor-pointer text-xs"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          {m.avatarUrl ? (
+                            <img
+                              src={m.avatarUrl}
+                              alt={m.name}
+                              className="h-5 w-5 rounded-full object-cover shrink-0"
+                            />
+                          ) : (
+                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-[10px] font-semibold text-primary-700">
+                              {m.initials || m.name.charAt(0)}
+                            </span>
+                          )}
+                          <div className="flex flex-col min-w-0">
+                            <span className="truncate font-medium text-neutral-800">{m.name}</span>
+                            {m.role && (
+                              <span className="text-[10px] text-neutral-400 leading-tight">
+                                {m.role}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="shrink-0 flex items-center w-4 h-4 justify-center">
+                          {isPending ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin text-neutral-400" />
+                          ) : isAssigned ? (
+                            <Check className="h-4 w-4 text-emerald-600" />
+                          ) : null}
+                        </div>
+                      </DropdownMenuItem>
+                    );
+                  })
                 )}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuLabel>Assign Member</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {members.map((m) => (
-                <DropdownMenuItem key={m.id} onClick={() => void handleSelectAssignee(m.id)}>
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-100 text-[10px] font-semibold text-primary-700">
-                    {m.initials || m.name.charAt(0)}
-                  </span>
-                  <span>{m.name}</span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Assignments Error / Retry Banner */}
+          {assignmentsError && (
+            <div className="flex items-center gap-1.5 pl-28 text-[11px] text-amber-700">
+              <AlertCircle className="h-3 w-3 shrink-0" />
+              <span className="truncate">{assignmentsError}</span>
+              {onRetryAssignments && (
+                <button
+                  type="button"
+                  onClick={onRetryAssignments}
+                  className="font-medium underline hover:text-amber-800 shrink-0"
+                >
+                  Retry
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -265,23 +417,97 @@ export const CardDetailMetadata: React.FC<CardDetailMetadataProps> = ({
         </div>
 
         {/* LABELS */}
-        <div className="flex items-center">
-          <span className="flex w-24 items-center gap-1.5 font-medium text-neutral-500">
-            <Tag className="h-3.5 w-3.5" />
-            <span>Labels</span>
-          </span>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {card.labels.map((lbl) => (
-              <CardTagBadge key={lbl.id} label={lbl.name} />
-            ))}
-            <span
-              className="inline-flex cursor-not-allowed items-center gap-1 rounded-md border border-dashed border-neutral-200 px-1.5 py-0.5 text-[11px] text-neutral-400"
-              title="Label management coming soon"
-            >
-              <span>+ Label</span>
-              <HelpCircle className="h-2.5 w-2.5" />
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center">
+            <span className="flex w-24 items-center gap-1.5 font-medium text-neutral-500">
+              <Tag className="h-3.5 w-3.5" />
+              <span>Labels</span>
             </span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {card.labels.map((lbl) => (
+                <CardTagBadge key={lbl.id} label={lbl.name} color={lbl.color} />
+              ))}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    disabled={isLoadingLabels}
+                    aria-label="Manage labels"
+                    className="inline-flex items-center gap-1 rounded-md border border-dashed border-neutral-300 hover:border-neutral-400 bg-white hover:bg-neutral-50 px-2 py-0.5 text-[11px] font-medium text-neutral-600 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:opacity-60"
+                  >
+                    {isLoadingLabels ? (
+                      <Loader2 className="h-2.5 w-2.5 animate-spin text-neutral-400" />
+                    ) : (
+                      <span>+ Label</span>
+                    )}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56 max-h-72 overflow-y-auto">
+                  <DropdownMenuLabel className="text-xs text-neutral-500 font-normal">
+                    Board Labels
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {boardLabels.length === 0 ? (
+                    <div className="px-2 py-3 text-center text-xs text-neutral-400">
+                      No board labels available
+                    </div>
+                  ) : (
+                    boardLabels.map((lbl) => {
+                      const isAttached = card.labels.some((l) => l.id === lbl.id);
+                      const isPending = pendingLabelId === lbl.id;
+                      return (
+                        <DropdownMenuItem
+                          key={lbl.id}
+                          disabled={Boolean(pendingLabelId)}
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            void handleToggleLabel(lbl, isAttached);
+                          }}
+                          className="flex items-center justify-between gap-2 px-2 py-1.5 cursor-pointer text-xs"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            {lbl.color && (
+                              <span
+                                className="h-2.5 w-2.5 rounded-full shrink-0"
+                                style={{ backgroundColor: lbl.color }}
+                              />
+                            )}
+                            <span className="truncate font-medium text-neutral-800">
+                              {lbl.name}
+                            </span>
+                          </div>
+                          <div className="shrink-0 flex items-center w-4 h-4 justify-center">
+                            {isPending ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin text-neutral-400" />
+                            ) : isAttached ? (
+                              <Check className="h-4 w-4 text-emerald-600" />
+                            ) : null}
+                          </div>
+                        </DropdownMenuItem>
+                      );
+                    })
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
+
+          {/* Labels Error / Retry Banner */}
+          {labelsError && (
+            <div className="flex items-center gap-1.5 pl-24 text-[11px] text-amber-700">
+              <AlertCircle className="h-3 w-3 shrink-0" />
+              <span className="truncate">{labelsError}</span>
+              {onRetryLabels && (
+                <button
+                  type="button"
+                  onClick={onRetryLabels}
+                  className="font-medium underline hover:text-amber-800 shrink-0"
+                >
+                  Retry
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,5 +1,13 @@
 import * as React from "react";
-import { AlertTriangle, CheckCircle2, Clock, Trash2, Plus } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  Trash2,
+  Plus,
+  AlertCircle,
+  RotateCcw,
+} from "lucide-react";
 import type { KanbanCard } from "@/types";
 import { AddDependencyDialog } from "../planning/AddDependencyDialog";
 
@@ -9,6 +17,9 @@ export interface CardDetailDependenciesProps {
   canManage?: boolean;
   onAddDependency?: (prerequisiteCardId: string) => Promise<void>;
   onDeleteDependency?: (dependencyId: string) => Promise<void>;
+  isLoading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
 }
 
 export const CardDetailDependencies: React.FC<CardDetailDependenciesProps> = ({
@@ -17,6 +28,9 @@ export const CardDetailDependencies: React.FC<CardDetailDependenciesProps> = ({
   canManage = false,
   onAddDependency,
   onDeleteDependency,
+  isLoading = false,
+  error = null,
+  onRetry,
 }) => {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
@@ -68,8 +82,34 @@ export const CardDetailDependencies: React.FC<CardDetailDependenciesProps> = ({
         </div>
       )}
 
-      {/* Dependencies List */}
-      {dependencies.length > 0 ? (
+      {/* Error Banner */}
+      {error && (
+        <div className="flex items-center justify-between rounded-lg border border-error-200 bg-error-50 p-2.5 text-xs text-error-800">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0 text-error-600" />
+            <span>{error}</span>
+          </div>
+          {onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="inline-flex items-center gap-1 font-medium text-error-700 hover:text-error-900 underline cursor-pointer"
+            >
+              <RotateCcw className="h-3 w-3" />
+              <span>Retry</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Dependencies List / Loading Skeleton */}
+      {isLoading ? (
+        <div className="space-y-2 py-1">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-9 w-full rounded-lg bg-neutral-100 animate-pulse" />
+          ))}
+        </div>
+      ) : dependencies.length > 0 ? (
         <div className="space-y-2">
           {dependencies.map((dep) => (
             <div

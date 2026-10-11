@@ -2,6 +2,16 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { AuthState, AuthTokens, UserProfile } from "@/types";
 
+type AuthClearCallback = () => void;
+const clearAuthCallbacks = new Set<AuthClearCallback>();
+
+export function registerOnClearAuth(cb: AuthClearCallback): () => void {
+  clearAuthCallbacks.add(cb);
+  return () => {
+    clearAuthCallbacks.delete(cb);
+  };
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
@@ -24,13 +34,21 @@ export const useAuthStore = create<AuthState>()(
         set({
           accessToken,
         }),
-      clearAuth: () =>
+      clearAuth: () => {
+        clearAuthCallbacks.forEach((cb) => {
+          try {
+            cb();
+          } catch {
+            // Ignore error in cleanup callback
+          }
+        });
         set({
           accessToken: null,
           refreshToken: null,
           user: null,
           isAuthenticated: false,
-        }),
+        });
+      },
     }),
     {
       name: "nexora_auth",

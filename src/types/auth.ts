@@ -144,6 +144,16 @@ export interface ResetPasswordRequest {
   newPassword: string;
 }
 
+export interface OAuthStartResponse {
+  authorizationUrl: string;
+  loginToken: string;
+}
+
+export interface OAuthCallbackRequest {
+  code: string;
+  state: string;
+}
+
 // ==========================================
 // Auth Store State Interface
 // ==========================================

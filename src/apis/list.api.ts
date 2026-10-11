@@ -1,69 +1,154 @@
-import type { KanbanList, CreateListInput } from "@/types";
-import { MOCK_BOARD_DETAIL } from "@/mocks/data/kanban.mock";
-
-// In-memory working store for board lists
-const inMemoryLists: Record<string, KanbanList[]> = {
-  [MOCK_BOARD_DETAIL.id]: [...MOCK_BOARD_DETAIL.lists],
-};
+import type {
+  KanbanList,
+  CreateListInput,
+  UpdateListInput,
+  ReorderListInput,
+  ListDto,
+  ListStatusGroupDto,
+  ListListsQuery,
+  CreateListRequest,
+  UpdateListRequest,
+  ReorderListRequest,
+  ArchiveListRequest,
+  ApiSuccessResponse,
+} from "@/types";
+import { apiClient } from "./client";
+import {
+  mapCategoryToListStatusGroup,
+  mapListDtoToKanbanList,
+  mapListDtosToKanbanLists,
+} from "@/mappers/list.mapper";
 
 export const listApi = {
   /**
    * Retrieves all Kanban lists for a given board
-   * (Mirrors GET /api/v1/boards/{id}/lists -> ListListResponse)
+   * GET /api/v1/boards/:boardId/lists
    */
-  async getBoardLists(boardId: string): Promise<KanbanList[]> {
-    return inMemoryLists[boardId] ? [...inMemoryLists[boardId]] : [];
+  async getBoardLists(
+    boardId: string,
+    options?: ListListsQuery
+  ): Promise<KanbanList[]> {
+    const params: Record<string, string> = {};
+    if (options?.includeArchived !== undefined) {
+      params.includeArchived = options.includeArchived ? "true" : "false";
+    }
+
+    const response = await apiClient.get<ApiSuccessResponse<ListDto[]>>(
+      `/boards/${boardId}/lists`,
+      {
+        params: Object.keys(params).length > 0 ? params : undefined,
+      }
+    );
+
+    return mapListDtosToKanbanLists(response.data.data || []);
   },
 
   /**
    * Creates a new Kanban list column in a board
-   * (Mirrors POST /api/v1/boards/{id}/lists -> ListResponse)
+   * POST /api/v1/boards/:boardId/lists
    */
-  async createList(boardId: string, payload: CreateListInput): Promise<KanbanList> {
-    const currentLists = inMemoryLists[boardId] || [];
-    const maxPosition = currentLists.reduce((max, l) => Math.max(max, l.position), 0);
-    const newPosition = maxPosition + 1024;
+  async createList(
+    boardId: string,
+    payload: CreateListInput | CreateListRequest
+  ): Promise<KanbanList> {
+    const statusGroup: ListStatusGroupDto =
+      "statusGroup" in payload
+        ? payload.statusGroup
+        : mapCategoryToListStatusGroup(payload.category);
 
-    const newList: KanbanList = {
-      id: `col-${Date.now()}`,
-      boardId,
+    const body: CreateListRequest = {
       name: payload.name.trim(),
-      category: payload.category,
-      position: newPosition,
-      status: "ACTIVE",
-      cards: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      statusGroup,
     };
 
-    inMemoryLists[boardId] = [...currentLists, newList];
-    return newList;
+    const response = await apiClient.post<ApiSuccessResponse<ListDto>>(
+      `/boards/${boardId}/lists`,
+      body
+    );
+
+    return mapListDtoToKanbanList(response.data.data);
+  },
+
+  /**
+   * Updates an existing Kanban list's name and/or statusGroup
+   * PATCH /api/v1/lists/:id
+   */
+  async updateList(
+    listId: string,
+    payload: UpdateListInput | UpdateListRequest
+  ): Promise<KanbanList> {
+    const body: UpdateListRequest = {};
+
+    if (payload.name !== undefined) {
+      body.name = payload.name.trim();
+    }
+
+    if ("statusGroup" in payload && payload.statusGroup) {
+      body.statusGroup = payload.statusGroup;
+    } else if ("category" in payload && payload.category) {
+      body.statusGroup = mapCategoryToListStatusGroup(payload.category);
+    }
+
+    const response = await apiClient.patch<ApiSuccessResponse<ListDto>>(
+      `/lists/${listId}`,
+      body
+    );
+
+    return mapListDtoToKanbanList(response.data.data);
   },
 
   /**
    * Reorders a list position
-   * (Mirrors PATCH /api/v1/lists/{id}/position -> EmptySuccessResponse)
+   * PATCH /api/v1/lists/:id/position
    */
-  async reorderList(listId: string, position: number): Promise<void> {
-    for (const boardId of Object.keys(inMemoryLists)) {
-      const lists = inMemoryLists[boardId];
-      const target = lists.find((l) => l.id === listId);
-      if (target) {
-        target.position = position;
-        target.updatedAt = new Date().toISOString();
-        lists.sort((a, b) => a.position - b.position);
-        break;
-      }
-    }
+  async reorderList(
+    listId: string,
+    positionOrInput: number | ReorderListInput | ReorderListRequest
+  ): Promise<KanbanList> {
+    const position =
+      typeof positionOrInput === "number"
+        ? positionOrInput
+        : positionOrInput.position;
+
+    const response = await apiClient.patch<ApiSuccessResponse<ListDto>>(
+      `/lists/${listId}/position`,
+      { position }
+    );
+
+    return mapListDtoToKanbanList(response.data.data);
   },
 
   /**
    * Archives a Kanban list
-   * (Mirrors POST /api/v1/lists/{id}/archive -> EmptySuccessResponse)
+   * PATCH /api/v1/lists/:id/archive
    */
-  async archiveList(listId: string): Promise<void> {
-    for (const boardId of Object.keys(inMemoryLists)) {
-      inMemoryLists[boardId] = inMemoryLists[boardId].filter((l) => l.id !== listId);
+  async archiveList(
+    listId: string,
+    payload?: ArchiveListRequest
+  ): Promise<void> {
+    const body: ArchiveListRequest = {};
+
+    if (payload?.moveCardsToListId) {
+      body.moveCardsToListId = payload.moveCardsToListId;
     }
+
+    if (payload?.archiveCards !== undefined) {
+      body.archiveCards = payload.archiveCards;
+    }
+
+    await apiClient.patch<ApiSuccessResponse<Record<string, never>>>(
+      `/lists/${listId}/archive`,
+      body
+    );
+  },
+
+  /**
+   * Restores an archived Kanban list
+   * PATCH /api/v1/lists/:id/restore
+   */
+  async restoreList(listId: string): Promise<void> {
+    await apiClient.patch<ApiSuccessResponse<Record<string, never>>>(
+      `/lists/${listId}/restore`
+    );
   },
 };

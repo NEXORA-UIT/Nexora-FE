@@ -76,4 +76,52 @@ describe("CardDetailDependencies Component", () => {
       expect(handleAdd).toHaveBeenCalledWith("card-102");
     });
   });
+
+  it("renders loading skeleton when isLoading is true", () => {
+    const { container } = render(
+      <CardDetailDependencies
+        card={card101}
+        boardCards={allCards}
+        isLoading={true}
+      />
+    );
+
+    const pulseElements = container.querySelectorAll(".animate-pulse");
+    expect(pulseElements.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("renders error banner and triggers onRetry when retry button clicked", () => {
+    const handleRetry = vi.fn();
+    render(
+      <CardDetailDependencies
+        card={card101}
+        boardCards={allCards}
+        error="Failed to load dependencies"
+        onRetry={handleRetry}
+      />
+    );
+
+    expect(screen.getByText("Failed to load dependencies")).toBeDefined();
+    const retryBtn = screen.getByRole("button", { name: /Retry/i });
+    expect(retryBtn).toBeDefined();
+
+    fireEvent.click(retryBtn);
+    expect(handleRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders empty state message when card has no dependencies", () => {
+    const cardWithoutDeps: KanbanCard = {
+      ...card101,
+      dependencies: [],
+    };
+
+    render(
+      <CardDetailDependencies
+        card={cardWithoutDeps}
+        boardCards={allCards}
+      />
+    );
+
+    expect(screen.getByText("No dependencies configured.")).toBeDefined();
+  });
 });

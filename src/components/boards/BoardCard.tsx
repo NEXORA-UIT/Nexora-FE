@@ -8,9 +8,12 @@ export const BoardCard: React.FC<BoardCardProps> = ({
   onDelete,
   onClick,
 }) => {
+  const members = board.members ?? [];
   const maxVisible = board.maxVisibleAvatars ?? 3;
-  const visibleMembers = board.members.slice(0, maxVisible);
-  const remainingCount = Math.max(0, board.members.length - maxVisible);
+  const visibleMembers = members.slice(0, maxVisible);
+  const remainingCount = Math.max(0, members.length - maxVisible);
+  const hasStats =
+    board.openTasksCount !== undefined || board.completedPercent !== undefined;
 
   return (
     <div
@@ -38,55 +41,69 @@ export const BoardCard: React.FC<BoardCardProps> = ({
         </div>
 
         {/* Description */}
-        <p className="mt-1 text-xs text-neutral-500 line-clamp-2 leading-relaxed">
-          {board.description}
-        </p>
+        {board.description && (
+          <p className="mt-1 text-xs text-neutral-500 line-clamp-2 leading-relaxed">
+            {board.description}
+          </p>
+        )}
       </div>
 
       {/* Middle & Bottom: Tasks, Progress Bar, Avatars */}
-      <div className="mt-5 space-y-4">
-        {/* Task Metric Row & Progress Bar */}
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-medium text-neutral-600">
-              {board.openTasksCount} open tasks
-            </span>
-            <span className="font-semibold text-neutral-800">
-              {board.completedPercent}% complete
-            </span>
-          </div>
+      {(hasStats || members.length > 0) && (
+        <div className="mt-5 space-y-4">
+          {/* Task Metric Row & Progress Bar */}
+          {hasStats && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                {board.openTasksCount !== undefined && (
+                  <span className="font-medium text-neutral-600">
+                    {board.openTasksCount} open tasks
+                  </span>
+                )}
+                {board.completedPercent !== undefined && (
+                  <span className="font-semibold text-neutral-800">
+                    {board.completedPercent}% complete
+                  </span>
+                )}
+              </div>
 
-          {/* Progress Bar Track & Fill */}
-          <div className="h-1.5 w-full rounded-full bg-neutral-100 overflow-hidden">
-            <div
-              className="h-full rounded-full bg-primary-600 transition-all duration-500"
-              style={{ width: `${Math.min(100, Math.max(0, board.completedPercent))}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Member Avatar Stack */}
-        <div className="flex items-center -space-x-1.5">
-          {visibleMembers.map((member) => (
-            <div
-              key={member.id}
-              title={member.name}
-              className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-neutral-100 text-[10px] font-semibold text-neutral-700 shadow-2xs"
-            >
-              {member.initials}
+              {/* Progress Bar Track & Fill */}
+              {board.completedPercent !== undefined && (
+                <div className="h-1.5 w-full rounded-full bg-neutral-100 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-primary-600 transition-all duration-500"
+                    style={{ width: `${Math.min(100, Math.max(0, board.completedPercent))}%` }}
+                  />
+                </div>
+              )}
             </div>
-          ))}
+          )}
 
-          {remainingCount > 0 && (
-            <div
-              title={`${remainingCount} more members`}
-              className="flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-white bg-primary-50 px-1 text-[10px] font-semibold text-primary-700 shadow-2xs"
-            >
-              +{remainingCount}
+          {/* Member Avatar Stack */}
+          {members.length > 0 && (
+            <div className="flex items-center -space-x-1.5">
+              {visibleMembers.map((member) => (
+                <div
+                  key={member.id}
+                  title={member.name}
+                  className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-neutral-100 text-[10px] font-semibold text-neutral-700 shadow-2xs"
+                >
+                  {member.initials}
+                </div>
+              ))}
+
+              {remainingCount > 0 && (
+                <div
+                  title={`${remainingCount} more members`}
+                  className="flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-white bg-primary-50 px-1 text-[10px] font-semibold text-primary-700 shadow-2xs"
+                >
+                  +{remainingCount}
+                </div>
+              )}
             </div>
           )}
         </div>
-      </div>
+      )}
     </div>
   );
 };

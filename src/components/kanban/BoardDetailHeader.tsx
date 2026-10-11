@@ -16,8 +16,9 @@ export const BoardDetailHeader: React.FC<BoardDetailHeaderProps> = ({
   onShareClick,
   onOptionsClick,
 }) => {
-  const visibleMembers = board.members.slice(0, 4);
-  const remainingCount = Math.max(0, board.members.length - 4);
+  const members = board.members || [];
+  const visibleMembers = members.slice(0, 4);
+  const remainingCount = Math.max(0, members.length - 4);
 
   return (
     <div className="space-y-3 select-none">

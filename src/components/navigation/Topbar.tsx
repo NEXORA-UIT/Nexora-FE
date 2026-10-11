@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/constants/routes";
 import { useAuthStore } from "@/stores/auth.store";
+import { useWorkspaceStore } from "@/stores/workspace.store";
 import { authApi } from "@/apis/auth.api";
 import { UserMenu } from "./UserMenu";
 import nexoraLogoSrc from "@/assets/logo/logo.png";
@@ -23,6 +24,7 @@ export const Topbar: React.FC = () => {
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
 
   const clearAuth = useAuthStore((state) => state.clearAuth);
+  const activeWorkspace = useWorkspaceStore((state) => state.getActiveWorkspace());
 
   const handleConfirmLogout = async () => {
     setIsLoggingOut(true);
@@ -69,13 +71,13 @@ export const Topbar: React.FC = () => {
         {/* Workspace Dropdown Button */}
         <button
           type="button"
-          className="hidden sm:flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-neutral-700 hover:bg-neutral-100 transition-colors"
+          className="hidden sm:flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-neutral-700 hover:bg-neutral-100 transition-colors max-w-[200px]"
           onClick={() => navigate(ROUTES.BOARDS)}
-          title="Switch Workspace: Core Platform"
+          title={`Active Workspace: ${activeWorkspace?.name || "None"}`}
         >
-          <Layers className="h-3.5 w-3.5 text-primary-600" />
-          <span>Core Platform</span>
-          <ChevronDown className="h-3 w-3 text-neutral-400" />
+          <Layers className="h-3.5 w-3.5 text-primary-600 shrink-0" />
+          <span className="truncate">{activeWorkspace?.name || "Select Workspace"}</span>
+          <ChevronDown className="h-3 w-3 text-neutral-400 shrink-0" />
         </button>
       </div>
 

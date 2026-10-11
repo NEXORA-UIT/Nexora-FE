@@ -8,9 +8,14 @@ import { RegisterPage } from "@/pages/auth/RegisterPage";
 import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
 import { VerifyEmailPage } from "@/pages/auth/VerifyEmailPage";
+import { OAuthCallbackPage } from "@/pages/auth/OAuthCallbackPage";
 import { SettingsPage } from "@/pages/settings/SettingsPage";
 import { BoardsPage, BoardDetailPage } from "@/pages/boards";
 import { UnderDevelopmentPage } from "@/pages/UnderDevelopmentPage";
+import {
+  ProtectedRoute,
+  PublicOnlyRoute,
+} from "@/components/auth";
 import { ROUTES } from "@/constants/routes";
 
 export const router = createBrowserRouter([
@@ -22,7 +27,11 @@ export const router = createBrowserRouter([
 
   // Authenticated App Workspace Layout
   {
-    element: <AppLayout />,
+    element: (
+      <ProtectedRoute>
+        <AppLayout />
+      </ProtectedRoute>
+    ),
     children: [
       {
         path: ROUTES.HOME,
@@ -73,23 +82,43 @@ export const router = createBrowserRouter([
     children: [
       {
         path: ROUTES.LOGIN,
-        element: <LoginPage />,
+        element: (
+          <PublicOnlyRoute>
+            <LoginPage />
+          </PublicOnlyRoute>
+        ),
       },
       {
         path: ROUTES.REGISTER,
-        element: <RegisterPage />,
+        element: (
+          <PublicOnlyRoute>
+            <RegisterPage />
+          </PublicOnlyRoute>
+        ),
       },
       {
         path: ROUTES.FORGOT_PASSWORD,
-        element: <ForgotPasswordPage />,
+        element: (
+          <PublicOnlyRoute>
+            <ForgotPasswordPage />
+          </PublicOnlyRoute>
+        ),
       },
       {
         path: ROUTES.RESET_PASSWORD,
-        element: <ResetPasswordPage />,
+        element: (
+          <PublicOnlyRoute>
+            <ResetPasswordPage />
+          </PublicOnlyRoute>
+        ),
       },
       {
         path: ROUTES.VERIFY_EMAIL,
         element: <VerifyEmailPage />,
+      },
+      {
+        path: ROUTES.OAUTH_CALLBACK,
+        element: <OAuthCallbackPage />,
       },
       {
         path: ROUTES.UNDER_DEVELOPMENT,

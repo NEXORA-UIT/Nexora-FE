@@ -1,7 +1,12 @@
 import * as React from "react";
 import { useNavigate } from "react-router-dom";
-import { FolderArchive } from "lucide-react";
-import { WorkspaceHeader, WorkspaceTabs } from "@/components/workspace";
+import { FolderArchive, FolderPlus, Plus } from "lucide-react";
+import { toast } from "sonner";
+import {
+  WorkspaceHeader,
+  WorkspaceTabs,
+  CreateWorkspaceModal,
+} from "@/components/workspace";
 import {
   BoardToolbar,
   BoardCard,
@@ -11,17 +16,36 @@ import {
   CreateBoardModal,
   ConfirmDeleteBoardDialog,
 } from "@/components/boards";
+import { Button } from "@/components/ui/button";
 import { useWorkspaceBoards } from "@/hooks";
+import { useWorkspaceStore } from "@/stores/workspace.store";
+import { ApiError } from "@/apis/client";
 import { getBoardDetailRoute } from "@/constants/routes";
 import type { WorkspaceTabId } from "@/types";
 
 export const BoardsPage: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = React.useState<WorkspaceTabId>("boards");
+  const [isCreateWorkspaceOpen, setIsCreateWorkspaceOpen] = React.useState(false);
+
+  const {
+    isInitialized,
+    isLoading: isStoreLoading,
+    fetchWorkspaces,
+    archiveWorkspace,
+    unarchiveWorkspace,
+  } = useWorkspaceStore();
+
+  React.useEffect(() => {
+    if (!isInitialized) {
+      void fetchWorkspaces();
+    }
+  }, [isInitialized, fetchWorkspaces]);
 
   const {
     workspace,
-    isLoading,
+    boards,
+    isLoading: isBoardsLoading,
     error,
     searchQuery,
     setSearchQuery,
@@ -43,7 +67,56 @@ export const BoardsPage: React.FC = () => {
     handleRestoreBoard,
     handleDeleteBoard,
     handleConfirmDelete,
-  } = useWorkspaceBoards("ws-core-platform");
+  } = useWorkspaceBoards();
+
+  const isLoading = isBoardsLoading || isStoreLoading;
+
+  // Local derived board count for UI presentation
+  const localActiveBoardCount = React.useMemo(
+    () => boards.filter((b) => b.status === "active").length,
+    [boards]
+  );
+
+  // Actions for workspace lifecycle
+  const handleArchiveWorkspace = async () => {
+    if (!workspace) return;
+    try {
+      await archiveWorkspace(workspace.id);
+      toast.success(`Workspace "${workspace.name}" archived.`);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 403) {
+        if (err.code === "WORKSPACE_FROZEN") {
+          toast.error("This workspace is frozen and cannot be modified.");
+        } else {
+          toast.error("Only the workspace owner can archive this workspace.");
+        }
+      } else {
+        toast.error(
+          err instanceof Error ? err.message : "Failed to archive workspace."
+        );
+      }
+    }
+  };
+
+  const handleRestoreWorkspace = async () => {
+    if (!workspace) return;
+    try {
+      await unarchiveWorkspace(workspace.id);
+      toast.success(`Workspace "${workspace.name}" restored to Active.`);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 403) {
+        if (err.code === "WORKSPACE_FROZEN") {
+          toast.error("This workspace is frozen and cannot be modified.");
+        } else {
+          toast.error("Only the workspace owner can restore this workspace.");
+        }
+      } else {
+        toast.error(
+          err instanceof Error ? err.message : "Failed to restore workspace."
+        );
+      }
+    }
+  };
 
   // Loading State
   if (isLoading && !workspace) {
@@ -65,7 +138,39 @@ export const BoardsPage: React.FC = () => {
     );
   }
 
-  if (!workspace) return null;
+  // Empty State: User has no workspaces
+  if (!workspace) {
+    return (
+      <div className="rounded-2xl border border-neutral-200/90 bg-white p-12 text-center select-none space-y-4 max-w-lg mx-auto mt-8">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 text-primary-600">
+          <FolderPlus className="h-7 w-7" />
+        </div>
+        <div className="space-y-1">
+          <h2 className="text-lg font-bold text-neutral-900">
+            No Workspace Selected
+          </h2>
+          <p className="text-xs text-neutral-500 max-w-sm mx-auto">
+            You do not have any workspaces yet or none is currently active. Create your first workspace to start organizing boards.
+          </p>
+        </div>
+        <Button
+          type="button"
+          onClick={() => setIsCreateWorkspaceOpen(true)}
+          className="h-9 gap-1.5 rounded-xl bg-primary-600 px-4 text-xs font-semibold text-white shadow-xs hover:bg-primary-700"
+        >
+          <Plus className="h-4 w-4" />
+          <span>Create Workspace</span>
+        </Button>
+
+        <CreateWorkspaceModal
+          isOpen={isCreateWorkspaceOpen}
+          onClose={() => setIsCreateWorkspaceOpen(false)}
+        />
+      </div>
+    );
+  }
+
+  const isArchived = workspace.status === "archived";
 
   const showActiveSection =
     filterTab === "all" || filterTab === "active";
@@ -85,17 +190,29 @@ export const BoardsPage: React.FC = () => {
       <WorkspaceHeader
         workspace={workspace}
         onCreateBoardClick={() => setIsCreateOpen(true)}
+        onArchiveClick={handleArchiveWorkspace}
+        onRestoreClick={handleRestoreWorkspace}
       />
 
-      {/* 2. Workspace Navigation Tabs */}
+      {/* 2. Archived Notice Banner */}
+      {isArchived && (
+        <div className="flex items-center gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-800">
+          <FolderArchive className="h-4 w-4 shrink-0 text-amber-600" />
+          <span>
+            This workspace is archived. Boards and workspace configurations are read-only.
+          </span>
+        </div>
+      )}
+
+      {/* 3. Workspace Navigation Tabs */}
       <WorkspaceTabs
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        boardCount={workspace.activeBoardCount}
+        boardCount={localActiveBoardCount}
         memberCount={workspace.memberCount}
       />
 
-      {/* 3. Tab Content Area */}
+      {/* 4. Tab Content Area */}
       {activeTab === "boards" ? (
         <div className="space-y-6 pt-2">
           {/* Section Heading & Subtitle */}
@@ -145,8 +262,7 @@ export const BoardsPage: React.FC = () => {
                       <BoardCard
                         key={board.id}
                         board={board}
-                        onArchive={handleArchiveBoard}
-                        onDelete={handleDeleteBoard}
+                        onArchive={isArchived ? undefined : handleArchiveBoard}
                         onClick={(b) => navigate(getBoardDetailRoute(b.id))}
                       />
                     ))}
@@ -172,8 +288,15 @@ export const BoardsPage: React.FC = () => {
                       <ArchivedBoardCard
                         key={board.id}
                         board={board}
-                        onRestore={handleRestoreBoard}
-                        onDelete={handleDeleteBoard}
+                        onRestore={
+                          isArchived
+                            ? () =>
+                                toast.error(
+                                  "Cannot restore boards in an archived workspace."
+                                )
+                            : handleRestoreBoard
+                        }
+                        onDelete={isArchived ? undefined : handleDeleteBoard}
                       />
                     ))}
                   </div>
@@ -194,7 +317,7 @@ export const BoardsPage: React.FC = () => {
         </div>
       )}
 
-      {/* 4. Create Board Modal */}
+      {/* 5. Create Board Modal */}
       <CreateBoardModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
@@ -203,7 +326,7 @@ export const BoardsPage: React.FC = () => {
         isSubmitting={isSubmitting}
       />
 
-      {/* 5. Safe Delete Confirmation Dialog */}
+      {/* 6. Safe Delete Confirmation Dialog */}
       <ConfirmDeleteBoardDialog
         board={deleteTargetBoard}
         isOpen={Boolean(deleteTargetBoard)}

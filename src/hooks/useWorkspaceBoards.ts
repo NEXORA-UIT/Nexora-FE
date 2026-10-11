@@ -1,19 +1,29 @@
 import * as React from "react";
 import { toast } from "sonner";
-import { workspaceApi } from "@/apis/workspace.api";
 import { boardApi } from "@/apis/board.api";
+import { ApiError } from "@/apis/client";
+import { useWorkspaceStore } from "@/stores/workspace.store";
 import type {
-  Workspace,
   Board,
   BoardFilterTab,
   BoardSortOption,
   CreateBoardInput,
+  UpdateBoardRequest,
 } from "@/types";
 
-export function useWorkspaceBoards(workspaceId: string = "ws-core-platform") {
-  const [workspace, setWorkspace] = React.useState<Workspace | null>(null);
+export function useWorkspaceBoards(customWorkspaceId?: string) {
+  const storeWorkspaces = useWorkspaceStore((state) => state.workspaces);
+  const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
+
+  const resolvedWorkspaceId = customWorkspaceId || activeWorkspaceId || "";
+
+  const workspace = React.useMemo(() => {
+    if (!resolvedWorkspaceId) return null;
+    return storeWorkspaces.find((w) => w.id === resolvedWorkspaceId) || null;
+  }, [storeWorkspaces, resolvedWorkspaceId]);
+
   const [boards, setBoards] = React.useState<Board[]>([]);
-  const [isLoading, setIsLoading] = React.useState<boolean>(true);
+  const [isLoading, setIsLoading] = React.useState<boolean>(Boolean(resolvedWorkspaceId));
   const [error, setError] = React.useState<string | null>(null);
 
   // Filter & Search Controls
@@ -27,16 +37,21 @@ export function useWorkspaceBoards(workspaceId: string = "ws-core-platform") {
   const [deleteTargetBoard, setDeleteTargetBoard] = React.useState<Board | null>(null);
   const [isDeleting, setIsDeleting] = React.useState<boolean>(false);
 
-  // Load Initial Data
+  // Load Boards Data for the Resolved Workspace
   const loadData = React.useCallback(async () => {
+    if (!resolvedWorkspaceId) {
+      setBoards([]);
+      setIsLoading(false);
+      setError(null);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
-      const [wsData, boardsData] = await Promise.all([
-        workspaceApi.getWorkspace(workspaceId),
-        boardApi.getBoards(workspaceId),
-      ]);
-      setWorkspace(wsData);
+      const boardsData = await boardApi.getBoards(resolvedWorkspaceId, {
+        includeArchived: true,
+      });
       setBoards(boardsData);
     } catch (err) {
       setError(
@@ -45,7 +60,7 @@ export function useWorkspaceBoards(workspaceId: string = "ws-core-platform") {
     } finally {
       setIsLoading(false);
     }
-  }, [workspaceId]);
+  }, [resolvedWorkspaceId]);
 
   React.useEffect(() => {
     void loadData();
@@ -61,7 +76,7 @@ export function useWorkspaceBoards(workspaceId: string = "ws-core-platform") {
         if (!query) return true;
         return (
           b.title.toLowerCase().includes(query) ||
-          b.description.toLowerCase().includes(query)
+          (b.description?.toLowerCase().includes(query) ?? false)
         );
       };
 
@@ -71,9 +86,9 @@ export function useWorkspaceBoards(workspaceId: string = "ws-core-platform") {
           case "name_asc":
             return a.title.localeCompare(b.title);
           case "progress_desc":
-            return b.completedPercent - a.completedPercent;
+            return (b.completedPercent ?? 0) - (a.completedPercent ?? 0);
           case "tasks_desc":
-            return b.openTasksCount - a.openTasksCount;
+            return (b.openTasksCount ?? 0) - (a.openTasksCount ?? 0);
           case "recently_updated":
           default:
             return (
@@ -101,70 +116,149 @@ export function useWorkspaceBoards(workspaceId: string = "ws-core-platform") {
 
   // Action: Create Board
   const handleCreateBoard = async (input: CreateBoardInput) => {
+    if (workspace?.status === "archived") {
+      toast.error("Cannot create boards in an archived workspace.");
+      return;
+    }
+    if (workspace?.isFrozen || workspace?.status === "paused") {
+      toast.error("This workspace is frozen and cannot be modified.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const newBoard = await boardApi.createBoard(input);
       setBoards((prev) => [newBoard, ...prev]);
-      setWorkspace((prev) =>
-        prev
-          ? {
-              ...prev,
-              activeBoardCount: prev.activeBoardCount + 1,
-            }
-          : prev
-      );
       toast.success(`Board "${newBoard.title || newBoard.name}" created successfully.`);
       setIsCreateOpen(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create board");
+      if (err instanceof ApiError) {
+        if (err.status === 403) {
+          if (err.code === "WORKSPACE_FROZEN") {
+            toast.error("This workspace is frozen and cannot be modified.");
+          } else if (err.code === "RESOURCE_ARCHIVED" || err.code === "WORKSPACE_ARCHIVED") {
+            toast.error("Cannot create boards in an archived workspace.");
+          } else {
+            toast.error("Only workspace owners can create boards.");
+          }
+        } else if (err.status === 400) {
+          toast.error(err.message || "Invalid board input.");
+        } else {
+          toast.error(err.message || "Failed to create board");
+        }
+      } else {
+        toast.error(err instanceof Error ? err.message : "Failed to create board");
+      }
       throw err;
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Action: Update Board
+  const handleUpdateBoard = async (boardId: string, data: UpdateBoardRequest) => {
+    if (workspace?.status === "archived") {
+      toast.error("Cannot modify boards in an archived workspace.");
+      return;
+    }
+    if (workspace?.isFrozen || workspace?.status === "paused") {
+      toast.error("This workspace is frozen and cannot be modified.");
+      return;
+    }
+
+    try {
+      const updated = await boardApi.updateBoard(boardId, data);
+      setBoards((prev) => prev.map((b) => (b.id === boardId ? updated : b)));
+      toast.success(`Board "${updated.title || updated.name}" updated successfully.`);
+      return updated;
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 403) {
+        if (err.code === "WORKSPACE_FROZEN") {
+          toast.error("This workspace is frozen and cannot be modified.");
+        } else if (err.code === "RESOURCE_ARCHIVED" || err.code === "WORKSPACE_ARCHIVED") {
+          toast.error("Cannot modify boards in an archived workspace.");
+        } else {
+          toast.error("Only workspace owners or PMs can update this board.");
+        }
+      } else {
+        toast.error(err instanceof Error ? err.message : "Failed to update board");
+      }
+      throw err;
+    }
+  };
+
   // Action: Archive Board
   const handleArchiveBoard = async (boardId: string) => {
+    if (workspace?.status === "archived") {
+      toast.error("Cannot modify boards in an archived workspace.");
+      return;
+    }
+    if (workspace?.isFrozen || workspace?.status === "paused") {
+      toast.error("This workspace is frozen and cannot be modified.");
+      return;
+    }
+
     try {
       const target = boards.find((b) => b.id === boardId);
-      const updated = await boardApi.archiveBoard(boardId);
+      await boardApi.archiveBoard(boardId);
       setBoards((prev) =>
-        prev.map((b) => (b.id === boardId ? updated : b))
-      );
-      setWorkspace((prev) =>
-        prev
-          ? {
-              ...prev,
-              activeBoardCount: Math.max(0, prev.activeBoardCount - 1),
-            }
-          : prev
+        prev.map((b) =>
+          b.id === boardId
+            ? { ...b, status: "archived", updatedAt: new Date().toISOString() }
+            : b
+        )
       );
       toast.success(`Board "${target?.title || target?.name || "Board"}" archived.`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Archive board failed");
+      if (err instanceof ApiError && err.status === 403) {
+        if (err.code === "WORKSPACE_FROZEN") {
+          toast.error("This workspace is frozen and cannot be modified.");
+        } else if (err.code === "RESOURCE_ARCHIVED" || err.code === "WORKSPACE_ARCHIVED") {
+          toast.error("Cannot modify boards in an archived workspace.");
+        } else {
+          toast.error("Only workspace owners or PMs can archive this board.");
+        }
+      } else {
+        toast.error(err instanceof Error ? err.message : "Archive board failed");
+      }
       console.error("Archive board failed:", err);
     }
   };
 
   // Action: Restore Board
   const handleRestoreBoard = async (boardId: string) => {
+    if (workspace?.status === "archived") {
+      toast.error("Cannot restore boards in an archived workspace.");
+      return;
+    }
+    if (workspace?.isFrozen || workspace?.status === "paused") {
+      toast.error("This workspace is frozen and cannot be modified.");
+      return;
+    }
+
     try {
       const target = boards.find((b) => b.id === boardId);
-      const updated = await boardApi.restoreBoard(boardId);
+      await boardApi.restoreBoard(boardId);
       setBoards((prev) =>
-        prev.map((b) => (b.id === boardId ? updated : b))
-      );
-      setWorkspace((prev) =>
-        prev
-          ? {
-              ...prev,
-              activeBoardCount: prev.activeBoardCount + 1,
-            }
-          : prev
+        prev.map((b) =>
+          b.id === boardId
+            ? { ...b, status: "active", updatedAt: new Date().toISOString() }
+            : b
+        )
       );
       toast.success(`Board "${target?.title || target?.name || "Board"}" restored to Active.`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Restore board failed");
+      if (err instanceof ApiError && err.status === 403) {
+        if (err.code === "WORKSPACE_FROZEN") {
+          toast.error("This workspace is frozen and cannot be modified.");
+        } else if (err.code === "RESOURCE_ARCHIVED" || err.code === "WORKSPACE_ARCHIVED") {
+          toast.error("Cannot restore boards in an archived workspace.");
+        } else {
+          toast.error("Only workspace owners or PMs can restore this board.");
+        }
+      } else {
+        toast.error(err instanceof Error ? err.message : "Restore board failed");
+      }
       console.error("Restore board failed:", err);
     }
   };
@@ -172,29 +266,57 @@ export function useWorkspaceBoards(workspaceId: string = "ws-core-platform") {
   // Action: Open Delete Confirmation Modal
   const handleDeleteBoard = (boardId: string) => {
     const target = boards.find((b) => b.id === boardId);
-    if (target) {
-      setDeleteTargetBoard(target);
+    if (!target) return;
+    if (target.status !== "archived") {
+      toast.error("Only archived boards can be permanently deleted.");
+      return;
     }
+    if (workspace?.status === "archived") {
+      toast.error("Cannot delete boards in an archived workspace.");
+      return;
+    }
+    if (workspace?.isFrozen || workspace?.status === "paused") {
+      toast.error("This workspace is frozen and cannot be modified.");
+      return;
+    }
+
+    setDeleteTargetBoard(target);
   };
 
   // Action: Confirm Permanent Delete
   const handleConfirmDelete = async (boardId: string, confirmationName: string) => {
+    const target = boards.find((b) => b.id === boardId);
+    if (target && target.status !== "archived") {
+      toast.error("Only archived boards can be permanently deleted.");
+      return;
+    }
+
     setIsDeleting(true);
     try {
       await boardApi.deleteBoard(boardId, confirmationName);
       setBoards((prev) => prev.filter((b) => b.id !== boardId));
-      setWorkspace((prev) =>
-        prev
-          ? {
-              ...prev,
-              activeBoardCount: Math.max(0, prev.activeBoardCount - 1),
-            }
-          : prev
-      );
       toast.success("Board deleted permanently.");
       setDeleteTargetBoard(null);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Delete board failed");
+      if (err instanceof ApiError) {
+        if (err.status === 403) {
+          if (err.code === "WORKSPACE_FROZEN") {
+            toast.error("This workspace is frozen and cannot be modified.");
+          } else if (err.code === "RESOURCE_ARCHIVED" || err.code === "WORKSPACE_ARCHIVED") {
+            toast.error("Cannot delete boards in an archived workspace.");
+          } else {
+            toast.error("Only the workspace owner can delete boards.");
+          }
+        } else if (err.status === 409) {
+          toast.error("Only archived boards can be permanently deleted.");
+        } else if (err.status === 400) {
+          toast.error("Confirmation name must match the board name exactly.");
+        } else {
+          toast.error(err.message || "Delete board failed");
+        }
+      } else {
+        toast.error(err instanceof Error ? err.message : "Delete board failed");
+      }
       throw err;
     } finally {
       setIsDeleting(false);
@@ -231,10 +353,10 @@ export function useWorkspaceBoards(workspaceId: string = "ws-core-platform") {
 
     // Handlers
     handleCreateBoard,
+    handleUpdateBoard,
     handleArchiveBoard,
     handleRestoreBoard,
     handleDeleteBoard,
     handleConfirmDelete,
   };
 }
-

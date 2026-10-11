@@ -14,6 +14,8 @@ import type {
   ListCategory,
   UpdateCardInput,
   CardActivity,
+  BoardLabel,
+  PaginatedActivitiesResult,
 } from "@/types";
 
 export interface CardDetailDrawerProps {
@@ -29,11 +31,46 @@ export interface CardDetailDrawerProps {
   onToggleChecklistItem: (cardId: string, taskId: string, isCompleted: boolean) => Promise<void>;
   onDeleteChecklistItem: (cardId: string, taskId: string) => Promise<void>;
   onAddComment: (cardId: string, content: string) => Promise<void>;
-  onFetchActivities: (cardId: string) => Promise<CardActivity[]>;
+  onUpdateComment?: (commentId: string, content: string) => Promise<void>;
+  onDeleteComment?: (commentId: string) => Promise<void>;
+  isLoadingComments?: boolean;
+  commentsError?: string | null;
+  onRetryComments?: () => void;
+  currentUserId?: string;
+  onFetchActivities: (
+    cardId: string,
+    cursor?: string
+  ) => Promise<CardActivity[] | PaginatedActivitiesResult>;
   boardCards?: KanbanCard[];
   canManageDependencies?: boolean;
   onAddDependency?: (cardId: string, prerequisiteCardId: string) => Promise<void>;
   onDeleteDependency?: (cardId: string, dependencyId: string) => Promise<void>;
+  isLoadingDependencies?: boolean;
+  dependenciesError?: string | null;
+  onRetryDependencies?: () => void;
+  isLoadingTasks?: boolean;
+  tasksError?: string | null;
+  onRetryTasks?: () => void;
+  onAssignMember?: (cardId: string, userId: string) => Promise<void>;
+  onUnassignMember?: (cardId: string, userId: string) => Promise<void>;
+  isLoadingAssignments?: boolean;
+  assignmentsError?: string | null;
+  onRetryAssignments?: () => void;
+  boardLabels?: BoardLabel[];
+  onAttachLabel?: (cardId: string, labelId: string) => Promise<void>;
+  onDetachLabel?: (cardId: string, labelId: string) => Promise<void>;
+  isLoadingLabels?: boolean;
+  labelsError?: string | null;
+  onRetryLabels?: () => void;
+  onUploadAttachment?: (cardId: string, file: File) => Promise<void>;
+  onDeleteAttachment?: (attachmentId: string) => Promise<void>;
+  onDownloadAttachment?: (attachmentId: string) => Promise<Blob>;
+  isLoadingAttachments?: boolean;
+  attachmentsError?: string | null;
+  onRetryAttachments?: () => void;
+  isUploadingAttachment?: boolean;
+  currentUserRole?: string;
+  isWorkspaceOwner?: boolean;
 }
 
 export const CardDetailDrawer: React.FC<CardDetailDrawerProps> = ({
@@ -49,11 +86,43 @@ export const CardDetailDrawer: React.FC<CardDetailDrawerProps> = ({
   onToggleChecklistItem,
   onDeleteChecklistItem,
   onAddComment,
+  onUpdateComment,
+  onDeleteComment,
+  isLoadingComments = false,
+  commentsError = null,
+  onRetryComments,
+  currentUserId,
   onFetchActivities,
   boardCards = [],
   canManageDependencies = false,
   onAddDependency,
   onDeleteDependency,
+  isLoadingDependencies = false,
+  dependenciesError = null,
+  onRetryDependencies,
+  isLoadingTasks = false,
+  tasksError = null,
+  onRetryTasks,
+  onAssignMember,
+  onUnassignMember,
+  isLoadingAssignments = false,
+  assignmentsError = null,
+  onRetryAssignments,
+  boardLabels = [],
+  onAttachLabel,
+  onDetachLabel,
+  isLoadingLabels = false,
+  labelsError = null,
+  onRetryLabels,
+  onUploadAttachment,
+  onDeleteAttachment,
+  onDownloadAttachment,
+  isLoadingAttachments = false,
+  attachmentsError = null,
+  onRetryAttachments,
+  isUploadingAttachment = false,
+  currentUserRole,
+  isWorkspaceOwner = false,
 }) => {
   if (!card) return null;
 
@@ -92,6 +161,17 @@ export const CardDetailDrawer: React.FC<CardDetailDrawerProps> = ({
               members={members}
               onStatusChange={onStatusChange}
               onUpdate={onUpdate}
+              onAssignMember={onAssignMember}
+              onUnassignMember={onUnassignMember}
+              isLoadingAssignments={isLoadingAssignments}
+              assignmentsError={assignmentsError}
+              onRetryAssignments={onRetryAssignments}
+              boardLabels={boardLabels}
+              onAttachLabel={onAttachLabel}
+              onDetachLabel={onDetachLabel}
+              isLoadingLabels={isLoadingLabels}
+              labelsError={labelsError}
+              onRetryLabels={onRetryLabels}
             />
 
             {/* Description: Debounced Autosave + Status Indicator */}
@@ -103,6 +183,9 @@ export const CardDetailDrawer: React.FC<CardDetailDrawerProps> = ({
               onAddItem={onAddChecklistItem}
               onToggleItem={onToggleChecklistItem}
               onDeleteItem={onDeleteChecklistItem}
+              isLoading={isLoadingTasks}
+              error={tasksError}
+              onRetry={onRetryTasks}
             />
 
             {/* Dependencies & Prerequisites: Consistent Blocked Warning + Linked Cards */}
@@ -110,6 +193,9 @@ export const CardDetailDrawer: React.FC<CardDetailDrawerProps> = ({
               card={card}
               boardCards={boardCards}
               canManage={Boolean(canManageDependencies)}
+              isLoading={isLoadingDependencies}
+              error={dependenciesError}
+              onRetry={onRetryDependencies}
               onAddDependency={
                 canManageDependencies && onAddDependency
                   ? (prereqId) => onAddDependency(card.id, prereqId)
@@ -122,14 +208,32 @@ export const CardDetailDrawer: React.FC<CardDetailDrawerProps> = ({
               }
             />
 
-            {/* Attachments: Read-only preview cards + disabled upload indicator */}
-            <CardDetailAttachments card={card} />
+            {/* Attachments: Upload, download, delete, and list */}
+            <CardDetailAttachments
+              card={card}
+              onUploadAttachment={onUploadAttachment}
+              onDeleteAttachment={onDeleteAttachment}
+              onDownloadAttachment={onDownloadAttachment}
+              isLoadingAttachments={isLoadingAttachments}
+              attachmentsError={attachmentsError}
+              onRetryAttachments={onRetryAttachments}
+              isUploadingAttachment={isUploadingAttachment}
+              currentUserId={currentUserId}
+              currentUserRole={currentUserRole}
+              isWorkspaceOwner={isWorkspaceOwner}
+            />
 
             {/* Activity & Comments: Radix tabs + Lazy-loaded activity audit stream */}
             <CardDetailActivity
               card={card}
               onAddComment={onAddComment}
               onFetchActivities={onFetchActivities}
+              onUpdateComment={onUpdateComment}
+              onDeleteComment={onDeleteComment}
+              isLoadingComments={isLoadingComments}
+              commentsError={commentsError}
+              onRetryComments={onRetryComments}
+              currentUserId={currentUserId}
             />
           </div>
         </Dialog.Content>

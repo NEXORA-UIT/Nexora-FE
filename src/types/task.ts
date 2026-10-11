@@ -35,20 +35,26 @@ export interface CardDependency {
 export interface CardAttachment {
   id: string;
   cardId: string;
+  userId?: string;
   fileName: string;
-  fileUrl: string;
-  fileSize: string;
+  fileUrl?: string;
+  fileSize: number | string;
+  mimeType?: string | null;
   uploadedBy: BoardMember;
+  createdAt?: string;
   uploadedAt?: string;
 }
 
 export interface CardComment {
   id: string;
   cardId: string;
+  userId?: string;
   author: BoardMember;
-  content: string;
+  content: string | null;
   createdAt: string;
   updatedAt?: string;
+  deletedAt?: string | null;
+  isDeleted?: boolean;
 }
 
 export interface CardActivity {

@@ -11,7 +11,6 @@ import { profileApi } from "@/apis/profile.api";
 import { ApiError } from "@/apis/client";
 import { useAuthStore } from "@/stores/auth.store";
 import type {
-  UserProfile,
   ProfileInformationCardProps,
   ProfileFormData,
 } from "@/types";
@@ -76,24 +75,9 @@ export const ProfileInformationCard: React.FC<ProfileInformationCardProps> = ({
       reset({ fullName: updatedUser.fullName });
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        if (err.status === 404) {
-          // In OpenAPI, PATCH /auth/me is marked planned-cloudinary and may return 404 until server route is deployed
-          // We update the local state so the user sees immediate UI reflection without blocking
-          if (user) {
-            const localUpdated: UserProfile = {
-              ...user,
-              fullName: data.fullName.trim(),
-              avatarUrl: avatarUrl || null,
-              updatedAt: new Date().toISOString(),
-            };
-            setUser(localUpdated);
-            onUpdateSuccess?.(localUpdated);
-            setSuccessMessage("Profile information updated locally in your session.");
-            reset({ fullName: localUpdated.fullName });
-            return;
-          }
+        if (err.status === 501 || err.status === 404 || err.code === "NOT_IMPLEMENTED") {
           setErrorMessage(
-            "The profile update endpoint is not yet supported by the server."
+            "Profile update (PATCH /api/v1/auth/me) is currently not supported by the backend server."
           );
         } else {
           setErrorMessage(err.message || "Failed to update profile information.");

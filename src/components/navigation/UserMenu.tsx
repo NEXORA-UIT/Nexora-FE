@@ -20,7 +20,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 }) => {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const displayName = user?.fullName || "Phan Gia Đạt";
+  const displayName = user?.fullName || user?.email || "User";
 
   const handleProfileClick = () => {
     navigate(ROUTES.SETTINGS);

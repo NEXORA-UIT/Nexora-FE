@@ -25,7 +25,7 @@ export const ConfirmDeleteBoardDialog: React.FC<ConfirmDeleteBoardDialogProps> =
 
   if (!isOpen || !board) return null;
 
-  const isConfirmed = confirmationInput.trim().toLowerCase() === boardName.trim().toLowerCase();
+  const isConfirmed = confirmationInput.trim() === boardName.trim();
 
   const handleConfirm = async (e: React.FormEvent) => {
     e.preventDefault();

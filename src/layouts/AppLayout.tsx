@@ -2,9 +2,12 @@ import * as React from "react";
 import { Outlet } from "react-router-dom";
 import { Topbar } from "@/components/navigation/Topbar";
 import { Sidebar } from "@/components/navigation/Sidebar";
+import { useSession } from "@/hooks/useSession";
 import type { AppLayoutProps } from "@/types";
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
+  useSession();
+
   return (
     <div className="flex min-h-screen flex-col bg-[#F8FAFC] text-neutral-900">
       {/* Pinned Top Navigation Bar */}
