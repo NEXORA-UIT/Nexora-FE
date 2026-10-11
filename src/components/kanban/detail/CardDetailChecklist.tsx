@@ -7,6 +7,9 @@ export interface CardDetailChecklistProps {
   onAddItem: (cardId: string, title: string) => Promise<void>;
   onToggleItem: (cardId: string, taskId: string, isCompleted: boolean) => Promise<void>;
   onDeleteItem: (cardId: string, taskId: string) => Promise<void>;
+  isLoading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
 }
 
 export const CardDetailChecklist: React.FC<CardDetailChecklistProps> = ({
@@ -14,6 +17,9 @@ export const CardDetailChecklist: React.FC<CardDetailChecklistProps> = ({
   onAddItem,
   onToggleItem,
   onDeleteItem,
+  isLoading = false,
+  error = null,
+  onRetry,
 }) => {
   const [newTitle, setNewTitle] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -59,48 +65,72 @@ export const CardDetailChecklist: React.FC<CardDetailChecklistProps> = ({
         />
       </div>
 
-      {/* Checklist items or empty state */}
-      {checklist.length > 0 ? (
-        <div className="space-y-1 pt-1">
-          {checklist.map((item) => (
-            <div
-              key={item.id}
-              className="group flex items-center justify-between rounded-md p-1.5 transition-colors hover:bg-neutral-50 focus-within:bg-neutral-50"
-            >
-              <label className="flex items-center gap-2.5 cursor-pointer text-xs flex-1 select-none">
-                <input
-                  type="checkbox"
-                  checked={item.isCompleted}
-                  onChange={(e) => void onToggleItem(card.id, item.id, e.target.checked)}
-                  className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
-                />
-                <span
-                  className={`transition-colors ${
-                    item.isCompleted ? "line-through text-neutral-400" : "text-neutral-800"
-                  }`}
-                >
-                  {item.title}
-                </span>
-              </label>
-
-              <button
-                type="button"
-                onClick={() => void onDeleteItem(card.id, item.id)}
-                className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 p-1.5 text-neutral-400 hover:text-error-600 focus:text-error-600 rounded transition-opacity focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                aria-label={`Remove checklist item: ${item.title}`}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          ))}
+      {/* Checklist items, loading, error, or empty state */}
+      {isLoading ? (
+        <div className="flex items-center gap-2 py-3 text-xs text-neutral-500">
+          <Loader2 className="h-4 w-4 animate-spin text-primary-600" />
+          <span>Loading tasks...</span>
         </div>
       ) : (
-        <div className="py-2 text-xs text-neutral-500">
-          <p className="font-medium text-neutral-600">No checklist items yet.</p>
-          <p className="text-neutral-400 mt-0.5">
-            Add a task to break this card into smaller steps.
-          </p>
-        </div>
+        <>
+          {error && (
+            <div className="flex items-center justify-between rounded-md bg-error-50 p-2.5 text-xs text-error-700">
+              <span>{error}</span>
+              {onRetry && (
+                <button
+                  type="button"
+                  onClick={onRetry}
+                  className="text-xs font-semibold text-error-800 underline hover:no-underline cursor-pointer"
+                >
+                  Retry
+                </button>
+              )}
+            </div>
+          )}
+
+          {checklist.length > 0 ? (
+            <div className="space-y-1 pt-1">
+              {checklist.map((item) => (
+                <div
+                  key={item.id}
+                  className="group flex items-center justify-between rounded-md p-1.5 transition-colors hover:bg-neutral-50 focus-within:bg-neutral-50"
+                >
+                  <label className="flex items-center gap-2.5 cursor-pointer text-xs flex-1 select-none">
+                    <input
+                      type="checkbox"
+                      checked={item.isCompleted}
+                      onChange={(e) => void onToggleItem(card.id, item.id, e.target.checked)}
+                      className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                    />
+                    <span
+                      className={`transition-colors ${
+                        item.isCompleted ? "line-through text-neutral-400" : "text-neutral-800"
+                      }`}
+                    >
+                      {item.title}
+                    </span>
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() => void onDeleteItem(card.id, item.id)}
+                    className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 p-1.5 text-neutral-400 hover:text-error-600 focus:text-error-600 rounded transition-opacity focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                    aria-label={`Remove checklist item: ${item.title}`}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : !error ? (
+            <div className="py-2 text-xs text-neutral-500">
+              <p className="font-medium text-neutral-600">No checklist items yet.</p>
+              <p className="text-neutral-400 mt-0.5">
+                Add a task to break this card into smaller steps.
+              </p>
+            </div>
+          ) : null}
+        </>
       )}
 
       {/* Inline Add Task Input */}

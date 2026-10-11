@@ -87,6 +87,59 @@ describe("Card Detail Content Sections", () => {
     expect(screen.getByText(/Add a task to break this card into smaller steps/i)).toBeDefined();
   });
 
+  it("renders loading indicator when isLoading is true", () => {
+    render(
+      <CardDetailChecklist
+        card={card101}
+        onAddItem={vi.fn()}
+        onToggleItem={vi.fn()}
+        onDeleteItem={vi.fn()}
+        isLoading={true}
+      />
+    );
+
+    expect(screen.getByText("Loading tasks...")).toBeDefined();
+  });
+
+  it("renders error message and retry button when error is provided", () => {
+    const handleRetry = vi.fn();
+    render(
+      <CardDetailChecklist
+        card={card101}
+        onAddItem={vi.fn()}
+        onToggleItem={vi.fn()}
+        onDeleteItem={vi.fn()}
+        error="Failed to load tasks from server"
+        onRetry={handleRetry}
+      />
+    );
+
+    expect(screen.getByText("Failed to load tasks from server")).toBeDefined();
+    const retryBtn = screen.getByRole("button", { name: "Retry" });
+    expect(retryBtn).toBeDefined();
+    retryBtn.click();
+    expect(handleRetry).toHaveBeenCalledOnce();
+  });
+
+  it("renders both error banner with retry and existing checklist items when error occurs", () => {
+    const handleRetry = vi.fn();
+    render(
+      <CardDetailChecklist
+        card={card101}
+        onAddItem={vi.fn()}
+        onToggleItem={vi.fn()}
+        onDeleteItem={vi.fn()}
+        error="Unable to sync latest card timestamp. Click Retry to sync."
+        onRetry={handleRetry}
+      />
+    );
+
+    expect(screen.getByText("Unable to sync latest card timestamp. Click Retry to sync.")).toBeDefined();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeDefined();
+    // Existing checklist item should still be rendered
+    expect(screen.getByText("Draft quotes")).toBeDefined();
+  });
+
   it("does NOT show blocked alert for card-101 with completed prerequisite", () => {
     render(<CardDetailDependencies card={card101} />);
     expect(screen.queryByText(/Blocked by an incomplete prerequisite/i)).toBeNull();
