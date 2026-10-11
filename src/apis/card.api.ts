@@ -4,8 +4,6 @@ import type {
   MoveCardInput,
   UpdateCardInput,
   ChecklistItem,
-  CardComment,
-  CardActivity,
   CardDependency,
   CreateDependencyRequest,
   CardDependenciesResponseDto,
@@ -43,13 +41,9 @@ import {
   mapBoardLabelDtosToBoardLabels,
   mapCardLabelDtoToBoardLabel,
   mapCardLabelDtosToBoardLabels,
-  mapCommentDtoToCardComment,
   mapCardPrerequisiteDtosToCardDependencies,
   mapActivityLogDtosToCardActivities,
 } from "@/mappers/card.mapper";
-import {
-  MOCK_BOARD_MEMBERS,
-} from "@/mocks/data/kanban.mock";
 
 export const cardApi = {
   /**
@@ -422,13 +416,6 @@ export const cardApi = {
     );
   },
 
-  /**
-   * Adds a new comment to a card (legacy method maintained for backwards compatibility)
-   */
-  async addComment(cardId: string, content: string): Promise<CardComment> {
-    const dto = await this.createCardComment(cardId, content);
-    return mapCommentDtoToCardComment(dto, MOCK_BOARD_MEMBERS);
-  },
 
   /**
    * Retrieves paginated activity logs for a card
@@ -458,17 +445,6 @@ export const cardApi = {
     return { items, nextCursor };
   },
 
-  /**
-   * Retrieves card activity logs
-   * GET /api/v1/cards/:cardId/activity
-   */
-  async getActivities(
-    cardId: string,
-    membersPool?: BoardMember[]
-  ): Promise<CardActivity[]> {
-    const result = await this.getCardActivities(cardId, { limit: 20 }, membersPool);
-    return result.items;
-  },
 
   /**
    * Archives a card

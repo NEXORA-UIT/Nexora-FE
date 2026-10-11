@@ -35,7 +35,7 @@ export const BoardCard: React.FC<BoardCardProps> = ({
       <div>
         <div className="flex items-start justify-between gap-2">
           <h3 className="text-sm font-bold text-neutral-900 group-hover:text-primary-600 transition-colors">
-            {board.title}
+            {board.name}
           </h3>
           <BoardActionMenu board={board} onArchive={onArchive} onDelete={onDelete} />
         </div>

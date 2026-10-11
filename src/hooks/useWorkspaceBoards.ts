@@ -75,7 +75,7 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
       const matchesSearch = (b: Board) => {
         if (!query) return true;
         return (
-          b.title.toLowerCase().includes(query) ||
+          b.name.toLowerCase().includes(query) ||
           (b.description?.toLowerCase().includes(query) ?? false)
         );
       };
@@ -84,7 +84,7 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
       const comparator = (a: Board, b: Board) => {
         switch (sortBy) {
           case "name_asc":
-            return a.title.localeCompare(b.title);
+            return a.name.localeCompare(b.name);
           case "progress_desc":
             return (b.completedPercent ?? 0) - (a.completedPercent ?? 0);
           case "tasks_desc":
@@ -129,7 +129,7 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
     try {
       const newBoard = await boardApi.createBoard(input);
       setBoards((prev) => [newBoard, ...prev]);
-      toast.success(`Board "${newBoard.title || newBoard.name}" created successfully.`);
+      toast.success(`Board "${newBoard.name}" created successfully.`);
       setIsCreateOpen(false);
     } catch (err) {
       if (err instanceof ApiError) {
@@ -169,7 +169,7 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
     try {
       const updated = await boardApi.updateBoard(boardId, data);
       setBoards((prev) => prev.map((b) => (b.id === boardId ? updated : b)));
-      toast.success(`Board "${updated.title || updated.name}" updated successfully.`);
+      toast.success(`Board "${updated.name}" updated successfully.`);
       return updated;
     } catch (err) {
       if (err instanceof ApiError && err.status === 403) {
@@ -208,7 +208,7 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
             : b
         )
       );
-      toast.success(`Board "${target?.title || target?.name || "Board"}" archived.`);
+      toast.success(`Board "${target?.name || "Board"}" archived.`);
     } catch (err) {
       if (err instanceof ApiError && err.status === 403) {
         if (err.code === "WORKSPACE_FROZEN") {
@@ -246,7 +246,7 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
             : b
         )
       );
-      toast.success(`Board "${target?.title || target?.name || "Board"}" restored to Active.`);
+      toast.success(`Board "${target?.name || "Board"}" restored to Active.`);
     } catch (err) {
       if (err instanceof ApiError && err.status === 403) {
         if (err.code === "WORKSPACE_FROZEN") {

@@ -234,6 +234,44 @@ describe("boardApi Suite", () => {
       expect(result.status).toBe("active");
     });
 
+    it("sends payload with canonical name and strictly omits title from outgoing HTTP request", async () => {
+      const postSpy = vi.spyOn(apiClient, "post").mockResolvedValueOnce({
+        data: {
+          success: true,
+          data: mockBoardDto,
+        },
+      });
+
+      await boardApi.createBoard({
+        workspaceId: "ws-uuid-1",
+        name: "Canonical Board Name",
+        title: "Legacy Fallback Title",
+        description: "Valid description",
+      });
+
+      expect(postSpy).toHaveBeenCalledTimes(1);
+      const [endpoint, payload] = postSpy.mock.calls[0];
+      expect(endpoint).toBe("/workspaces/ws-uuid-1/boards");
+      expect(payload).toEqual({
+        name: "Canonical Board Name",
+        description: "Valid description",
+      });
+      expect(payload).not.toHaveProperty("title");
+    });
+
+    it("throws an error and prevents HTTP request when board name is empty or whitespace", async () => {
+      const postSpy = vi.spyOn(apiClient, "post");
+
+      await expect(
+        boardApi.createBoard({
+          workspaceId: "ws-uuid-1",
+          name: "   ",
+        })
+      ).rejects.toThrow("Board name is required and cannot be empty.");
+
+      expect(postSpy).not.toHaveBeenCalled();
+    });
+
     it("supports direct workspaceId and payload call signature", async () => {
       vi.spyOn(apiClient, "post").mockResolvedValueOnce({
         data: {

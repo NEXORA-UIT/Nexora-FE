@@ -38,6 +38,7 @@ describe("BoardsPage Workspace Integration Suite", () => {
     {
       id: "board-1",
       workspaceId: "ws-test-1",
+      name: "Alpha Platform",
       title: "Alpha Platform",
       description: "Platform core",
       status: "active",

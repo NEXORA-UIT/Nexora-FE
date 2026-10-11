@@ -36,7 +36,7 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({
     try {
       await onSubmit({
         workspaceId,
-        title: cleanTitle,
+        name: cleanTitle,
         description: description.trim(),
       });
       onClose();

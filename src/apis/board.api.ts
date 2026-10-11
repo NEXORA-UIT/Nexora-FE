@@ -86,7 +86,7 @@ export const boardApi = {
     } else {
       workspaceId = workspaceIdOrInput.workspaceId;
       rawBody = {
-        name: (workspaceIdOrInput.name || workspaceIdOrInput.title).trim(),
+        name: (workspaceIdOrInput.name || workspaceIdOrInput.title || "").trim(),
       };
       if (workspaceIdOrInput.description !== undefined) {
         rawBody.description = workspaceIdOrInput.description?.trim() || null;
@@ -96,8 +96,13 @@ export const boardApi = {
       }
     }
 
+    const trimmedName = (rawBody?.name || "").trim();
+    if (!trimmedName) {
+      throw new Error("Board name is required and cannot be empty.");
+    }
+
     const cleanBody: CreateBoardRequest = {
-      name: rawBody.name.trim(),
+      name: trimmedName,
     };
     if (rawBody.description !== undefined) {
       cleanBody.description = rawBody.description?.trim() || null;

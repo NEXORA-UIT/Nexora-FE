@@ -4,6 +4,7 @@ export const MOCK_BOARDS: Board[] = [
   {
     id: "board-website-redesign",
     workspaceId: "ws-core-platform",
+    name: "Website Redesign",
     title: "Website Redesign",
     description:
       "Product website redesign and high-conversion landing systems",
@@ -24,6 +25,7 @@ export const MOCK_BOARDS: Board[] = [
   {
     id: "board-mobile-application",
     workspaceId: "ws-core-platform",
+    name: "Mobile Application",
     title: "Mobile Application",
     description:
       "iOS & Android rollout with offline-first local cache synchronization",
@@ -46,6 +48,7 @@ export const MOCK_BOARDS: Board[] = [
   {
     id: "board-marketing-campaign",
     workspaceId: "ws-core-platform",
+    name: "Marketing Campaign",
     title: "Marketing Campaign",
     description:
       "Product launch, executive messaging, and developer relations documentation",
@@ -64,6 +67,7 @@ export const MOCK_BOARDS: Board[] = [
   {
     id: "board-customer-portal",
     workspaceId: "ws-core-platform",
+    name: "Customer Portal",
     title: "Customer Portal",
     description:
       "Customer account experience, self-serve billing, and audit logs",
@@ -83,6 +87,7 @@ export const MOCK_BOARDS: Board[] = [
   {
     id: "board-legacy-website",
     workspaceId: "ws-core-platform",
+    name: "Legacy Website",
     title: "Legacy Website",
     description:
       "Old marketing site and archived documentation for v1 platform",
@@ -99,6 +104,7 @@ export const MOCK_BOARDS: Board[] = [
   {
     id: "board-old-marketing-campaign",
     workspaceId: "ws-core-platform",
+    name: "Old Marketing Campaign",
     title: "Old Marketing Campaign",
     description:
       "Q1 Campaign assets, raw video edits, and obsolete collateral",

@@ -31,7 +31,7 @@ export const ArchivedBoardCard: React.FC<ArchivedBoardCardProps> = ({
 
         {/* Board Title */}
         <h3 className="mt-2.5 text-sm font-bold text-neutral-800 group-hover:text-primary-600 transition-colors">
-          {board.title}
+          {board.name}
         </h3>
 
         {/* Description */}

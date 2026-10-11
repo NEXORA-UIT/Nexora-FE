@@ -14,7 +14,7 @@ export const ConfirmDeleteBoardDialog: React.FC<ConfirmDeleteBoardDialogProps> =
   const [confirmationInput, setConfirmationInput] = React.useState("");
   const [error, setError] = React.useState("");
 
-  const boardName = board?.title || board?.name || "";
+  const boardName = board?.name || board?.title || "";
 
   React.useEffect(() => {
     if (isOpen) {
