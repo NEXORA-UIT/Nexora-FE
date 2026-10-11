@@ -1,51 +1,142 @@
 import * as React from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import { format, parseISO } from "date-fns";
-import { Send, Loader2, MessageSquare, Activity as ActivityIcon } from "lucide-react";
+import {
+  Send,
+  Loader2,
+  MessageSquare,
+  Activity as ActivityIcon,
+  Edit2,
+  Trash2,
+  AlertCircle,
+  RotateCcw,
+} from "lucide-react";
 import type { KanbanCard, CardActivity } from "@/types";
+import { useAuthStore } from "@/stores/auth.store";
 
 export interface CardDetailActivityProps {
   card: KanbanCard;
   onAddComment: (cardId: string, content: string) => Promise<void>;
-  onFetchActivities: (cardId: string) => Promise<CardActivity[]>;
+  onFetchActivities: (
+    cardId: string,
+    cursor?: string
+  ) => Promise<CardActivity[] | { items: CardActivity[]; nextCursor: string | null }>;
+  onUpdateComment?: (commentId: string, content: string) => Promise<void>;
+  onDeleteComment?: (commentId: string) => Promise<void>;
+  isLoadingComments?: boolean;
+  commentsError?: string | null;
+  onRetryComments?: () => void;
+  currentUserId?: string;
 }
 
 export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
   card,
   onAddComment,
   onFetchActivities,
+  onUpdateComment,
+  onDeleteComment,
+  isLoadingComments = false,
+  commentsError = null,
+  onRetryComments,
+  currentUserId,
 }) => {
   const [activeTab, setActiveTab] = React.useState<string>("comments");
   const [commentText, setCommentText] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  // Lazy-loaded activity state
+  // Editing state
+  const [editingCommentId, setEditingCommentId] = React.useState<string | null>(null);
+  const [editText, setEditText] = React.useState<string>("");
+  const [isSavingEdit, setIsSavingEdit] = React.useState(false);
+
+  // Deleting state
+  const [deletingCommentId, setDeletingCommentId] = React.useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
+  // Current logged in user ID
+  const storeUserId = useAuthStore((state) => state.user?.id);
+  const effectiveUserId = currentUserId || storeUserId;
+
+  // Lazy-loaded activity state with cursor pagination
   const [activities, setActivities] = React.useState<CardActivity[] | null>(null);
+  const [nextCursor, setNextCursor] = React.useState<string | null>(null);
   const [isLoadingActivities, setIsLoadingActivities] = React.useState(false);
+  const [isLoadingMoreActivities, setIsLoadingMoreActivities] = React.useState(false);
   const [activityError, setActivityError] = React.useState<string | null>(null);
+  const activeCardIdRef = React.useRef<string>(card.id);
 
   const comments = card.comments || [];
 
-  // Reset or clear activities cache when card ID changes
+  // Reset activities, cursor, and editing cache when card ID changes
   React.useEffect(() => {
+    activeCardIdRef.current = card.id;
     setActivities(null);
+    setNextCursor(null);
     setIsLoadingActivities(false);
+    setIsLoadingMoreActivities(false);
     setActivityError(null);
+    setEditingCommentId(null);
+    setEditText("");
+    setDeletingCommentId(null);
   }, [card.id]);
+
+  const loadInitialActivities = React.useCallback(async () => {
+    const currentId = card.id;
+    activeCardIdRef.current = currentId;
+    setIsLoadingActivities(true);
+    setActivityError(null);
+    try {
+      const data = await onFetchActivities(currentId);
+      if (activeCardIdRef.current !== currentId) return;
+
+      if (Array.isArray(data)) {
+        setActivities(data);
+        setNextCursor(null);
+      } else {
+        setActivities(data.items);
+        setNextCursor(data.nextCursor);
+      }
+    } catch (err) {
+      if (activeCardIdRef.current !== currentId) return;
+      setActivityError(err instanceof Error ? err.message : "Failed to load activity logs");
+    } finally {
+      if (activeCardIdRef.current === currentId) {
+        setIsLoadingActivities(false);
+      }
+    }
+  }, [card.id, onFetchActivities]);
+
+  const handleLoadMoreActivities = async () => {
+    if (!nextCursor || isLoadingMoreActivities) return;
+    const currentId = card.id;
+    setIsLoadingMoreActivities(true);
+    try {
+      const data = await onFetchActivities(currentId, nextCursor);
+      if (activeCardIdRef.current !== currentId) return;
+
+      const newItems = Array.isArray(data) ? data : data.items;
+      const newCursor = Array.isArray(data) ? null : data.nextCursor;
+
+      setActivities((prev) => {
+        const existingIds = new Set((prev || []).map((a) => a.id));
+        const filtered = newItems.filter((a) => !existingIds.has(a.id));
+        return [...(prev || []), ...filtered];
+      });
+      setNextCursor(newCursor);
+    } catch (err) {
+      if (activeCardIdRef.current !== currentId) return;
+      setActivityError(err instanceof Error ? err.message : "Failed to load more activities");
+    } finally {
+      if (activeCardIdRef.current === currentId) {
+        setIsLoadingMoreActivities(false);
+      }
+    }
+  };
 
   const handleTabChange = async (tab: string) => {
     setActiveTab(tab);
     if (tab === "activity" && activities === null && !isLoadingActivities) {
-      setIsLoadingActivities(true);
-      setActivityError(null);
-      try {
-        const data = await onFetchActivities(card.id);
-        setActivities(data);
-      } catch (err) {
-        setActivityError(err instanceof Error ? err.message : "Failed to load activity logs");
-      } finally {
-        setIsLoadingActivities(false);
-      }
+      await loadInitialActivities();
     }
   };
 
@@ -58,8 +149,51 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
     try {
       await onAddComment(card.id, trimmed);
       setCommentText("");
+    } catch {
+      // Intentionally preserve commentText on failure so user does not lose input
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleStartEdit = (commentId: string, initialContent: string | null) => {
+    setEditingCommentId(commentId);
+    setEditText(initialContent || "");
+    setDeletingCommentId(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCommentId(null);
+    setEditText("");
+  };
+
+  const handleSaveEdit = async (commentId: string) => {
+    const trimmed = editText.trim();
+    if (!trimmed || isSavingEdit || !onUpdateComment) return;
+
+    setIsSavingEdit(true);
+    try {
+      await onUpdateComment(commentId, trimmed);
+      setEditingCommentId(null);
+      setEditText("");
+    } catch {
+      // Intentionally preserve editText on failure
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const handleConfirmDelete = async (commentId: string) => {
+    if (isDeleting || !onDeleteComment) return;
+
+    setIsDeleting(true);
+    try {
+      await onDeleteComment(commentId);
+      setDeletingCommentId(null);
+    } catch {
+      // Retain confirmation state on failure
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -130,29 +264,179 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
             </div>
           </form>
 
-          {/* Comments List */}
-          <div className="space-y-3">
-            {comments.map((comment) => (
-              <div key={comment.id} className="flex gap-2.5 text-xs">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-100 text-[10px] font-semibold text-primary-700">
-                  {comment.author.initials || comment.author.name.charAt(0)}
-                </span>
-                <div className="space-y-1 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-neutral-900">
-                      {comment.author.name}
-                    </span>
-                    <span className="text-[11px] text-neutral-400">
-                      {formatTimestamp(comment.createdAt)}
-                    </span>
+          {/* Comments Loading / Error / List */}
+          {isLoadingComments ? (
+            <div className="space-y-3 py-2">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="flex gap-2.5 animate-pulse">
+                  <div className="h-6 w-6 rounded-full bg-neutral-200 shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3 w-28 rounded bg-neutral-200" />
+                    <div className="h-8 rounded bg-neutral-100" />
                   </div>
-                  <p className="rounded-lg bg-neutral-50 p-2.5 text-neutral-800 leading-relaxed">
-                    {comment.content}
-                  </p>
                 </div>
+              ))}
+            </div>
+          ) : commentsError ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{commentsError}</span>
               </div>
-            ))}
-          </div>
+              {onRetryComments && (
+                <button
+                  type="button"
+                  onClick={onRetryComments}
+                  className="flex items-center gap-1 rounded bg-white px-2 py-1 text-xs font-semibold text-red-700 border border-red-300 hover:bg-red-50 cursor-pointer"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  Retry
+                </button>
+              )}
+            </div>
+          ) : comments.length === 0 ? (
+            <p className="text-xs text-neutral-400 italic py-2">
+              No comments yet. Start the conversation!
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {comments.map((comment) => {
+                const isDeleted = Boolean(
+                  comment.isDeleted || comment.content === null || comment.deletedAt
+                );
+                const isAuthor = Boolean(
+                  effectiveUserId &&
+                    (comment.userId === effectiveUserId || comment.author?.id === effectiveUserId)
+                );
+                const isEditing = editingCommentId === comment.id;
+                const isConfirmingDelete = deletingCommentId === comment.id;
+
+                return (
+                  <div key={comment.id} className="flex gap-2.5 text-xs group">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-100 text-[10px] font-semibold text-primary-700">
+                      {comment.author.initials || comment.author.name.charAt(0)}
+                    </span>
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-neutral-900">
+                            {comment.author.name}
+                          </span>
+                          <span className="text-[11px] text-neutral-400">
+                            {formatTimestamp(comment.createdAt)}
+                          </span>
+                          {comment.updatedAt &&
+                            comment.updatedAt !== comment.createdAt &&
+                            !isDeleted && (
+                              <span className="text-[10px] text-neutral-400 italic">
+                                (edited)
+                              </span>
+                            )}
+                        </div>
+
+                        {/* Author actions (Edit / Delete) */}
+                        {isAuthor && !isDeleted && !isEditing && (
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {onUpdateComment && (
+                              <button
+                                type="button"
+                                onClick={() => handleStartEdit(comment.id, comment.content)}
+                                className="rounded p-1 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 cursor-pointer"
+                                aria-label="Edit comment"
+                                title="Edit comment"
+                              >
+                                <Edit2 className="h-3 w-3" />
+                              </button>
+                            )}
+                            {onDeleteComment && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setDeletingCommentId(isConfirmingDelete ? null : comment.id)
+                                }
+                                className="rounded p-1 text-neutral-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+                                aria-label="Delete comment"
+                                title="Delete comment"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Delete confirmation banner */}
+                      {isConfirmingDelete && (
+                        <div className="rounded-lg border border-red-200 bg-red-50 p-2 text-xs flex items-center justify-between gap-2">
+                          <span className="text-red-700 font-medium">Delete this comment?</span>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setDeletingCommentId(null)}
+                              disabled={isDeleting}
+                              className="px-2 py-0.5 text-[11px] rounded bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50 cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleConfirmDelete(comment.id)}
+                              disabled={isDeleting}
+                              className="px-2 py-0.5 text-[11px] rounded bg-red-600 text-white font-medium hover:bg-red-700 disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+                            >
+                              {isDeleting && <Loader2 className="h-2.5 w-2.5 animate-spin" />}
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Content or Edit Form or Deleted Tombstone */}
+                      {isDeleted ? (
+                        <p className="rounded-lg bg-neutral-50/70 border border-neutral-100 p-2.5 text-neutral-400 italic leading-relaxed">
+                          This comment has been deleted.
+                        </p>
+                      ) : isEditing ? (
+                        <div className="space-y-1.5 pt-1">
+                          <textarea
+                            value={editText}
+                            onChange={(e) => setEditText(e.target.value)}
+                            disabled={isSavingEdit}
+                            rows={2}
+                            aria-label="Edit comment text"
+                            className="w-full rounded-lg border border-primary-500 bg-white p-2 text-xs text-neutral-800 placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                          />
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              type="button"
+                              onClick={handleCancelEdit}
+                              disabled={isSavingEdit}
+                              className="px-2.5 py-1 text-xs rounded-md border border-neutral-200 text-neutral-700 hover:bg-neutral-50 cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleSaveEdit(comment.id)}
+                              disabled={!editText.trim() || isSavingEdit}
+                              className="px-2.5 py-1 text-xs rounded-md bg-primary-600 text-white font-medium hover:bg-primary-700 disabled:opacity-40 flex items-center gap-1 cursor-pointer"
+                            >
+                              {isSavingEdit && <Loader2 className="h-3 w-3 animate-spin" />}
+                              Save
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="rounded-lg bg-neutral-50 p-2.5 text-neutral-800 leading-relaxed whitespace-pre-wrap break-words">
+                          {comment.content}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </Tabs.Content>
 
         {/* Activity Tab Content (Lazy Loaded) */}
@@ -170,8 +454,16 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
               ))}
             </div>
           ) : activityError ? (
-            <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 p-3 text-xs text-neutral-500 italic">
-              {activityError}
+            <div className="flex items-center justify-between rounded-lg border border-neutral-200 bg-neutral-50/60 p-3 text-xs text-neutral-600">
+              <span>{activityError}</span>
+              <button
+                type="button"
+                onClick={() => void loadInitialActivities()}
+                className="inline-flex items-center gap-1 font-medium text-primary-600 hover:text-primary-700 underline cursor-pointer"
+              >
+                <RotateCcw className="h-3 w-3" />
+                <span>Retry</span>
+              </button>
             </div>
           ) : activities && activities.length > 0 ? (
             <div className="space-y-3">
@@ -189,6 +481,25 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
                   </div>
                 </div>
               ))}
+              {nextCursor && (
+                <div className="pt-2 text-center">
+                  <button
+                    type="button"
+                    onClick={() => void handleLoadMoreActivities()}
+                    disabled={isLoadingMoreActivities}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-700 disabled:opacity-50 cursor-pointer transition-colors"
+                  >
+                    {isLoadingMoreActivities ? (
+                      <>
+                        <Loader2 className="h-3 w-3 animate-spin text-neutral-500" />
+                        <span>Loading more...</span>
+                      </>
+                    ) : (
+                      <span>Load more activity</span>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <p className="text-xs text-neutral-400 italic">No activity recorded yet.</p>

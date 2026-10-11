@@ -131,7 +131,7 @@ describe("CardDetailDrawer Component", () => {
     expect(screen.getByRole("button", { name: /Add dependency/i })).toBeDefined();
   });
 
-  it("renders live UUID card with coming soon indicator for assignees and labels", () => {
+  it("renders live UUID card with interactive assignee and label controls", () => {
     const liveCard = {
       id: "9c3f4e12-8a7b-4d6c-b3a1-123456789abc",
       listId: "2b1c4e12-8a7b-4d6c-b3a1-123456789abc",
@@ -170,7 +170,111 @@ describe("CardDetailDrawer Component", () => {
 
     expect(screen.getByText("NEX-999")).toBeDefined();
     expect(screen.getByText("Live card from backend")).toBeDefined();
-    expect(screen.getByTitle("Card assignment coming soon")).toBeDefined();
-    expect(screen.getByTitle("Label management coming soon")).toBeDefined();
+    expect(screen.getByRole("button", { name: /Assign member/i })).toBeDefined();
+    expect(screen.getByRole("button", { name: /Manage labels/i })).toBeDefined();
+  });
+
+  it("threads comment error, retry and loading props down to activity component", () => {
+    const handleRetry = vi.fn();
+    render(
+      <CardDetailDrawer
+        card={card101}
+        isOpen={true}
+        lists={MOCK_BOARD_DETAIL.lists}
+        members={MOCK_BOARD_MEMBERS}
+        onClose={vi.fn()}
+        onUpdate={vi.fn()}
+        onStatusChange={vi.fn()}
+        onDelete={vi.fn()}
+        onAddChecklistItem={vi.fn()}
+        onToggleChecklistItem={vi.fn()}
+        onDeleteChecklistItem={vi.fn()}
+        onAddComment={vi.fn()}
+        onFetchActivities={vi.fn()}
+        commentsError="Failed to load comments"
+        onRetryComments={handleRetry}
+      />
+    );
+
+    expect(screen.getByText("Failed to load comments")).toBeDefined();
+    const retryBtn = screen.getByRole("button", { name: /Retry/i });
+    retryBtn.click();
+    expect(handleRetry).toHaveBeenCalled();
+  });
+
+  it("threads attachment error, retry and loading props down to attachments component", () => {
+    const handleRetry = vi.fn();
+    render(
+      <CardDetailDrawer
+        card={card101}
+        isOpen={true}
+        lists={MOCK_BOARD_DETAIL.lists}
+        members={MOCK_BOARD_MEMBERS}
+        onClose={vi.fn()}
+        onUpdate={vi.fn()}
+        onStatusChange={vi.fn()}
+        onDelete={vi.fn()}
+        onAddChecklistItem={vi.fn()}
+        onToggleChecklistItem={vi.fn()}
+        onDeleteChecklistItem={vi.fn()}
+        onAddComment={vi.fn()}
+        onFetchActivities={vi.fn()}
+        attachmentsError="Failed to load attachments"
+        onRetryAttachments={handleRetry}
+      />
+    );
+
+    expect(screen.getByText("Failed to load attachments")).toBeDefined();
+    const retryBtn = screen.getByRole("button", { name: /Retry/i });
+    retryBtn.click();
+    expect(handleRetry).toHaveBeenCalled();
+  });
+
+  it("threads isWorkspaceOwner prop to attachments and enables delete", () => {
+    const cardWithAttachment = {
+      ...card101,
+      attachments: [
+        {
+          id: "att-drawer-1",
+          cardId: card101.id,
+          userId: "some-other-user",
+          fileName: "document.pdf",
+          fileSize: 1024,
+          mimeType: "application/pdf",
+          uploadedBy: {
+            id: "some-other-user",
+            name: "Other User",
+            initials: "OU",
+          },
+          createdAt: "2026-10-10T00:00:00.000Z",
+        },
+      ],
+    };
+
+    render(
+      <CardDetailDrawer
+        card={cardWithAttachment}
+        isOpen={true}
+        lists={MOCK_BOARD_DETAIL.lists}
+        members={MOCK_BOARD_MEMBERS}
+        onClose={vi.fn()}
+        onUpdate={vi.fn()}
+        onStatusChange={vi.fn()}
+        onDelete={vi.fn()}
+        onAddChecklistItem={vi.fn()}
+        onToggleChecklistItem={vi.fn()}
+        onDeleteChecklistItem={vi.fn()}
+        onAddComment={vi.fn()}
+        onFetchActivities={vi.fn()}
+        onDeleteAttachment={vi.fn()}
+        currentUserId="owner-outside-board"
+        isWorkspaceOwner={true}
+      />
+    );
+
+    const deleteBtn = screen.getByRole("button", { name: /Delete document.pdf/i });
+    expect(deleteBtn).toBeDefined();
   });
 });
+
+

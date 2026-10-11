@@ -8,26 +8,48 @@ import type {
   CardActivity,
   CardDependency,
   CreateDependencyRequest,
+  CardDependenciesResponseDto,
+  CardDependencyRecordDto,
+  ActivityLogDto,
+  PaginatedActivitiesResult,
+  GetCardActivityQuery,
   CardDto,
   CreateCardRequest,
   UpdateCardRequest,
   MoveCardRequest,
   ListCardsQuery,
   ApiSuccessResponse,
+  TaskDto,
+  CreateTaskRequest,
+  UpdateTaskRequest,
+  CardAssignmentDto,
+  AssignCardMemberRequest,
+  BoardMember,
+  BoardLabel,
+  BoardLabelDto,
+  CardLabelDto,
+  LinkCardLabelRequest,
+  CommentDto,
+  CreateCommentRequest,
+  UpdateCommentRequest,
+  AttachmentDto,
 } from "@/types";
 import { apiClient } from "./client";
 import {
   mapCardDtoToKanbanCard,
   mapCardDtosToKanbanCards,
+  mapTaskDtoToChecklistItem,
+  mapTaskDtosToChecklistItems,
+  mapBoardLabelDtosToBoardLabels,
+  mapCardLabelDtoToBoardLabel,
+  mapCardLabelDtosToBoardLabels,
+  mapCommentDtoToCardComment,
+  mapCardPrerequisiteDtosToCardDependencies,
+  mapActivityLogDtosToCardActivities,
 } from "@/mappers/card.mapper";
-import { wouldCreateCycle } from "@/utils/planning.utils";
 import {
-  MOCK_BOARD_DETAIL,
   MOCK_BOARD_MEMBERS,
 } from "@/mocks/data/kanban.mock";
-
-// In-memory working store for cards, indexed by listId
-const inMemoryLists = [...MOCK_BOARD_DETAIL.lists];
 
 export const cardApi = {
   /**
@@ -136,150 +158,316 @@ export const cardApi = {
 
   /**
    * Retrieves single card detail
-   * (Mirrors GET /api/v1/cards/{id} -> CardDetailResponse)
+   * GET /api/v1/cards/:id
    */
   async getCardById(cardId: string): Promise<KanbanCard> {
-    for (const list of inMemoryLists) {
-      const card = list.cards.find((c) => c.id === cardId);
-      if (card) return { ...card };
-    }
-    throw new Error(`Card not found: ${cardId}`);
+    const response = await apiClient.get<ApiSuccessResponse<CardDto>>(
+      `/cards/${cardId}`
+    );
+    return mapCardDtoToKanbanCard(response.data.data);
+  },
+
+  /**
+   * Retrieves all checklist tasks for a card
+   * GET /api/v1/cards/:cardId/tasks
+   */
+  async getCardTasks(cardId: string): Promise<ChecklistItem[]> {
+    const response = await apiClient.get<ApiSuccessResponse<TaskDto[]>>(
+      `/cards/${cardId}/tasks`
+    );
+    return mapTaskDtosToChecklistItems(response.data.data || []);
   },
 
   /**
    * Adds a checklist task to a card
-   * (Mirrors POST /api/v1/cards/{id}/tasks -> TaskResponse)
+   * POST /api/v1/cards/:cardId/tasks
    */
   async addChecklistItem(cardId: string, title: string): Promise<ChecklistItem> {
-    for (const list of inMemoryLists) {
-      const card = list.cards.find((c) => c.id === cardId);
-      if (card) {
-        const checklist = card.checklist ? [...card.checklist] : [];
-        const maxPos = checklist.reduce((max, t) => Math.max(max, t.position), 0);
-        const newItem: ChecklistItem = {
-          id: `task-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-          cardId,
-          title: title.trim(),
-          isCompleted: false,
-          position: maxPos + 1024,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-
-        card.checklist = [...checklist, newItem];
-        card.tasksCount = card.checklist.length;
-        card.completedTasksCount = card.checklist.filter((t) => t.isCompleted).length;
-        card.updatedAt = new Date().toISOString();
-
-        return newItem;
-      }
-    }
-    throw new Error("Checklist tasks are not supported for live cards yet.");
+    const body: CreateTaskRequest = {
+      title: title.trim(),
+    };
+    const response = await apiClient.post<ApiSuccessResponse<TaskDto>>(
+      `/cards/${cardId}/tasks`,
+      body
+    );
+    return mapTaskDtoToChecklistItem(response.data.data);
   },
 
   /**
    * Updates an existing checklist task (title or completion status)
-   * (Mirrors PATCH /api/v1/tasks/{id} -> TaskResponse)
+   * PATCH /api/v1/tasks/:taskId
    */
   async updateChecklistItem(
     taskId: string,
-    updates: { title?: string; isCompleted?: boolean }
+    updates: UpdateTaskRequest
   ): Promise<ChecklistItem> {
-    for (const list of inMemoryLists) {
-      for (const card of list.cards) {
-        if (!card.checklist) continue;
-        const taskIdx = card.checklist.findIndex((t) => t.id === taskId);
-        if (taskIdx !== -1) {
-          const prev = card.checklist[taskIdx];
-          const updated: ChecklistItem = {
-            ...prev,
-            title: updates.title !== undefined ? updates.title.trim() : prev.title,
-            isCompleted: updates.isCompleted !== undefined ? updates.isCompleted : prev.isCompleted,
-            updatedAt: new Date().toISOString(),
-          };
-
-          card.checklist[taskIdx] = updated;
-          card.completedTasksCount = card.checklist.filter((t) => t.isCompleted).length;
-          card.updatedAt = new Date().toISOString();
-
-          return updated;
-        }
-      }
+    const body: UpdateTaskRequest = {};
+    if (updates.title !== undefined) {
+      body.title = updates.title.trim();
     }
-    throw new Error("Checklist tasks are not supported for live cards yet.");
+    if (updates.isCompleted !== undefined) {
+      body.isCompleted = updates.isCompleted;
+    }
+
+    const response = await apiClient.patch<ApiSuccessResponse<TaskDto>>(
+      `/tasks/${taskId}`,
+      body
+    );
+    return mapTaskDtoToChecklistItem(response.data.data);
   },
 
   /**
    * Deletes a checklist task
-   * (Mirrors DELETE /api/v1/tasks/{id} -> EmptySuccessResponse)
+   * DELETE /api/v1/tasks/:taskId
    */
   async deleteChecklistItem(taskId: string): Promise<void> {
-    for (const list of inMemoryLists) {
-      for (const card of list.cards) {
-        if (!card.checklist) continue;
-        const taskIdx = card.checklist.findIndex((t) => t.id === taskId);
-        if (taskIdx !== -1) {
-          card.checklist = card.checklist.filter((t) => t.id !== taskId);
-          card.tasksCount = card.checklist.length;
-          card.completedTasksCount = card.checklist.filter((t) => t.isCompleted).length;
-          card.updatedAt = new Date().toISOString();
-          return;
-        }
-      }
-    }
-    throw new Error("Checklist tasks are not supported for live cards yet.");
+    await apiClient.delete<ApiSuccessResponse<Record<string, never>>>(
+      `/tasks/${taskId}`
+    );
+  },
+
+  /**
+   * Retrieves all assignments for a card
+   * GET /api/v1/cards/:cardId/assignments
+   */
+  async getCardAssignments(cardId: string): Promise<CardAssignmentDto[]> {
+    const response = await apiClient.get<ApiSuccessResponse<CardAssignmentDto[]>>(
+      `/cards/${cardId}/assignments`
+    );
+    return response.data.data || [];
+  },
+
+  /**
+   * Assigns a user to a card
+   * POST /api/v1/cards/:cardId/assignments
+   */
+  async assignCardMember(
+    cardId: string,
+    userId: string
+  ): Promise<CardAssignmentDto> {
+    const body: AssignCardMemberRequest = { userId };
+    const response = await apiClient.post<ApiSuccessResponse<CardAssignmentDto>>(
+      `/cards/${cardId}/assignments`,
+      body
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Unassigns a user from a card
+   * DELETE /api/v1/cards/:cardId/assignments/:userId
+   */
+  async unassignCardMember(cardId: string, userId: string): Promise<void> {
+    await apiClient.delete<ApiSuccessResponse<Record<string, never>>>(
+      `/cards/${cardId}/assignments/${userId}`
+    );
+  },
+
+  /**
+   * Retrieves all labels defined for a board
+   * GET /api/v1/boards/:boardId/labels
+   */
+  async getBoardLabels(boardId: string): Promise<BoardLabel[]> {
+    const response = await apiClient.get<ApiSuccessResponse<BoardLabelDto[]>>(
+      `/boards/${boardId}/labels`
+    );
+    return mapBoardLabelDtosToBoardLabels(response.data.data || []);
+  },
+
+  /**
+   * Retrieves all labels attached to a card
+   * GET /api/v1/cards/:cardId/labels
+   */
+  async getCardLabels(cardId: string): Promise<BoardLabel[]> {
+    const response = await apiClient.get<ApiSuccessResponse<CardLabelDto[]>>(
+      `/cards/${cardId}/labels`
+    );
+    return mapCardLabelDtosToBoardLabels(response.data.data || []);
+  },
+
+  /**
+   * Attaches an existing board label to a card
+   * POST /api/v1/cards/:cardId/labels
+   */
+  async attachCardLabel(cardId: string, labelId: string): Promise<BoardLabel> {
+    const body: LinkCardLabelRequest = { labelId };
+    const response = await apiClient.post<ApiSuccessResponse<CardLabelDto>>(
+      `/cards/${cardId}/labels`,
+      body
+    );
+    return mapCardLabelDtoToBoardLabel(response.data.data);
+  },
+
+  /**
+   * Detaches a label from a card
+   * DELETE /api/v1/cards/:cardId/labels/:labelId
+   */
+  async detachCardLabel(cardId: string, labelId: string): Promise<void> {
+    await apiClient.delete<ApiSuccessResponse<Record<string, never>>>(
+      `/cards/${cardId}/labels/${labelId}`
+    );
+  },
+
+  /**
+   * Retrieves all comments for a card
+   * GET /api/v1/cards/:cardId/comments
+   */
+  async getCardComments(cardId: string): Promise<CommentDto[]> {
+    const response = await apiClient.get<ApiSuccessResponse<CommentDto[]>>(
+      `/cards/${cardId}/comments`
+    );
+    return response.data.data || [];
   },
 
   /**
    * Adds a new comment to a card
-   * (Mirrors POST /api/v1/cards/{id}/comments -> CommentResponse)
+   * POST /api/v1/cards/:cardId/comments
    */
-  async addComment(cardId: string, content: string): Promise<CardComment> {
-    for (const list of inMemoryLists) {
-      const card = list.cards.find((c) => c.id === cardId);
-      if (card) {
-        const comments = card.comments ? [...card.comments] : [];
-        const newComment: CardComment = {
-          id: `comment-${Date.now()}`,
-          cardId,
-          author: MOCK_BOARD_MEMBERS[0], // Current active user (PM Phan Gia Đạt)
-          content: content.trim(),
-          createdAt: new Date().toISOString(),
-        };
-
-        card.comments = [...comments, newComment];
-        card.updatedAt = new Date().toISOString();
-        return newComment;
-      }
-    }
-    throw new Error("Comments are not supported for live cards yet.");
+  async createCardComment(
+    cardId: string,
+    content: string
+  ): Promise<CommentDto> {
+    const body: CreateCommentRequest = {
+      content: content.trim(),
+    };
+    const response = await apiClient.post<ApiSuccessResponse<CommentDto>>(
+      `/cards/${cardId}/comments`,
+      body
+    );
+    return response.data.data;
   },
 
   /**
-   * Lazy-loads card activity logs
-   * (Mirrors GET /api/v1/cards/{id}/activities -> PaginatedCardActivityResponse)
+   * Updates an existing comment on a card
+   * PATCH /api/v1/comments/:commentId
    */
-  async getActivities(cardId: string): Promise<CardActivity[]> {
-    const card = inMemoryLists.flatMap((l) => l.cards).find((c) => c.id === cardId);
-    if (!card) {
-      throw new Error("Activity logs are not available for live cards yet.");
-    }
-    return [
+  async updateCardComment(
+    commentId: string,
+    content: string
+  ): Promise<CommentDto> {
+    const body: UpdateCommentRequest = {
+      content: content.trim(),
+    };
+    const response = await apiClient.patch<ApiSuccessResponse<CommentDto>>(
+      `/comments/${commentId}`,
+      body
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Soft deletes a comment
+   * DELETE /api/v1/comments/:commentId
+   */
+  async deleteCardComment(commentId: string): Promise<void> {
+    await apiClient.delete<ApiSuccessResponse<Record<string, never>>>(
+      `/comments/${commentId}`
+    );
+  },
+
+  /**
+   * Retrieves all attachments for a card
+   * GET /api/v1/cards/:cardId/attachments
+   */
+  async getCardAttachments(cardId: string): Promise<AttachmentDto[]> {
+    const response = await apiClient.get<ApiSuccessResponse<AttachmentDto[]>>(
+      `/cards/${cardId}/attachments`
+    );
+    return response.data.data || [];
+  },
+
+  /**
+   * Uploads a raw binary attachment file to a card
+   * POST /api/v1/cards/:cardId/attachments
+   */
+  async uploadCardAttachment(
+    cardId: string,
+    file: File
+  ): Promise<AttachmentDto> {
+    const response = await apiClient.post<ApiSuccessResponse<AttachmentDto>>(
+      `/cards/${cardId}/attachments`,
+      file,
       {
-        id: `act-${cardId}-1`,
-        cardId,
-        user: card.assignees[0] || MOCK_BOARD_MEMBERS[0],
-        action: "created this card",
-        createdAt: card.createdAt,
-      },
+        headers: {
+          "Content-Type": file.type || "application/octet-stream",
+          "x-file-name": file.name,
+        },
+        timeout: 60000,
+      }
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Downloads raw binary content of an attachment
+   * GET /api/v1/attachments/:attachmentId/content
+   */
+  async downloadCardAttachment(attachmentId: string): Promise<Blob> {
+    const response = await apiClient.get<Blob>(
+      `/attachments/${attachmentId}/content`,
       {
-        id: `act-${cardId}-2`,
-        cardId,
-        user: MOCK_BOARD_MEMBERS[4],
-        action: "updated description and checklist",
-        createdAt: card.updatedAt,
-      },
-    ];
+        responseType: "blob",
+      }
+    );
+    return response.data;
+  },
+
+  /**
+   * Permanently deletes an attachment
+   * DELETE /api/v1/attachments/:attachmentId
+   */
+  async deleteCardAttachment(attachmentId: string): Promise<void> {
+    await apiClient.delete<ApiSuccessResponse<Record<string, never>>>(
+      `/attachments/${attachmentId}`
+    );
+  },
+
+  /**
+   * Adds a new comment to a card (legacy method maintained for backwards compatibility)
+   */
+  async addComment(cardId: string, content: string): Promise<CardComment> {
+    const dto = await this.createCardComment(cardId, content);
+    return mapCommentDtoToCardComment(dto, MOCK_BOARD_MEMBERS);
+  },
+
+  /**
+   * Retrieves paginated activity logs for a card
+   * GET /api/v1/cards/:cardId/activity
+   */
+  async getCardActivities(
+    cardId: string,
+    params?: GetCardActivityQuery,
+    membersPool?: BoardMember[]
+  ): Promise<PaginatedActivitiesResult> {
+    const queryParams: Record<string, string | number> = {};
+    if (params?.limit !== undefined) queryParams.limit = params.limit;
+    if (params?.cursor) queryParams.cursor = params.cursor;
+
+    const response = await apiClient.get<
+      ApiSuccessResponse<ActivityLogDto[]> & { nextCursor?: string | null }
+    >(`/cards/${cardId}/activity`, {
+      params: Object.keys(queryParams).length > 0 ? queryParams : undefined,
+    });
+
+    const items = mapActivityLogDtosToCardActivities(
+      response.data.data || [],
+      membersPool
+    );
+    const nextCursor = response.data.nextCursor ?? null;
+
+    return { items, nextCursor };
+  },
+
+  /**
+   * Retrieves card activity logs
+   * GET /api/v1/cards/:cardId/activity
+   */
+  async getActivities(
+    cardId: string,
+    membersPool?: BoardMember[]
+  ): Promise<CardActivity[]> {
+    const result = await this.getCardActivities(cardId, { limit: 20 }, membersPool);
+    return result.items;
   },
 
   /**
@@ -313,71 +501,64 @@ export const cardApi = {
   },
 
   /**
-   * Declares a dependency prerequisite for a card
-   * (Mirrors POST /api/v1/cards/{id}/dependencies -> CardDependencyResponse)
+   * Retrieves all dependency prerequisites for a card
+   * GET /api/v1/cards/:cardId/dependencies
    */
-  async addDependency(cardId: string, payload: CreateDependencyRequest): Promise<CardDependency> {
+  async getCardDependencies(cardId: string): Promise<CardDependency[]> {
+    const response = await apiClient.get<ApiSuccessResponse<CardDependenciesResponseDto>>(
+      `/cards/${cardId}/dependencies`
+    );
+    return mapCardPrerequisiteDtosToCardDependencies(
+      response.data.data?.prerequisites || [],
+      cardId
+    );
+  },
+
+  /**
+   * Declares a dependency prerequisite for a card
+   * POST /api/v1/cards/:cardId/dependencies
+   */
+  async addDependency(
+    cardId: string,
+    payload: CreateDependencyRequest
+  ): Promise<CardDependency> {
     if (cardId === payload.dependsOnCardId) {
       throw new Error("Cannot depend on self");
     }
 
-    let targetCard: KanbanCard | undefined;
-    let prereqCard: KanbanCard | undefined;
-    let prereqListCategory: "TODO" | "IN_PROGRESS" | "DONE" = "TODO";
+    const response = await apiClient.post<ApiSuccessResponse<CardDependencyRecordDto>>(
+      `/cards/${cardId}/dependencies`,
+      payload
+    );
 
-    const allCards = inMemoryLists.flatMap((l) => l.cards);
+    // Refresh dependencies to get complete prerequisite card metadata
+    const freshDependencies = await this.getCardDependencies(cardId);
+    const matched = freshDependencies.find(
+      (d) =>
+        d.id === response.data.data?.id ||
+        d.prerequisiteCardId === payload.dependsOnCardId
+    );
 
-    for (const list of inMemoryLists) {
-      for (const card of list.cards) {
-        if (card.id === cardId) targetCard = card;
-        if (card.id === payload.dependsOnCardId) {
-          prereqCard = card;
-          prereqListCategory = list.category;
-        }
-      }
-    }
+    if (matched) return matched;
 
-    if (!targetCard || !prereqCard) {
-      throw new Error("Dependencies are not supported for live cards yet.");
-    }
-
-    if (targetCard.dependencies?.some((d) => d.prerequisiteCardId === payload.dependsOnCardId)) {
-      throw new Error("Dependency already exists");
-    }
-
-    if (wouldCreateCycle(cardId, payload.dependsOnCardId, allCards)) {
-      throw new Error("Circular dependency detected");
-    }
-
-    const newDep: CardDependency = {
-      id: `dep-${Date.now()}`,
+    return {
+      id: response.data.data?.id || `dep-${Date.now()}`,
       cardId,
       prerequisiteCardId: payload.dependsOnCardId,
-      prerequisiteCode: prereqCard.code,
-      prerequisiteTitle: prereqCard.title,
-      prerequisiteStatus: prereqListCategory,
-      isCompleted: prereqListCategory === "DONE",
+      prerequisiteCode: "",
+      prerequisiteTitle: "",
+      prerequisiteStatus: "TODO",
+      isCompleted: false,
     };
-
-    targetCard.dependencies = [...(targetCard.dependencies || []), newDep];
-    targetCard.updatedAt = new Date().toISOString();
-
-    return newDep;
   },
 
   /**
    * Removes a dependency prerequisite from a card
-   * (Mirrors DELETE /api/v1/cards/{id}/dependencies/{dependencyId} -> EmptySuccessResponse)
+   * DELETE /api/v1/cards/:cardId/dependencies/:dependencyId
    */
   async deleteDependency(cardId: string, dependencyId: string): Promise<void> {
-    for (const list of inMemoryLists) {
-      const card = list.cards.find((c) => c.id === cardId);
-      if (card) {
-        card.dependencies = (card.dependencies || []).filter((d) => d.id !== dependencyId);
-        card.updatedAt = new Date().toISOString();
-        return;
-      }
-    }
-    throw new Error("Dependencies are not supported for live cards yet.");
+    await apiClient.delete<ApiSuccessResponse<Record<string, never>>>(
+      `/cards/${cardId}/dependencies/${dependencyId}`
+    );
   },
 };
