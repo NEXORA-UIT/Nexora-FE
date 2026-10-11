@@ -14,6 +14,18 @@ import type { BoardDetail, KanbanCard } from "@/types";
 describe("Sub-Entity Domain Hooks Unit Tests", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(cardApi, "getCardById").mockResolvedValue({
+      id: "c-1",
+      updatedAt: "2026-10-10T10:00:00.000Z",
+      tasksCount: 0,
+      completedTasksCount: 0,
+    } as never);
+    vi.spyOn(cardApi, "getCardLabels").mockResolvedValue([] as never);
+    vi.spyOn(cardApi, "getCardTasks").mockResolvedValue([] as never);
+    vi.spyOn(cardApi, "getCardComments").mockResolvedValue([] as never);
+    vi.spyOn(cardApi, "getCardAttachments").mockResolvedValue([] as never);
+    vi.spyOn(cardApi, "getCardDependencies").mockResolvedValue([] as never);
+    vi.spyOn(cardApi, "getCardAssignments").mockResolvedValue([] as never);
   });
 
   const createMockBoard = (initialCard?: Partial<KanbanCard>): BoardDetail => {
@@ -192,6 +204,92 @@ describe("Sub-Entity Domain Hooks Unit Tests", () => {
       expect(currentBoard.lists[0].cards[0].labels).toHaveLength(1);
       expect(currentBoard.lists[0].cards[0].updatedAt).toBe("2026-10-10T10:15:00.000Z");
     });
+
+    it("resets pendingLabelId when drawer closes (selectedCardId = null)", async () => {
+      let resolveAttach: (val: unknown) => void = () => {};
+      const attachPromise = new Promise((resolve) => {
+        resolveAttach = resolve;
+      });
+      vi.spyOn(cardApi, "attachCardLabel").mockReturnValue(attachPromise as never);
+
+      const setBoard = vi.fn();
+      const { result, rerender } = renderHook(
+        ({ cardId }) => useCardLabels({ selectedCardId: cardId, setBoard }),
+        { initialProps: { cardId: "c-1" as string | null } }
+      );
+
+      let attachOp!: Promise<void>;
+      act(() => {
+        attachOp = result.current.handleAttachCardLabel("c-1", "lbl-1");
+      });
+
+      expect(result.current.pendingLabelId).toBe("lbl-1");
+
+      // Close drawer while request is still pending
+      rerender({ cardId: null });
+
+      expect(result.current.pendingLabelId).toBeNull();
+
+      // Clean up in-flight promise
+      await act(async () => {
+        resolveAttach({ id: "lbl-1", boardId: "b-1", name: "Bug", color: "#EF4444" });
+        await attachOp.catch(() => {});
+      });
+    });
+
+    it("prevents stale label responses from overwriting newly selected card", async () => {
+      let currentBoard = createMockBoard();
+      currentBoard.lists[0].cards.push({
+        ...currentBoard.lists[0].cards[0],
+        id: "c-2",
+        title: "Card 2",
+        labels: [],
+      });
+
+      const setBoard = vi.fn((updater) => {
+        if (typeof updater === "function") currentBoard = updater(currentBoard);
+      });
+
+      let resolveCard1Labels: (val: unknown) => void = () => {};
+      const card1Promise = new Promise((resolve) => {
+        resolveCard1Labels = resolve;
+      });
+
+      vi.spyOn(cardApi, "getCardLabels").mockImplementation((cardId: string) => {
+        if (cardId === "c-1") {
+          return card1Promise as never;
+        }
+        return Promise.resolve([
+          { id: "lbl-2", boardId: "b-1", name: "Card 2 Label", color: "#3B82F6" },
+        ]) as never;
+      });
+
+      const { rerender } = renderHook(
+        ({ cardId }) => useCardLabels({ selectedCardId: cardId, setBoard }),
+        { initialProps: { cardId: "c-1" as string | null } }
+      );
+
+      // Switch to Card 2 before Card 1 finishes
+      await act(async () => {
+        rerender({ cardId: "c-2" });
+      });
+
+      // Card 2 labels should be loaded
+      expect(currentBoard.lists[0].cards.find((c) => c.id === "c-2")?.labels).toHaveLength(1);
+      expect(currentBoard.lists[0].cards.find((c) => c.id === "c-2")?.labels[0].name).toBe("Card 2 Label");
+
+      // Now Card 1 finishes late
+      await act(async () => {
+        resolveCard1Labels([
+          { id: "lbl-1", boardId: "b-1", name: "Stale Card 1 Label", color: "#EF4444" },
+        ]);
+      });
+
+      // Card 1 response must be ignored because active card was changed to c-2
+      const card2 = currentBoard.lists[0].cards.find((c) => c.id === "c-2");
+      expect(card2?.labels).toHaveLength(1);
+      expect(card2?.labels[0].name).toBe("Card 2 Label");
+    });
   });
 
   describe("useCardAssignments", () => {
@@ -232,28 +330,79 @@ describe("Sub-Entity Domain Hooks Unit Tests", () => {
   });
 
   describe("useCardDependencies", () => {
-    it("rolls back optimistic dependency addition on server failure", async () => {
+    it("does not overwrite unrelated concurrent board updates when dependency API fails", async () => {
       let currentBoard = createMockBoard();
       const setBoard = vi.fn((updater) => {
         if (typeof updater === "function") currentBoard = updater(currentBoard);
         else currentBoard = updater;
       });
 
-      vi.spyOn(cardApi, "addDependency").mockRejectedValue(new Error("Network failure"));
+      let rejectDep: (err: unknown) => void = () => {};
+      const depPromise = new Promise((_, reject) => {
+        rejectDep = reject;
+      });
+      vi.spyOn(cardApi, "addDependency").mockReturnValue(depPromise as never);
 
       const { result } = renderHook(() =>
         useCardDependencies({ selectedCardId: "c-1", board: currentBoard, setBoard })
       );
 
-      await expect(
-        act(async () => {
-          await result.current.handleAddDependency("c-1", "c-2");
-        })
-      ).rejects.toThrow("Network failure");
+      let addOp!: Promise<void>;
+      act(() => {
+        addOp = result.current.handleAddDependency("c-1", "c-2");
+      });
 
-      expect(cardApi.addDependency).toHaveBeenCalledWith("c-1", { dependsOnCardId: "c-2" });
-      // Rolled back to original state with empty dependencies
-      expect(currentBoard.lists[0].cards[0].dependencies).toBeUndefined();
+      // Simulate concurrent unrelated board change while addDependency is pending
+      act(() => {
+        setBoard((prev: BoardDetail | null) => {
+          if (!prev) return prev;
+          return { ...prev, name: "Concurrent Board Rename" };
+        });
+      });
+
+      expect(currentBoard.name).toBe("Concurrent Board Rename");
+
+      // Now reject dependency API call
+      await act(async () => {
+        rejectDep(new Error("Network failure"));
+        await expect(addOp).rejects.toThrow("Network failure");
+      });
+
+      // Verified: The concurrent board rename is preserved and NOT overwritten by an old snapshot!
+      expect(currentBoard.name).toBe("Concurrent Board Rename");
+      expect(currentBoard.lists[0].cards[0].dependencies).toEqual([]);
+    });
+
+    it("deletes dependency on server success", async () => {
+      let currentBoard = createMockBoard({
+        dependencies: [
+          {
+            id: "dep-1",
+            cardId: "c-1",
+            prerequisiteCardId: "c-2",
+            prerequisiteCode: "NEX-2",
+            prerequisiteTitle: "Prerequisite Card",
+            prerequisiteStatus: "TODO",
+            isCompleted: false,
+          },
+        ],
+      });
+      const setBoard = vi.fn((updater) => {
+        if (typeof updater === "function") currentBoard = updater(currentBoard);
+      });
+
+      vi.spyOn(cardApi, "deleteDependency").mockResolvedValue(undefined);
+
+      const { result } = renderHook(() =>
+        useCardDependencies({ selectedCardId: "c-1", board: currentBoard, setBoard })
+      );
+
+      await act(async () => {
+        await result.current.handleDeleteDependency("c-1", "dep-1");
+      });
+
+      expect(cardApi.deleteDependency).toHaveBeenCalledWith("c-1", "dep-1");
+      expect(currentBoard.lists[0].cards[0].dependencies).toHaveLength(0);
     });
   });
 
@@ -275,12 +424,18 @@ describe("Sub-Entity Domain Hooks Unit Tests", () => {
       };
 
       vi.spyOn(cardApi, "addChecklistItem").mockResolvedValue(newItem);
-      // Reconcile card fetch fails
-      vi.spyOn(cardApi, "getCardById").mockRejectedValue(new Error("Transient network error"));
 
       const { result } = renderHook(() =>
         useCardTasks({ selectedCardId: "c-1", setBoard })
       );
+
+      // Settle initial load
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      // Reconcile card fetch fails
+      vi.spyOn(cardApi, "getCardById").mockRejectedValue(new Error("Transient network error"));
 
       await act(async () => {
         await result.current.handleAddChecklistItem("c-1", "Test Checklist Item");
@@ -292,6 +447,71 @@ describe("Sub-Entity Domain Hooks Unit Tests", () => {
       expect(currentBoard.lists[0].cards[0].checklist?.[0].title).toBe("Test Checklist Item");
       // But error state is set for retry
       expect(result.current.tasksError).toBe("Unable to sync latest card timestamp. Click Retry to sync.");
+    });
+
+    it("toggles and deletes checklist items updating counts and checklist array", async () => {
+      let currentBoard = createMockBoard({
+        checklist: [
+          { id: "t-1", cardId: "c-1", title: "Task 1", isCompleted: false, position: 1024, createdAt: "", updatedAt: "" },
+        ],
+        tasksCount: 1,
+        completedTasksCount: 0,
+      });
+      const setBoard = vi.fn((updater) => {
+        if (typeof updater === "function") currentBoard = updater(currentBoard);
+      });
+
+      vi.spyOn(cardApi, "getCardTasks").mockResolvedValue(currentBoard.lists[0].cards[0].checklist as never);
+
+      // Toggle
+      vi.spyOn(cardApi, "updateChecklistItem").mockResolvedValue({
+        id: "t-1",
+        cardId: "c-1",
+        title: "Task 1",
+        isCompleted: true,
+        position: 1024,
+        createdAt: "",
+        updatedAt: "",
+      });
+      vi.spyOn(cardApi, "getCardById").mockResolvedValue({
+        ...currentBoard.lists[0].cards[0],
+        updatedAt: "2026-10-10T12:00:00.000Z",
+        tasksCount: 1,
+        completedTasksCount: 1,
+      });
+
+      const { result } = renderHook(() =>
+        useCardTasks({ selectedCardId: "c-1", setBoard })
+      );
+
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      await act(async () => {
+        await result.current.handleToggleChecklistItem("c-1", "t-1", true);
+      });
+
+      expect(cardApi.updateChecklistItem).toHaveBeenCalledWith("t-1", { isCompleted: true });
+      expect(currentBoard.lists[0].cards[0].checklist?.[0].isCompleted).toBe(true);
+      expect(currentBoard.lists[0].cards[0].completedTasksCount).toBe(1);
+
+      // Delete
+      vi.spyOn(cardApi, "deleteChecklistItem").mockResolvedValue(undefined);
+      vi.spyOn(cardApi, "getCardById").mockResolvedValue({
+        ...currentBoard.lists[0].cards[0],
+        updatedAt: "2026-10-10T12:05:00.000Z",
+        tasksCount: 0,
+        completedTasksCount: 0,
+      });
+
+      await act(async () => {
+        await result.current.handleDeleteChecklistItem("c-1", "t-1");
+      });
+
+      expect(cardApi.deleteChecklistItem).toHaveBeenCalledWith("t-1");
+      expect(currentBoard.lists[0].cards[0].checklist).toHaveLength(0);
+      expect(currentBoard.lists[0].cards[0].tasksCount).toBe(0);
     });
   });
 });

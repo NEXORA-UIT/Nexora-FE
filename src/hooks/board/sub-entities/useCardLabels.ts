@@ -53,6 +53,7 @@ export function useCardLabels({
       activeLabelsCardIdRef.current = null;
       setIsLabelsLoading(false);
       setLabelsError(null);
+      setPendingLabelId(null);
       return;
     }
 
@@ -70,6 +71,7 @@ export function useCardLabels({
     await loadLabelsForCard(selectedCardId);
     try {
       const refreshedCard = await cardApi.getCardById(selectedCardId);
+      if (activeLabelsCardIdRef.current !== selectedCardId) return;
       setBoard((prev) => {
         if (!prev) return prev;
         return updateCardInBoard(prev, selectedCardId, (c) =>
@@ -78,6 +80,7 @@ export function useCardLabels({
       });
       setLabelsError(null);
     } catch {
+      if (activeLabelsCardIdRef.current !== selectedCardId) return;
       setLabelsError("Unable to sync latest card timestamp with server.");
     }
   }, [selectedCardId, loadLabelsForCard, setBoard]);

@@ -6,13 +6,12 @@ import type { BoardDetail } from "@/types";
 
 export interface UseCardDependenciesOptions {
   selectedCardId: string | null;
-  board: BoardDetail | null;
+  board?: BoardDetail | null;
   setBoard: React.Dispatch<React.SetStateAction<BoardDetail | null>>;
 }
 
 export function useCardDependencies({
   selectedCardId,
-  board,
   setBoard,
 }: UseCardDependenciesOptions) {
   const [isDependenciesLoading, setIsDependenciesLoading] = React.useState<boolean>(false);
@@ -85,11 +84,8 @@ export function useCardDependencies({
     }
   }, [selectedCardId, loadDependenciesForCard]);
 
-  // Action: Add Dependency (Optimistic with rollback)
+  // Action: Add Dependency
   const handleAddDependency = React.useCallback(async (cardId: string, prerequisiteCardId: string): Promise<void> => {
-    if (!board) return;
-    const previousBoard = JSON.parse(JSON.stringify(board)) as BoardDetail;
-
     try {
       const newDep = await cardApi.addDependency(cardId, { dependsOnCardId: prerequisiteCardId });
       setBoard((prev) => {
@@ -110,18 +106,14 @@ export function useCardDependencies({
       });
       toast.success("Dependency added");
     } catch (err) {
-      setBoard(previousBoard);
       const msg = err instanceof Error ? err.message : "Failed to add dependency";
       toast.error(msg);
       throw err;
     }
-  }, [board, setBoard]);
+  }, [setBoard]);
 
-  // Action: Delete Dependency (Optimistic with rollback)
+  // Action: Delete Dependency
   const handleDeleteDependency = React.useCallback(async (cardId: string, dependencyId: string): Promise<void> => {
-    if (!board) return;
-    const previousBoard = JSON.parse(JSON.stringify(board)) as BoardDetail;
-
     try {
       await cardApi.deleteDependency(cardId, dependencyId);
       setBoard((prev) => {
@@ -142,12 +134,11 @@ export function useCardDependencies({
       });
       toast.success("Dependency removed");
     } catch (err) {
-      setBoard(previousBoard);
       const msg = err instanceof Error ? err.message : "Failed to delete dependency";
       toast.error(msg);
       throw err;
     }
-  }, [board, setBoard]);
+  }, [setBoard]);
 
   return {
     isDependenciesLoading,
