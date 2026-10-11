@@ -3,31 +3,23 @@ import {
   mapBoardDtoToBoard,
   mapBoardDtosToBoards,
   mapBoardMemberDtoToBoardMember,
+  mapBoardDashboardDtoToBoardDashboard,
 } from "@/mappers/board.mapper";
 import type {
   Board,
   BoardDto,
   BoardMember,
   BoardMemberDto,
-  BoardDetail,
   CreateBoardInput,
   CreateBoardRequest,
   UpdateBoardRequest,
   ConfirmDeleteBoardRequest,
   AssignBoardPmRequest,
   BoardDashboard,
+  BoardDashboardDto,
   ListBoardsQuery,
   ApiSuccessResponse,
 } from "@/types";
-import { getBoardDashboardMetrics } from "@/utils/planning.utils";
-import { MOCK_BOARDS } from "@/mocks/data/boards.mock";
-import { MOCK_BOARD_DETAIL } from "@/mocks/data/kanban.mock";
-
-// In-memory working copy to simulate state persistence across client interactions for write/detail operations
-const inMemoryBoards: Board[] = [...MOCK_BOARDS];
-const inMemoryBoardDetails: Record<string, BoardDetail> = {
-  [MOCK_BOARD_DETAIL.id]: JSON.parse(JSON.stringify(MOCK_BOARD_DETAIL)),
-};
 
 export const boardApi = {
   /**
@@ -75,70 +67,6 @@ export const boardApi = {
     );
 
     return (response.data.data || []).map(mapBoardMemberDtoToBoardMember);
-  },
-
-  /**
-   * Retrieves full details and Kanban lists for a single board
-   * (Mock implementation ready for GET /api/v1/boards/:id)
-   */
-  async getBoardDetail(boardId: string): Promise<BoardDetail> {
-    if (inMemoryBoardDetails[boardId]) {
-      return JSON.parse(JSON.stringify(inMemoryBoardDetails[boardId]));
-    }
-
-    const fallbackBoard = inMemoryBoards.find((b) => b.id === boardId);
-    if (fallbackBoard) {
-      const newDetail: BoardDetail = {
-        id: fallbackBoard.id,
-        workspaceId: fallbackBoard.workspaceId,
-        name: fallbackBoard.name || fallbackBoard.title,
-        description: fallbackBoard.description,
-        status: fallbackBoard.status === "active" ? "ACTIVE" : "ARCHIVED",
-        members: [...(fallbackBoard.members || [])],
-        labels: [],
-        lists: [
-          {
-            id: `col-todo-${boardId}`,
-            boardId,
-            name: "TO DO",
-            category: "TODO",
-            position: 1024,
-            status: "ACTIVE",
-            cards: [],
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-          {
-            id: `col-inprogress-${boardId}`,
-            boardId,
-            name: "IN PROGRESS",
-            category: "IN_PROGRESS",
-            position: 2048,
-            status: "ACTIVE",
-            cards: [],
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-          {
-            id: `col-done-${boardId}`,
-            boardId,
-            name: "DONE",
-            category: "DONE",
-            position: 3072,
-            status: "ACTIVE",
-            cards: [],
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        ],
-        updatedAt: fallbackBoard.updatedAt,
-        createdAt: fallbackBoard.createdAt,
-      };
-      inMemoryBoardDetails[boardId] = newDetail;
-      return JSON.parse(JSON.stringify(newDetail));
-    }
-
-    throw new Error(`Board not found: ${boardId}`);
   },
 
   /**
@@ -282,29 +210,13 @@ export const boardApi = {
 
   /**
    * Retrieves aggregated statistical metrics of a project board
-   * (Mirrors GET /api/v1/boards/{id}/dashboard -> BoardDashboardResponse)
+   * GET /api/v1/boards/:id/dashboard
    */
   async getBoardDashboard(boardId: string): Promise<BoardDashboard> {
-    let detail = inMemoryBoardDetails[boardId];
-    if (!detail) {
-      try {
-        detail = await this.getBoardDetail(boardId);
-      } catch {
-        // board not found
-      }
-    }
+    const response = await apiClient.get<ApiSuccessResponse<BoardDashboardDto>>(
+      `/boards/${boardId}/dashboard`
+    );
 
-    if (detail && detail.lists) {
-      return getBoardDashboardMetrics(detail.lists);
-    }
-
-    return {
-      totalCards: 0,
-      completedCards: 0,
-      inProgressCards: 0,
-      todoCards: 0,
-      overdueCards: 0,
-      completionRate: 0,
-    };
+    return mapBoardDashboardDtoToBoardDashboard(response.data.data);
   },
 };

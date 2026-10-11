@@ -4,6 +4,8 @@ import type {
   BoardMember,
   BoardMemberDto,
   BoardStatus,
+  BoardDashboard,
+  BoardDashboardDto,
 } from "@/types";
 
 /**
@@ -79,5 +81,21 @@ export function mapBoardMemberDtoToBoardMember(
     initials,
     avatarUrl: dto.user.avatarUrl ?? undefined,
     role: dto.role,
+  };
+}
+
+/**
+ * Pure mapping function converting Backend BoardDashboardDto to Frontend BoardDashboard domain model.
+ */
+export function mapBoardDashboardDtoToBoardDashboard(
+  dto: BoardDashboardDto
+): BoardDashboard {
+  return {
+    totalCards: dto.totalCards,
+    completedCards: dto.done,
+    inProgressCards: dto.inProgress,
+    todoCards: dto.todo,
+    overdueCards: dto.overdue,
+    completionRate: dto.completionPercent,
   };
 }
