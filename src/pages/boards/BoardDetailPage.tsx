@@ -273,53 +273,66 @@ export const BoardDetailPage: React.FC = () => {
           <CardDetailDrawer
             card={selectedCard}
             isOpen={Boolean(selectedCardId && selectedCard)}
-            lists={board.lists}
-            members={board.members}
             onClose={handleCloseCardDetail}
-            onUpdate={(payload) => handleUpdateCard(selectedCard!.id, payload)}
-            onStatusChange={handleStatusChange}
-            onDelete={handleDeleteCard}
-            onAddChecklistItem={handleAddChecklistItem}
-            onToggleChecklistItem={handleToggleChecklistItem}
-            onDeleteChecklistItem={handleDeleteChecklistItem}
-            onAddComment={handleAddComment}
-            onUpdateComment={handleUpdateComment}
-            onDeleteComment={handleDeleteComment}
-            isLoadingComments={isCommentsLoading}
-            commentsError={commentsError}
-            onRetryComments={handleRetryComments}
-            currentUserId={currentUser?.id}
-            onFetchActivities={fetchCardActivities}
-            boardCards={allBoardCards}
-            canManageDependencies={canManageDependencies}
-            onAddDependency={handleAddDependency}
-            onDeleteDependency={handleDeleteDependency}
-            isLoadingDependencies={isDependenciesLoading}
-            dependenciesError={dependenciesError}
-            onRetryDependencies={handleRetryDependencies}
-            isLoadingTasks={isTasksLoading}
-            tasksError={tasksError}
-            onRetryTasks={handleRetryTasks}
-            isLoadingAssignments={isAssignmentsLoading}
-            assignmentsError={assignmentsError}
-            onRetryAssignments={handleRetryAssignments}
-            onAssignMember={handleAssignMember}
-            onUnassignMember={handleUnassignMember}
-            boardLabels={board.labels}
-            isLoadingLabels={isLabelsLoading}
-            labelsError={labelsError}
-            onRetryLabels={handleRetryLabels}
-            onAttachLabel={handleAttachCardLabel}
-            onDetachLabel={handleDetachCardLabel}
-            onUploadAttachment={handleUploadAttachment}
-            onDeleteAttachment={handleDeleteAttachment}
-            onDownloadAttachment={handleDownloadAttachment}
-            isLoadingAttachments={isAttachmentsLoading}
-            attachmentsError={attachmentsError}
-            onRetryAttachments={handleRetryAttachments}
-            isUploadingAttachment={isUploadingAttachment}
-            currentUserRole={currentUserRole}
-            isWorkspaceOwner={isWorkspaceOwner}
+            operations={{
+              onUpdate: (payload) => handleUpdateCard(selectedCard!.id, payload),
+              onDelete: handleDeleteCard,
+            }}
+            metadata={{
+              lists: board.lists,
+              members: board.members,
+              boardLabels: board.labels,
+              onStatusChange: handleStatusChange,
+              onAssignMember: handleAssignMember,
+              onUnassignMember: handleUnassignMember,
+              isLoadingAssignments: isAssignmentsLoading,
+              assignmentsError,
+              onRetryAssignments: handleRetryAssignments,
+              onAttachLabel: handleAttachCardLabel,
+              onDetachLabel: handleDetachCardLabel,
+              isLoadingLabels: isLabelsLoading,
+              labelsError,
+              onRetryLabels: handleRetryLabels,
+            }}
+            checklist={{
+              onAddItem: handleAddChecklistItem,
+              onToggleItem: handleToggleChecklistItem,
+              onDeleteItem: handleDeleteChecklistItem,
+              isLoading: isTasksLoading,
+              error: tasksError,
+              onRetry: handleRetryTasks,
+            }}
+            dependencies={{
+              boardCards: allBoardCards,
+              canManage: canManageDependencies,
+              isLoading: isDependenciesLoading,
+              error: dependenciesError,
+              onRetry: handleRetryDependencies,
+              onAddDependency: handleAddDependency,
+              onDeleteDependency: handleDeleteDependency,
+            }}
+            attachments={{
+              onUploadAttachment: handleUploadAttachment,
+              onDeleteAttachment: handleDeleteAttachment,
+              onDownloadAttachment: handleDownloadAttachment,
+              isLoadingAttachments: isAttachmentsLoading,
+              attachmentsError,
+              onRetryAttachments: handleRetryAttachments,
+              isUploadingAttachment,
+              currentUserId: currentUser?.id,
+              currentUserRole,
+              isWorkspaceOwner,
+            }}
+            activity={{
+              onAddComment: handleAddComment,
+              onUpdateComment: handleUpdateComment,
+              onDeleteComment: handleDeleteComment,
+              onFetchActivities: fetchCardActivities,
+              isLoadingComments: isCommentsLoading,
+              commentsError,
+              onRetryComments: handleRetryComments,
+              currentUserId: currentUser?.id,
+            }}
           />
         </>
       )}
