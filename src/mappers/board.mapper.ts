@@ -7,6 +7,7 @@ import type {
   BoardDashboard,
   BoardDashboardDto,
 } from "@/types";
+import { generateMemberInitials } from "@/utils/format";
 
 /**
  * Derives Frontend UI board status ('active' | 'archived') from Backend BoardDto
@@ -69,11 +70,7 @@ export function mapBoardMemberDtoToBoardMember(
   dto: BoardMemberDto
 ): BoardMember {
   const name = dto.user.fullName?.trim() || dto.user.email;
-  const parts = name.split(/\s+/).filter(Boolean);
-  const initials =
-    parts.length > 1
-      ? (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase()
-      : name.slice(0, parts.length === 1 ? 1 : 2).toUpperCase();
+  const initials = generateMemberInitials(name);
 
   return {
     id: dto.user.id || dto.userId,

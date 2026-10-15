@@ -18,6 +18,7 @@ import type {
   ActivityLogDto,
   CardActivity,
 } from "@/types";
+import { generateMemberInitials } from "@/utils/format";
 
 /**
  * Derives Frontend UI card status ('ACTIVE' | 'ARCHIVED') from Backend CardDto
@@ -179,11 +180,7 @@ export function mapCardAssignmentDtoToBoardMember(
   }
 
   const name = dto.user?.fullName?.trim() || dto.user?.email || "Unknown Member";
-  const parts = name.split(/\s+/).filter(Boolean);
-  const initials =
-    parts.length > 1
-      ? (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase()
-      : name.slice(0, parts.length === 1 ? 1 : 2).toUpperCase() || "U";
+  const initials = generateMemberInitials(name);
 
   return {
     id: dto.userId,

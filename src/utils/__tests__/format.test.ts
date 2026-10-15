@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { formatFileSize } from "../format";
-import { formatFileSize as formatFileSizeFromIndex } from "../index";
+import { formatFileSize, generateMemberInitials } from "../format";
+import {
+  formatFileSize as formatFileSizeFromIndex,
+  generateMemberInitials as generateMemberInitialsFromIndex,
+} from "../index";
 import { formatFileSize as formatFileSizeFromMapper } from "@/mappers/card.mapper";
 
 describe("formatFileSize Utility Suite (F-018)", () => {
@@ -38,5 +41,45 @@ describe("formatFileSize Utility Suite (F-018)", () => {
     expect(formatFileSizeFromMapper).toBe(formatFileSize);
     expect(formatFileSizeFromIndex(2048)).toBe("2.0 KB");
     expect(formatFileSizeFromMapper(2048)).toBe("2.0 KB");
+  });
+});
+
+describe("generateMemberInitials Utility Suite", () => {
+  it("derives initials from first two words of a multi-word name", () => {
+    expect(generateMemberInitials("Phan Gia Dat")).toBe("PG");
+    expect(generateMemberInitials("Alice PM")).toBe("AP");
+    expect(generateMemberInitials("Bao Workspace Owner")).toBe("BW");
+    expect(generateMemberInitials("John Doe")).toBe("JD");
+  });
+
+  it("derives single-character initial from single-word name", () => {
+    expect(generateMemberInitials("Alice")).toBe("A");
+    expect(generateMemberInitials("Member")).toBe("M");
+  });
+
+  it("derives initial from email prefix when passed as name", () => {
+    expect(generateMemberInitials("dev@nexora.app")).toBe("D");
+    expect(generateMemberInitials("member@example.com")).toBe("M");
+  });
+
+  it("supports Unicode characters in names", () => {
+    expect(generateMemberInitials("Đạt Phan")).toBe("ĐP");
+    expect(generateMemberInitials("Đạt")).toBe("Đ");
+  });
+
+  it("handles whitespace, empty string, null, and undefined with default fallback 'U'", () => {
+    expect(generateMemberInitials("")).toBe("U");
+    expect(generateMemberInitials("   ")).toBe("U");
+    expect(generateMemberInitials(null)).toBe("U");
+    expect(generateMemberInitials(undefined)).toBe("U");
+  });
+
+  it("allows custom fallback string when provided", () => {
+    expect(generateMemberInitials("", "NA")).toBe("NA");
+    expect(generateMemberInitials(null, "?")).toBe("?");
+  });
+
+  it("exports generateMemberInitials via utils barrel", () => {
+    expect(generateMemberInitialsFromIndex).toBe(generateMemberInitials);
   });
 });

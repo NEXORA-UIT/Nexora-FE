@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Calendar, CheckCircle2, Lock } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { formatCardDueDate } from "@/utils/date";
 import { CardPriorityBadge } from "./CardPriorityBadge";
 import { CardTagBadge } from "./CardTagBadge";
 import type { KanbanCard as KanbanCardType } from "@/types";
@@ -19,14 +19,10 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
   const primaryTag = card.labels[0]?.name;
   const primaryAssignee = card.assignees[0];
 
-  const formattedDueDate = React.useMemo(() => {
-    if (!card.dueDate) return null;
-    try {
-      return format(parseISO(card.dueDate), "MMM dd");
-    } catch {
-      return null;
-    }
-  }, [card.dueDate]);
+  const formattedDueDate = React.useMemo(
+    () => formatCardDueDate(card.dueDate),
+    [card.dueDate]
+  );
 
   const hasChecklist = card.tasksCount > 0;
   const isChecklistComplete =
