@@ -1,3 +1,5 @@
+import type { PaginationMeta } from "../api";
+
 export type WorkspaceDomainCategory =
   | "SOFTWARE"
   | "EDUCATION"
@@ -30,12 +32,11 @@ export interface UpdateWorkspaceRequest {
   domainCategory?: WorkspaceDomainCategory;
 }
 
-export interface WorkspacePaginationMeta {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
+/**
+ * Pagination metadata for Workspace endpoints.
+ * Aliases shared PaginationMeta for domain consistency and backward compatibility.
+ */
+export type WorkspacePaginationMeta = PaginationMeta;
 
 export type WorkspaceRole = "OWNER" | "MEMBER";
 
@@ -61,4 +62,3 @@ export interface ListWorkspaceMembersResponse {
   items: WorkspaceMemberDto[];
   meta?: WorkspacePaginationMeta;
 }
-

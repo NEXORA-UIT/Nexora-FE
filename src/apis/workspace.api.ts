@@ -1,9 +1,11 @@
 import { apiClient } from "@/apis/client";
+import { registerOnClearAuth } from "@/stores/auth.store";
 import { mapWorkspaceDtoToDomain } from "@/mappers/workspace.mapper";
 import type {
   Workspace,
   WorkspaceDto,
   WorkspaceMemberDto,
+  ListWorkspacesResponse,
   ListWorkspaceMembersResponse,
   CreateWorkspaceRequest,
   UpdateWorkspaceRequest,
@@ -11,12 +13,7 @@ import type {
   ApiSuccessResponse,
 } from "@/types";
 
-export interface ListWorkspacesResponse {
-  items: Workspace[];
-  meta?: WorkspacePaginationMeta;
-}
-
-import { registerOnClearAuth } from "@/stores/auth.store";
+export type { ListWorkspacesResponse };
 
 export const MAX_WORKSPACE_MEMBERS_CACHE_ENTRIES = 50;
 const workspaceMembersCache = new Map<string, { timestamp: number; data: ListWorkspaceMembersResponse }>();

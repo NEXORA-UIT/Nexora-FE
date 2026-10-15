@@ -1,16 +1,4 @@
 import type { BoardMember } from "./board";
-import type { CardPriority } from "./kanban";
-
-export interface UpdateCardInput {
-  title?: string;
-  description?: string | null;
-  startDate?: string | null;
-  dueDate?: string | null;
-  priority?: CardPriority;
-  assigneeIds?: string[];
-  labelIds?: string[];
-  updatedAt: string; // Required for OCC concurrency check
-}
 
 export interface ChecklistItem {
   id: string;
@@ -63,4 +51,9 @@ export interface CardActivity {
   user: BoardMember;
   action: string;
   createdAt: string;
+}
+
+export interface PaginatedActivitiesResult {
+  items: CardActivity[];
+  nextCursor: string | null;
 }
