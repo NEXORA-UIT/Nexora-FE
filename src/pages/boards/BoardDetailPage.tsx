@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/auth.store";
 import { canUserManageDependencies } from "@/utils";
-import { workspaceApi } from "@/apis/workspace.api";
+import { useWorkspaceOwnership } from "@/hooks/useWorkspaceOwnership";
 
 export const BoardDetailPage: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
@@ -81,60 +81,10 @@ export const BoardDetailPage: React.FC = () => {
   } = useBoardDetail(boardId);
 
   const currentUser = useAuthStore((state) => state.user);
-  const [verifiedOwnerContext, setVerifiedOwnerContext] = React.useState<{
-    workspaceId: string;
-    userId: string;
-    isOwner: boolean;
-  } | null>(null);
-
-  // Invariant: isWorkspaceOwner is only true if verifiedOwnerContext strictly matches the current workspace and user identity
-  const isWorkspaceOwner = Boolean(
-    board?.workspaceId &&
-      currentUser?.id &&
-      verifiedOwnerContext?.workspaceId === board.workspaceId &&
-      verifiedOwnerContext?.userId === currentUser.id &&
-      verifiedOwnerContext?.isOwner
+  const { isWorkspaceOwner } = useWorkspaceOwnership(
+    board?.workspaceId,
+    currentUser?.id
   );
-
-  React.useEffect(() => {
-    let isCancelled = false;
-
-    if (!board?.workspaceId || !currentUser?.id) {
-      return;
-    }
-
-    const targetWorkspaceId = board.workspaceId;
-    const targetUserId = currentUser.id;
-
-    const checkWorkspaceOwnership = async () => {
-      try {
-        const res = await workspaceApi.listWorkspaceMembers(targetWorkspaceId);
-        if (isCancelled) return;
-        const isOwner = (res.items || []).some(
-          (m) => m.userId === targetUserId && m.role === "OWNER"
-        );
-        setVerifiedOwnerContext({
-          workspaceId: targetWorkspaceId,
-          userId: targetUserId,
-          isOwner,
-        });
-      } catch {
-        if (!isCancelled) {
-          setVerifiedOwnerContext({
-            workspaceId: targetWorkspaceId,
-            userId: targetUserId,
-            isOwner: false,
-          });
-        }
-      }
-    };
-
-    void checkWorkspaceOwnership();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [board?.workspaceId, currentUser?.id]);
 
   const currentUserRole = React.useMemo(() => {
     if (!board || !currentUser) return undefined;
