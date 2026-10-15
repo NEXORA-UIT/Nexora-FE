@@ -3,17 +3,8 @@ import { FolderPlus, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useWorkspaceStore } from "@/stores/workspace.store";
+import { DOMAIN_CATEGORY_OPTIONS } from "@/constants/workspace";
 import type { WorkspaceDomainCategory } from "@/types";
-
-const DOMAIN_OPTIONS: Array<{ value: WorkspaceDomainCategory; label: string }> = [
-  { value: "SOFTWARE", label: "Software Engineering" },
-  { value: "EDUCATION", label: "Education" },
-  { value: "RESEARCH_ACADEMIC", label: "Research & Academic" },
-  { value: "MARKETING", label: "Marketing" },
-  { value: "EVENT", label: "Event Management" },
-  { value: "INTERNAL_OPERATIONS", label: "Internal Operations" },
-  { value: "OTHER", label: "Other / General" },
-];
 
 export interface CreateWorkspaceModalProps {
   isOpen: boolean;
@@ -159,7 +150,7 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({
               }
               className="w-full h-9.5 rounded-xl border border-neutral-300 bg-white px-3 text-xs text-neutral-800 outline-none transition-all focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20"
             >
-              {DOMAIN_OPTIONS.map((opt) => (
+              {DOMAIN_CATEGORY_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
                 </option>

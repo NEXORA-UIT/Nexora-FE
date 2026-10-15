@@ -4,8 +4,9 @@ import {
   mapBoardDtoToBoard,
   mapBoardDtosToBoards,
   mapBoardMemberDtoToBoardMember,
+  mapBoardDashboardDtoToBoardDashboard,
 } from "../board.mapper";
-import type { BoardDto, BoardMemberDto } from "@/types";
+import type { BoardDto, BoardMemberDto, BoardDashboardDto } from "@/types";
 
 describe("board.mapper Suite", () => {
   const mockActiveDto: BoardDto = {
@@ -187,6 +188,50 @@ describe("board.mapper Suite", () => {
       expect(result.initials).toBe("M");
       expect(result.avatarUrl).toBeUndefined();
       expect(result.role).toBe("MEMBER");
+    });
+  });
+
+  describe("mapBoardDashboardDtoToBoardDashboard", () => {
+    it("maps backend BoardDashboardDto to frontend domain BoardDashboard correctly", () => {
+      const dto: BoardDashboardDto = {
+        totalCards: 10,
+        todo: 3,
+        inProgress: 4,
+        done: 3,
+        overdue: 1,
+        completionPercent: 30,
+      };
+
+      const result = mapBoardDashboardDtoToBoardDashboard(dto);
+      expect(result).toEqual({
+        totalCards: 10,
+        todoCards: 3,
+        inProgressCards: 4,
+        completedCards: 3,
+        overdueCards: 1,
+        completionRate: 30,
+      });
+    });
+
+    it("handles empty board with zero counts", () => {
+      const dto: BoardDashboardDto = {
+        totalCards: 0,
+        todo: 0,
+        inProgress: 0,
+        done: 0,
+        overdue: 0,
+        completionPercent: 0,
+      };
+
+      const result = mapBoardDashboardDtoToBoardDashboard(dto);
+      expect(result).toEqual({
+        totalCards: 0,
+        todoCards: 0,
+        inProgressCards: 0,
+        completedCards: 0,
+        overdueCards: 0,
+        completionRate: 0,
+      });
     });
   });
 });

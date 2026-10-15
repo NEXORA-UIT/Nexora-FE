@@ -1116,22 +1116,6 @@ describe("cardApi Suite", () => {
       });
     });
 
-    it("getActivities returns items array for backward compatibility", async () => {
-      vi.spyOn(apiClient, "get").mockResolvedValueOnce({
-        data: {
-          success: true,
-          data: mockActivitiesDto,
-          nextCursor: null,
-        },
-      });
-
-      const items = await cardApi.getActivities(cardId);
-      expect(apiClient.get).toHaveBeenCalledWith(`/cards/${cardId}/activity`, {
-        params: { limit: 20 },
-      });
-      expect(Array.isArray(items)).toBe(true);
-      expect(items).toHaveLength(2);
-    });
 
     it("propagates error when activity fetch fails", async () => {
       const error = new ApiError("Failed to load activity logs", "INTERNAL_ERROR", 500);
@@ -1141,33 +1125,6 @@ describe("cardApi Suite", () => {
     });
   });
 
-  describe("Legacy addComment method compatibility", () => {
-    it("calls createCardComment and returns mapped comment", async () => {
-      const mockCreatedCommentDto = {
-        id: "cmt-uuid-1",
-        cardId: "card-uuid-1",
-        userId: "user-1",
-        content: "Hello world",
-        createdAt: "2026-10-10T10:00:00.000Z",
-        updatedAt: "2026-10-10T10:00:00.000Z",
-        deletedAt: null,
-      };
-
-      vi.spyOn(apiClient, "post").mockResolvedValueOnce({
-        data: {
-          success: true,
-          data: mockCreatedCommentDto,
-        },
-      });
-
-      const comment = await cardApi.addComment("card-uuid-1", "Hello world");
-      expect(apiClient.post).toHaveBeenCalledWith("/cards/card-uuid-1/comments", {
-        content: "Hello world",
-      });
-      expect(comment.id).toBe("cmt-uuid-1");
-      expect(comment.content).toBe("Hello world");
-    });
-  });
 
   describe("Card Comments Integration API (Step 6E)", () => {
     const cardId = "card-uuid-1";

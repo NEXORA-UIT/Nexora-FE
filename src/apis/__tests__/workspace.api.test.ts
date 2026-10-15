@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { workspaceApi, clearWorkspaceMembersCache } from "../workspace.api";
+import {
+  workspaceApi,
+  clearWorkspaceMembersCache,
+  getWorkspaceMembersCacheSize,
+  MAX_WORKSPACE_MEMBERS_CACHE_ENTRIES,
+} from "../workspace.api";
 import { apiClient, ApiError } from "../client";
 import { useAuthStore, registerOnClearAuth } from "@/stores/auth.store";
 import { authApi } from "../auth.api";
@@ -325,6 +330,130 @@ describe("workspaceApi Suite", () => {
       expect(useAuthStore.getState().isAuthenticated).toBe(false);
 
       unregister();
+    });
+
+    it("bounds cache to MAX_WORKSPACE_MEMBERS_CACHE_ENTRIES (50) and evicts oldest entry", async () => {
+      expect(MAX_WORKSPACE_MEMBERS_CACHE_ENTRIES).toBe(50);
+
+      vi.spyOn(apiClient, "get").mockImplementation((url) => {
+        return Promise.resolve({
+          data: {
+            success: true,
+            data: [{ ...mockMember, workspaceId: url.split("/")[2] }],
+          },
+        });
+      });
+
+      // Populate 50 entries
+      for (let i = 0; i < 50; i++) {
+        await workspaceApi.listWorkspaceMembers(`ws-bulk-${i}`);
+      }
+
+      expect(getWorkspaceMembersCacheSize()).toBe(50);
+      expect(apiClient.get).toHaveBeenCalledTimes(50);
+
+      // Accessing ws-bulk-0 without network call
+      await workspaceApi.listWorkspaceMembers("ws-bulk-0");
+      expect(apiClient.get).toHaveBeenCalledTimes(50);
+
+      // Add 51st entry, which should evict the oldest entry
+      await workspaceApi.listWorkspaceMembers("ws-bulk-50");
+      expect(getWorkspaceMembersCacheSize()).toBe(50);
+      expect(apiClient.get).toHaveBeenCalledTimes(51);
+    });
+
+    it("refreshes LRU position on access so accessed entry is not evicted next", async () => {
+      vi.spyOn(apiClient, "get").mockImplementation((url) => {
+        return Promise.resolve({
+          data: {
+            success: true,
+            data: [{ ...mockMember, workspaceId: url.split("/")[2] }],
+          },
+        });
+      });
+
+      // Populate 50 entries (ws-bulk-0 is the first/oldest inserted)
+      for (let i = 0; i < 50; i++) {
+        await workspaceApi.listWorkspaceMembers(`ws-bulk-${i}`);
+      }
+
+      // Access ws-bulk-0 to touch it and move it to the newest position in LRU
+      await workspaceApi.listWorkspaceMembers("ws-bulk-0");
+      expect(apiClient.get).toHaveBeenCalledTimes(50);
+
+      // Add ws-bulk-50 (51st unique key). The oldest entry should now be ws-bulk-1, NOT ws-bulk-0!
+      await workspaceApi.listWorkspaceMembers("ws-bulk-50");
+      expect(apiClient.get).toHaveBeenCalledTimes(51);
+
+      // ws-bulk-0 should still be cached (no network hit)
+      await workspaceApi.listWorkspaceMembers("ws-bulk-0");
+      expect(apiClient.get).toHaveBeenCalledTimes(51);
+
+      // ws-bulk-1 was evicted, so accessing it MUST trigger a network call
+      await workspaceApi.listWorkspaceMembers("ws-bulk-1");
+      expect(apiClient.get).toHaveBeenCalledTimes(52);
+    });
+
+    it("evicts expired entry after TTL (60s) has elapsed", async () => {
+      vi.spyOn(apiClient, "get").mockResolvedValue({
+        data: {
+          success: true,
+          data: [mockMember],
+        },
+      });
+
+      const initialTime = 1_000_000;
+      const dateSpy = vi.spyOn(Date, "now").mockReturnValue(initialTime);
+
+      // Initial fetch caches response at initialTime
+      await workspaceApi.listWorkspaceMembers("ws-ttl-1");
+      expect(apiClient.get).toHaveBeenCalledTimes(1);
+
+      // Read within 59 seconds hits cache
+      dateSpy.mockReturnValue(initialTime + 59 * 1000);
+      await workspaceApi.listWorkspaceMembers("ws-ttl-1");
+      expect(apiClient.get).toHaveBeenCalledTimes(1);
+
+      // Read at 61 seconds (past 60s TTL) evicts and fetches fresh
+      dateSpy.mockReturnValue(initialTime + 61 * 1000);
+      await workspaceApi.listWorkspaceMembers("ws-ttl-1");
+      expect(apiClient.get).toHaveBeenCalledTimes(2);
+
+      dateSpy.mockRestore();
+    });
+
+    it("ensures repeated cache hits do not extend TTL beyond original 60s window", async () => {
+      vi.spyOn(apiClient, "get").mockResolvedValue({
+        data: {
+          success: true,
+          data: [mockMember],
+        },
+      });
+
+      const initialTime = 2_000_000;
+      const dateSpy = vi.spyOn(Date, "now").mockReturnValue(initialTime);
+
+      // Initial fetch at t = 0
+      await workspaceApi.listWorkspaceMembers("ws-ttl-extend");
+      expect(apiClient.get).toHaveBeenCalledTimes(1);
+
+      // Multiple cache hits during TTL window
+      dateSpy.mockReturnValue(initialTime + 20 * 1000); // t = 20s
+      await workspaceApi.listWorkspaceMembers("ws-ttl-extend");
+
+      dateSpy.mockReturnValue(initialTime + 40 * 1000); // t = 40s
+      await workspaceApi.listWorkspaceMembers("ws-ttl-extend");
+
+      dateSpy.mockReturnValue(initialTime + 55 * 1000); // t = 55s
+      await workspaceApi.listWorkspaceMembers("ws-ttl-extend");
+      expect(apiClient.get).toHaveBeenCalledTimes(1);
+
+      // At t = 62s (only 7s after last touch, but > 60s after insertion), cache MUST expire
+      dateSpy.mockReturnValue(initialTime + 62 * 1000);
+      await workspaceApi.listWorkspaceMembers("ws-ttl-extend");
+      expect(apiClient.get).toHaveBeenCalledTimes(2);
+
+      dateSpy.mockRestore();
     });
   });
 

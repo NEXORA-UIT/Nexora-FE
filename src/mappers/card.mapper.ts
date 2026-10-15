@@ -18,6 +18,7 @@ import type {
   ActivityLogDto,
   CardActivity,
 } from "@/types";
+import { generateMemberInitials } from "@/utils/format";
 
 /**
  * Derives Frontend UI card status ('ACTIVE' | 'ARCHIVED') from Backend CardDto
@@ -179,11 +180,7 @@ export function mapCardAssignmentDtoToBoardMember(
   }
 
   const name = dto.user?.fullName?.trim() || dto.user?.email || "Unknown Member";
-  const parts = name.split(/\s+/).filter(Boolean);
-  const initials =
-    parts.length > 1
-      ? (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase()
-      : name.slice(0, parts.length === 1 ? 1 : 2).toUpperCase() || "U";
+  const initials = generateMemberInitials(name);
 
   return {
     id: dto.userId,
@@ -297,15 +294,8 @@ export function mapCommentDtosToCardComments(
   return (dtos || []).map((dto) => mapCommentDtoToCardComment(dto, membersPool));
 }
 
-/**
- * Formats file size in bytes to a human-readable string (e.g. 1.5 MB, 320 KB).
- */
-export function formatFileSize(bytes: number | string): string {
-  if (typeof bytes === "string") return bytes;
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+// Re-export formatting utility for backward compatibility (Finding F-018)
+export { formatFileSize } from "@/utils/format";
 
 /**
  * Pure mapping function converting Backend AttachmentDto to Frontend CardAttachment domain model.

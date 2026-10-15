@@ -4,16 +4,9 @@ import type {
   WorkspaceDomainCategory,
   WorkspaceStatus,
 } from "@/types";
+import { DOMAIN_CATEGORY_LABELS } from "@/constants/workspace";
 
-export const DOMAIN_CATEGORY_LABELS: Record<WorkspaceDomainCategory, string> = {
-  SOFTWARE: "Software Engineering",
-  EDUCATION: "Education",
-  RESEARCH_ACADEMIC: "Research & Academic",
-  MARKETING: "Marketing",
-  EVENT: "Event Management",
-  INTERNAL_OPERATIONS: "Internal Operations",
-  OTHER: "General",
-};
+export { DOMAIN_CATEGORY_LABELS };
 
 /**
  * Converts a domainCategory enum from the backend to a human-readable teamType string

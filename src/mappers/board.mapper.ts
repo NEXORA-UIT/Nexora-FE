@@ -4,7 +4,10 @@ import type {
   BoardMember,
   BoardMemberDto,
   BoardStatus,
+  BoardDashboard,
+  BoardDashboardDto,
 } from "@/types";
+import { generateMemberInitials } from "@/utils/format";
 
 /**
  * Derives Frontend UI board status ('active' | 'archived') from Backend BoardDto
@@ -67,11 +70,7 @@ export function mapBoardMemberDtoToBoardMember(
   dto: BoardMemberDto
 ): BoardMember {
   const name = dto.user.fullName?.trim() || dto.user.email;
-  const parts = name.split(/\s+/).filter(Boolean);
-  const initials =
-    parts.length > 1
-      ? (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase()
-      : name.slice(0, parts.length === 1 ? 1 : 2).toUpperCase();
+  const initials = generateMemberInitials(name);
 
   return {
     id: dto.user.id || dto.userId,
@@ -79,5 +78,21 @@ export function mapBoardMemberDtoToBoardMember(
     initials,
     avatarUrl: dto.user.avatarUrl ?? undefined,
     role: dto.role,
+  };
+}
+
+/**
+ * Pure mapping function converting Backend BoardDashboardDto to Frontend BoardDashboard domain model.
+ */
+export function mapBoardDashboardDtoToBoardDashboard(
+  dto: BoardDashboardDto
+): BoardDashboard {
+  return {
+    totalCards: dto.totalCards,
+    completedCards: dto.done,
+    inProgressCards: dto.inProgress,
+    todoCards: dto.todo,
+    overdueCards: dto.overdue,
+    completionRate: dto.completionPercent,
   };
 }

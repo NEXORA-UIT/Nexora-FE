@@ -234,6 +234,44 @@ describe("boardApi Suite", () => {
       expect(result.status).toBe("active");
     });
 
+    it("sends payload with canonical name and strictly omits title from outgoing HTTP request", async () => {
+      const postSpy = vi.spyOn(apiClient, "post").mockResolvedValueOnce({
+        data: {
+          success: true,
+          data: mockBoardDto,
+        },
+      });
+
+      await boardApi.createBoard({
+        workspaceId: "ws-uuid-1",
+        name: "Canonical Board Name",
+        title: "Legacy Fallback Title",
+        description: "Valid description",
+      });
+
+      expect(postSpy).toHaveBeenCalledTimes(1);
+      const [endpoint, payload] = postSpy.mock.calls[0];
+      expect(endpoint).toBe("/workspaces/ws-uuid-1/boards");
+      expect(payload).toEqual({
+        name: "Canonical Board Name",
+        description: "Valid description",
+      });
+      expect(payload).not.toHaveProperty("title");
+    });
+
+    it("throws an error and prevents HTTP request when board name is empty or whitespace", async () => {
+      const postSpy = vi.spyOn(apiClient, "post");
+
+      await expect(
+        boardApi.createBoard({
+          workspaceId: "ws-uuid-1",
+          name: "   ",
+        })
+      ).rejects.toThrow("Board name is required and cannot be empty.");
+
+      expect(postSpy).not.toHaveBeenCalled();
+    });
+
     it("supports direct workspaceId and payload call signature", async () => {
       vi.spyOn(apiClient, "post").mockResolvedValueOnce({
         data: {
@@ -257,6 +295,12 @@ describe("boardApi Suite", () => {
         }
       );
       expect(result.id).toBe("board-uuid-1");
+    });
+
+    it("throws an error when workspaceId is passed as string without payload", async () => {
+      await expect(boardApi.createBoard("ws-uuid-1")).rejects.toThrow(
+        "Board creation payload is required when specifying workspaceId."
+      );
     });
 
     it("re-throws ApiError when board creation fails (e.g. frozen workspace)", async () => {
@@ -427,24 +471,71 @@ describe("boardApi Suite", () => {
   });
 
   describe("boardApi.getBoardDashboard", () => {
-    it("derives BoardDashboard from existing board detail state", async () => {
-      const dashboard = await boardApi.getBoardDashboard(
-        "board-website-redesign"
-      );
-      expect(dashboard).toBeDefined();
-      expect(dashboard.totalCards).toBeGreaterThanOrEqual(1);
-      expect(typeof dashboard.completedCards).toBe("number");
-      expect(typeof dashboard.inProgressCards).toBe("number");
-      expect(typeof dashboard.todoCards).toBe("number");
-      expect(typeof dashboard.overdueCards).toBe("number");
-      expect(typeof dashboard.completionRate).toBe("number");
+    const mockDashboardDto = {
+      totalCards: 12,
+      todo: 3,
+      inProgress: 5,
+      done: 4,
+      overdue: 2,
+      completionPercent: 33,
+    };
+
+    it("requests GET /boards/:id/dashboard and maps metrics to domain model", async () => {
+      vi.spyOn(apiClient, "get").mockResolvedValueOnce({
+        data: {
+          success: true,
+          data: mockDashboardDto,
+        },
+      });
+
+      const dashboard = await boardApi.getBoardDashboard("board-uuid-1");
+
+      expect(apiClient.get).toHaveBeenCalledWith("/boards/board-uuid-1/dashboard");
+      expect(dashboard).toEqual({
+        totalCards: 12,
+        todoCards: 3,
+        inProgressCards: 5,
+        completedCards: 4,
+        overdueCards: 2,
+        completionRate: 33,
+      });
     });
 
-    it("handles non-existent board gracefully by returning zero metrics", async () => {
-      const dashboard = await boardApi.getBoardDashboard("non-existent-board");
-      expect(dashboard).toBeDefined();
-      expect(dashboard.totalCards).toBe(0);
-      expect(dashboard.completionRate).toBe(0);
+    it("handles empty board with zero metrics", async () => {
+      vi.spyOn(apiClient, "get").mockResolvedValueOnce({
+        data: {
+          success: true,
+          data: {
+            totalCards: 0,
+            todo: 0,
+            inProgress: 0,
+            done: 0,
+            overdue: 0,
+            completionPercent: 0,
+          },
+        },
+      });
+
+      const dashboard = await boardApi.getBoardDashboard("board-empty");
+
+      expect(apiClient.get).toHaveBeenCalledWith("/boards/board-empty/dashboard");
+      expect(dashboard).toEqual({
+        totalCards: 0,
+        todoCards: 0,
+        inProgressCards: 0,
+        completedCards: 0,
+        overdueCards: 0,
+        completionRate: 0,
+      });
+    });
+
+    it("propagates ApiError when GET /boards/:id/dashboard fails", async () => {
+      const apiError = new ApiError("Board not found", "BOARD_NOT_FOUND", 404);
+      vi.spyOn(apiClient, "get").mockRejectedValueOnce(apiError);
+
+      await expect(
+        boardApi.getBoardDashboard("board-not-found")
+      ).rejects.toThrow(apiError);
     });
   });
 });

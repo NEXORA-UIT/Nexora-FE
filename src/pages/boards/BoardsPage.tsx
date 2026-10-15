@@ -44,7 +44,6 @@ export const BoardsPage: React.FC = () => {
 
   const {
     workspace,
-    boards,
     isLoading: isBoardsLoading,
     error,
     searchQuery,
@@ -56,6 +55,7 @@ export const BoardsPage: React.FC = () => {
     filteredActiveBoards,
     filteredArchivedBoards,
     counts,
+    totalActiveBoards,
     isCreateOpen,
     setIsCreateOpen,
     isSubmitting,
@@ -70,12 +70,6 @@ export const BoardsPage: React.FC = () => {
   } = useWorkspaceBoards();
 
   const isLoading = isBoardsLoading || isStoreLoading;
-
-  // Local derived board count for UI presentation
-  const localActiveBoardCount = React.useMemo(
-    () => boards.filter((b) => b.status === "active").length,
-    [boards]
-  );
 
   // Actions for workspace lifecycle
   const handleArchiveWorkspace = async () => {
@@ -208,7 +202,7 @@ export const BoardsPage: React.FC = () => {
       <WorkspaceTabs
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        boardCount={localActiveBoardCount}
+        boardCount={totalActiveBoards}
         memberCount={workspace.memberCount}
       />
 

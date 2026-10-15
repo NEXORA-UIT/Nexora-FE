@@ -12,7 +12,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import type { KanbanCard, CardAttachment } from "@/types";
-import { formatFileSize } from "@/mappers/card.mapper";
+import { formatFileSize } from "@/utils/format";
 
 export interface CardDetailAttachmentsProps {
   card: KanbanCard;

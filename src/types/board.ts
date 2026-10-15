@@ -11,7 +11,8 @@ export interface BoardMember {
 export interface Board {
   id: string;
   workspaceId: string;
-  name?: string;
+  name: string;
+  /** @deprecated Canonical field is `name`. Retained for compatibility with useBoardDetail until Phase 3. */
   title: string;
   description?: string | null;
   status: BoardStatus;
@@ -35,7 +36,8 @@ export type BoardSortOption =
 
 export interface CreateBoardInput {
   name?: string;
-  title: string;
+  /** @deprecated Canonical field is `name`. Retained for compatibility. */
+  title?: string;
   description?: string;
   workspaceId: string;
   coverColor?: string;

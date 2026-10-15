@@ -5,7 +5,7 @@ import { Sidebar } from "@/components/navigation/Sidebar";
 import { useSession } from "@/hooks/useSession";
 import type { AppLayoutProps } from "@/types";
 
-export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
+export const AppLayout: React.FC<AppLayoutProps> = () => {
   useSession();
 
   return (
@@ -21,7 +21,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         {/* Scrollable Main Content Area */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
           <div className="mx-auto max-w-7xl">
-            {children ?? <Outlet />}
+            <Outlet />
           </div>
         </main>
       </div>

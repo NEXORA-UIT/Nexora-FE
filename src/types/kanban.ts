@@ -79,6 +79,17 @@ export interface CreateCardInput {
   labelIds?: string[];
 }
 
+export interface UpdateCardInput {
+  title?: string;
+  description?: string | null;
+  startDate?: string | null;
+  dueDate?: string | null;
+  priority?: CardPriority;
+  assigneeIds?: string[];
+  labelIds?: string[];
+  updatedAt: string; // Required for OCC concurrency check
+}
+
 export interface MoveCardInput {
   targetListId: string;
   position: number;

@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/auth.store";
 import { canUserManageDependencies } from "@/utils";
-import { workspaceApi } from "@/apis/workspace.api";
+import { useWorkspaceOwnership } from "@/hooks/useWorkspaceOwnership";
 
 export const BoardDetailPage: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
@@ -81,60 +81,10 @@ export const BoardDetailPage: React.FC = () => {
   } = useBoardDetail(boardId);
 
   const currentUser = useAuthStore((state) => state.user);
-  const [verifiedOwnerContext, setVerifiedOwnerContext] = React.useState<{
-    workspaceId: string;
-    userId: string;
-    isOwner: boolean;
-  } | null>(null);
-
-  // Invariant: isWorkspaceOwner is only true if verifiedOwnerContext strictly matches the current workspace and user identity
-  const isWorkspaceOwner = Boolean(
-    board?.workspaceId &&
-      currentUser?.id &&
-      verifiedOwnerContext?.workspaceId === board.workspaceId &&
-      verifiedOwnerContext?.userId === currentUser.id &&
-      verifiedOwnerContext?.isOwner
+  const { isWorkspaceOwner } = useWorkspaceOwnership(
+    board?.workspaceId,
+    currentUser?.id
   );
-
-  React.useEffect(() => {
-    let isCancelled = false;
-
-    if (!board?.workspaceId || !currentUser?.id) {
-      return;
-    }
-
-    const targetWorkspaceId = board.workspaceId;
-    const targetUserId = currentUser.id;
-
-    const checkWorkspaceOwnership = async () => {
-      try {
-        const res = await workspaceApi.listWorkspaceMembers(targetWorkspaceId);
-        if (isCancelled) return;
-        const isOwner = (res.items || []).some(
-          (m) => m.userId === targetUserId && m.role === "OWNER"
-        );
-        setVerifiedOwnerContext({
-          workspaceId: targetWorkspaceId,
-          userId: targetUserId,
-          isOwner,
-        });
-      } catch {
-        if (!isCancelled) {
-          setVerifiedOwnerContext({
-            workspaceId: targetWorkspaceId,
-            userId: targetUserId,
-            isOwner: false,
-          });
-        }
-      }
-    };
-
-    void checkWorkspaceOwnership();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [board?.workspaceId, currentUser?.id]);
 
   const currentUserRole = React.useMemo(() => {
     if (!board || !currentUser) return undefined;
@@ -273,53 +223,69 @@ export const BoardDetailPage: React.FC = () => {
           <CardDetailDrawer
             card={selectedCard}
             isOpen={Boolean(selectedCardId && selectedCard)}
-            lists={board.lists}
-            members={board.members}
             onClose={handleCloseCardDetail}
-            onUpdate={(payload) => handleUpdateCard(selectedCard!.id, payload)}
-            onStatusChange={handleStatusChange}
-            onDelete={handleDeleteCard}
-            onAddChecklistItem={handleAddChecklistItem}
-            onToggleChecklistItem={handleToggleChecklistItem}
-            onDeleteChecklistItem={handleDeleteChecklistItem}
-            onAddComment={handleAddComment}
-            onUpdateComment={handleUpdateComment}
-            onDeleteComment={handleDeleteComment}
-            isLoadingComments={isCommentsLoading}
-            commentsError={commentsError}
-            onRetryComments={handleRetryComments}
-            currentUserId={currentUser?.id}
-            onFetchActivities={fetchCardActivities}
-            boardCards={allBoardCards}
-            canManageDependencies={canManageDependencies}
-            onAddDependency={handleAddDependency}
-            onDeleteDependency={handleDeleteDependency}
-            isLoadingDependencies={isDependenciesLoading}
-            dependenciesError={dependenciesError}
-            onRetryDependencies={handleRetryDependencies}
-            isLoadingTasks={isTasksLoading}
-            tasksError={tasksError}
-            onRetryTasks={handleRetryTasks}
-            isLoadingAssignments={isAssignmentsLoading}
-            assignmentsError={assignmentsError}
-            onRetryAssignments={handleRetryAssignments}
-            onAssignMember={handleAssignMember}
-            onUnassignMember={handleUnassignMember}
-            boardLabels={board.labels}
-            isLoadingLabels={isLabelsLoading}
-            labelsError={labelsError}
-            onRetryLabels={handleRetryLabels}
-            onAttachLabel={handleAttachCardLabel}
-            onDetachLabel={handleDetachCardLabel}
-            onUploadAttachment={handleUploadAttachment}
-            onDeleteAttachment={handleDeleteAttachment}
-            onDownloadAttachment={handleDownloadAttachment}
-            isLoadingAttachments={isAttachmentsLoading}
-            attachmentsError={attachmentsError}
-            onRetryAttachments={handleRetryAttachments}
-            isUploadingAttachment={isUploadingAttachment}
-            currentUserRole={currentUserRole}
-            isWorkspaceOwner={isWorkspaceOwner}
+            operations={{
+              onUpdate: async (payload) => {
+                if (!selectedCard) return;
+                await handleUpdateCard(selectedCard.id, payload);
+              },
+              onDelete: handleDeleteCard,
+            }}
+            metadata={{
+              lists: board.lists,
+              members: board.members,
+              boardLabels: board.labels,
+              onStatusChange: handleStatusChange,
+              onAssignMember: handleAssignMember,
+              onUnassignMember: handleUnassignMember,
+              isLoadingAssignments: isAssignmentsLoading,
+              assignmentsError,
+              onRetryAssignments: handleRetryAssignments,
+              onAttachLabel: handleAttachCardLabel,
+              onDetachLabel: handleDetachCardLabel,
+              isLoadingLabels: isLabelsLoading,
+              labelsError,
+              onRetryLabels: handleRetryLabels,
+            }}
+            checklist={{
+              onAddItem: handleAddChecklistItem,
+              onToggleItem: handleToggleChecklistItem,
+              onDeleteItem: handleDeleteChecklistItem,
+              isLoading: isTasksLoading,
+              error: tasksError,
+              onRetry: handleRetryTasks,
+            }}
+            dependencies={{
+              boardCards: allBoardCards,
+              canManage: canManageDependencies,
+              isLoading: isDependenciesLoading,
+              error: dependenciesError,
+              onRetry: handleRetryDependencies,
+              onAddDependency: handleAddDependency,
+              onDeleteDependency: handleDeleteDependency,
+            }}
+            attachments={{
+              onUploadAttachment: handleUploadAttachment,
+              onDeleteAttachment: handleDeleteAttachment,
+              onDownloadAttachment: handleDownloadAttachment,
+              isLoadingAttachments: isAttachmentsLoading,
+              attachmentsError,
+              onRetryAttachments: handleRetryAttachments,
+              isUploadingAttachment,
+              currentUserId: currentUser?.id,
+              currentUserRole,
+              isWorkspaceOwner,
+            }}
+            activity={{
+              onAddComment: handleAddComment,
+              onUpdateComment: handleUpdateComment,
+              onDeleteComment: handleDeleteComment,
+              onFetchActivities: fetchCardActivities,
+              isLoadingComments: isCommentsLoading,
+              commentsError,
+              onRetryComments: handleRetryComments,
+              currentUserId: currentUser?.id,
+            }}
           />
         </>
       )}

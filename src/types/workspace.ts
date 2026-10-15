@@ -1,3 +1,5 @@
+import type { WorkspacePaginationMeta } from "./dto/workspace.dto";
+
 export type WorkspaceStatus = "active" | "archived" | "paused";
 
 export interface Workspace {
@@ -11,6 +13,16 @@ export interface Workspace {
   teamType: string;
   initials: string;
   isFrozen?: boolean;
+}
+
+/**
+ * Normalized response for workspace listing.
+ * Contains domain Workspace models transformed from backend WorkspaceDtos,
+ * alongside standard pagination metadata.
+ */
+export interface ListWorkspacesResponse {
+  items: Workspace[];
+  meta?: WorkspacePaginationMeta;
 }
 
 export interface WorkspaceHeaderProps {

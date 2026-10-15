@@ -6,8 +6,5 @@ export * from "./LandingTeamsSection";
 export * from "./LandingBentoGrid";
 export * from "./LandingStatsAndQuotes";
 export * from "./LandingEcosystem";
-export * from "./LandingPillars";
-export * from "./LandingFeatureDetail";
-export * from "./LandingSummaryCards";
 export * from "./LandingCta";
 export * from "./LandingFooter";

@@ -42,14 +42,20 @@ let failedQueue: Array<{
   reject: (reason?: unknown) => void;
 }> = [];
 
-const processQueue = (error: unknown = null) => {
-  failedQueue.forEach((prom) => {
+const processQueue = (error: ApiError | null = null) => {
+  const queue = failedQueue;
+  failedQueue = [];
+  queue.forEach((prom) => {
     if (error) {
       prom.reject(error);
     } else {
       prom.resolve();
     }
   });
+};
+
+export const _resetClientStateForTesting = () => {
+  isRefreshing = false;
   failedQueue = [];
 };
 
@@ -103,6 +109,15 @@ apiClient.interceptors.response.use(
               originalRequest.headers.Authorization = `Bearer ${token}`;
             }
             return apiClient(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(
+              err instanceof ApiError
+                ? err
+                : axios.isAxiosError(err)
+                  ? transformAxiosError(err)
+                  : err
+            );
           });
       }
 
@@ -125,12 +140,21 @@ apiClient.interceptors.response.use(
         const transformedError =
           axios.isAxiosError(refreshErr)
             ? transformAxiosError(refreshErr as AxiosError<ApiErrorResponse>)
-            : transformAxiosError(error);
+            : refreshErr instanceof ApiError
+              ? refreshErr
+              : new ApiError(
+                  refreshErr instanceof Error ? refreshErr.message : "Token refresh failed",
+                  "REFRESH_FAILED",
+                  401
+                );
         processQueue(transformedError);
         useAuthStore.getState().clearAuth();
         return Promise.reject(transformedError);
       } finally {
         isRefreshing = false;
+        if (failedQueue.length > 0) {
+          processQueue(transformAxiosError(error));
+        }
       }
     }
 

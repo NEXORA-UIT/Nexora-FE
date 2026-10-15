@@ -1,3 +1,7 @@
+/**
+ * Shared API contract types for HTTP communication across all domains.
+ */
+
 export interface ApiErrorDetail {
   field?: string;
   message: string;
@@ -22,4 +26,14 @@ export interface ApiErrorResponse {
 
 export interface EmptySuccessData {
   [key: string]: never;
+}
+
+/**
+ * Standard pagination metadata envelope shared across paginated API responses.
+ */
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }

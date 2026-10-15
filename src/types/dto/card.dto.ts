@@ -1,3 +1,6 @@
+export type { CreateDependencyRequest } from "../planning";
+export type { PaginatedActivitiesResult } from "../task";
+
 export type BackendCardPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
 export interface CardTaskProgressDto {
@@ -154,8 +157,6 @@ export interface CardDependenciesResponseDto {
   prerequisites: CardPrerequisiteDto[];
 }
 
-export type { CreateDependencyRequest } from "./planning";
-
 export interface CardDependencyRecordDto {
   id: string;
   cardId: string;
@@ -181,10 +182,5 @@ export interface PaginatedActivityResponseDto {
 export interface GetCardActivityQuery {
   limit?: number;
   cursor?: string;
-}
-
-export interface PaginatedActivitiesResult {
-  items: import("./task").CardActivity[];
-  nextCursor: string | null;
 }
 

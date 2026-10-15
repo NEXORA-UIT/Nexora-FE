@@ -24,7 +24,7 @@ export const BoardActionMenu: React.FC<BoardActionMenuProps> = ({
           type="button"
           onClick={(e) => e.stopPropagation()}
           className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 transition-colors"
-          aria-label={`Actions for ${board.title}`}
+          aria-label={`Actions for ${board.name}`}
           title="Board options"
         >
           <MoreVertical className="h-4 w-4" />
