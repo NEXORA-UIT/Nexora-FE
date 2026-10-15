@@ -81,8 +81,11 @@ export const boardApi = {
     let rawBody: CreateBoardRequest;
 
     if (typeof workspaceIdOrInput === "string") {
+      if (!payload) {
+        throw new Error("Board creation payload is required when specifying workspaceId.");
+      }
       workspaceId = workspaceIdOrInput;
-      rawBody = payload!;
+      rawBody = payload;
     } else {
       workspaceId = workspaceIdOrInput.workspaceId;
       rawBody = {

@@ -297,6 +297,12 @@ describe("boardApi Suite", () => {
       expect(result.id).toBe("board-uuid-1");
     });
 
+    it("throws an error when workspaceId is passed as string without payload", async () => {
+      await expect(boardApi.createBoard("ws-uuid-1")).rejects.toThrow(
+        "Board creation payload is required when specifying workspaceId."
+      );
+    });
+
     it("re-throws ApiError when board creation fails (e.g. frozen workspace)", async () => {
       const apiError = new ApiError("Workspace is frozen", "WORKSPACE_FROZEN", 403);
       vi.spyOn(apiClient, "post").mockRejectedValueOnce(apiError);

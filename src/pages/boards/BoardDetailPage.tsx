@@ -225,7 +225,10 @@ export const BoardDetailPage: React.FC = () => {
             isOpen={Boolean(selectedCardId && selectedCard)}
             onClose={handleCloseCardDetail}
             operations={{
-              onUpdate: (payload) => handleUpdateCard(selectedCard!.id, payload),
+              onUpdate: async (payload) => {
+                if (!selectedCard) return;
+                await handleUpdateCard(selectedCard.id, payload);
+              },
               onDelete: handleDeleteCard,
             }}
             metadata={{
