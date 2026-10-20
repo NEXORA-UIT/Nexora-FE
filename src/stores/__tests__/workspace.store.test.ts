@@ -4,6 +4,7 @@ import {
   ACTIVE_WORKSPACE_STORAGE_KEY,
 } from "../workspace.store";
 import { workspaceApi } from "@/apis/workspace.api";
+import { ApiError } from "@/apis/client";
 import { useAuthStore } from "@/stores/auth.store";
 import type { Workspace } from "@/types";
 
@@ -117,16 +118,17 @@ describe("useWorkspaceStore Suite", () => {
 
     it("handles fetch failure gracefully without silent mock fallback", async () => {
       vi.spyOn(workspaceApi, "listWorkspaces").mockRejectedValueOnce(
-        new Error("Network connection lost")
+        new ApiError("Không thể tải workspace", "WORKSPACE_LIST_FAILED", 400)
       );
 
       await expect(
         useWorkspaceStore.getState().fetchWorkspaces()
-      ).rejects.toThrow("Network connection lost");
+      ).rejects.toThrow("Không thể tải workspace");
 
       const state = useWorkspaceStore.getState();
       expect(state.isLoading).toBe(false);
-      expect(state.error).toBe("Network connection lost");
+      expect(state.error).toBe("Failed to load workspaces. Please try again.");
+      expect(state.error).not.toContain("Không thể tải workspace");
       expect(state.workspaces).toEqual([]);
     });
 

@@ -10,6 +10,7 @@ import type {
   CreateBoardInput,
   UpdateBoardRequest,
 } from "@/types";
+import { getUserFacingApiError } from "@/utils/api-error-message";
 
 export function useWorkspaceBoards(customWorkspaceId?: string) {
   const storeWorkspaces = useWorkspaceStore((state) => state.workspaces);
@@ -54,9 +55,7 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
       });
       setBoards(boardsData);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load workspace boards"
-      );
+      setError(getUserFacingApiError(err, "Failed to load workspace Boards."));
     } finally {
       setIsLoading(false);
     }
@@ -142,12 +141,12 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
             toast.error("Only workspace owners can create boards.");
           }
         } else if (err.status === 400) {
-          toast.error(err.message || "Invalid board input.");
+          toast.error(getUserFacingApiError(err, "Invalid Board input."));
         } else {
-          toast.error(err.message || "Failed to create board");
+          toast.error(getUserFacingApiError(err, "Failed to create Board."));
         }
       } else {
-        toast.error(err instanceof Error ? err.message : "Failed to create board");
+        toast.error(getUserFacingApiError(err, "Failed to create Board."));
       }
       throw err;
     } finally {
@@ -181,7 +180,7 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
           toast.error("Only workspace owners or PMs can update this board.");
         }
       } else {
-        toast.error(err instanceof Error ? err.message : "Failed to update board");
+        toast.error(getUserFacingApiError(err, "Failed to update Board."));
       }
       throw err;
     }
@@ -219,7 +218,7 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
           toast.error("Only workspace owners or PMs can archive this board.");
         }
       } else {
-        toast.error(err instanceof Error ? err.message : "Archive board failed");
+        toast.error(getUserFacingApiError(err, "Could not archive Board."));
       }
       console.error("Archive board failed:", err);
     }
@@ -257,7 +256,7 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
           toast.error("Only workspace owners or PMs can restore this board.");
         }
       } else {
-        toast.error(err instanceof Error ? err.message : "Restore board failed");
+        toast.error(getUserFacingApiError(err, "Could not restore Board."));
       }
       console.error("Restore board failed:", err);
     }
@@ -312,10 +311,10 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
         } else if (err.status === 400) {
           toast.error("Confirmation name must match the board name exactly.");
         } else {
-          toast.error(err.message || "Delete board failed");
+          toast.error(getUserFacingApiError(err, "Could not delete Board."));
         }
       } else {
-        toast.error(err instanceof Error ? err.message : "Delete board failed");
+        toast.error(getUserFacingApiError(err, "Could not delete Board."));
       }
       throw err;
     } finally {

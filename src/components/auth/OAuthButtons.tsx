@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { GoogleIcon, GitHubIcon } from "@/components/common/Icons";
 import { authApi } from "@/apis/auth.api";
 import { ApiError } from "@/apis/client";
+import { getUserFacingApiError } from "@/utils/api-error-message";
 import type { OAuthButtonsProps } from "@/types";
 
 export const OAuthButtons: React.FC<OAuthButtonsProps> = ({
@@ -34,7 +35,7 @@ export const OAuthButtons: React.FC<OAuthButtonsProps> = ({
             "Google OAuth is not configured on the server. Please verify GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in backend configuration."
           );
         } else {
-          setErrorMessage(err.message || "Failed to initiate Google sign-in.");
+          setErrorMessage(getUserFacingApiError(err, "Failed to initiate Google sign-in."));
         }
       } else {
         setErrorMessage("An unexpected error occurred while contacting Google.");
@@ -61,7 +62,7 @@ export const OAuthButtons: React.FC<OAuthButtonsProps> = ({
             "GitHub OAuth is not configured on the server. Please verify GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in backend configuration."
           );
         } else {
-          setErrorMessage(err.message || "Failed to initiate GitHub sign-in.");
+          setErrorMessage(getUserFacingApiError(err, "Failed to initiate GitHub sign-in."));
         }
       } else {
         setErrorMessage("An unexpected error occurred while contacting GitHub.");

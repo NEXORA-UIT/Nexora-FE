@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { changePasswordFormSchema } from "@/schemas";
 import { profileApi } from "@/apis/profile.api";
 import { ApiError } from "@/apis/client";
+import { getUserFacingApiError } from "@/utils/api-error-message";
 import type {
   ChangePasswordCardProps,
   ChangePasswordFormData,
@@ -58,7 +59,7 @@ export const ChangePasswordCard: React.FC<ChangePasswordCardProps> = ({
         if (err.code === "INVALID_CREDENTIALS" || err.status === 401) {
           setErrorMessage("Current password is incorrect. Please try again.");
         } else {
-          setErrorMessage(err.message || "Failed to change password.");
+          setErrorMessage(getUserFacingApiError(err, "Failed to change password."));
         }
       } else {
         setErrorMessage("An unexpected network error occurred. Please try again.");

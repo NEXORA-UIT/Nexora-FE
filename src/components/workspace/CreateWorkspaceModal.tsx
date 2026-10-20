@@ -2,6 +2,7 @@ import * as React from "react";
 import { FolderPlus, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { getUserFacingApiError } from "@/utils/api-error-message";
 import { useWorkspaceStore } from "@/stores/workspace.store";
 import type { WorkspaceDomainCategory } from "@/types";
 
@@ -72,9 +73,7 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({
         onSuccess(created.id);
       }
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to create workspace."
-      );
+      setError(getUserFacingApiError(err, "Failed to create workspace."));
     } finally {
       setIsSubmitting(false);
     }

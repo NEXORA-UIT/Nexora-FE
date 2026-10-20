@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { authApi, ApiError } from "@/apis";
 import { useAuthStore } from "@/stores";
 import { ROUTES } from "@/constants/routes";
+import { getUserFacingApiError } from "@/utils/api-error-message";
 
 export const VerifyEmailPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -48,7 +49,7 @@ export const VerifyEmailPage: React.FC = () => {
             setErrorMessage("This account has already been verified.");
           } else {
             setErrorMessage(
-              err.message || "Account verification failed. Please try again."
+              getUserFacingApiError(err, "Account verification failed. Please try again.")
             );
           }
         } else {
