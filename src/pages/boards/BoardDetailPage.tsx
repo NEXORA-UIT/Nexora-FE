@@ -21,6 +21,12 @@ import { useAuthStore } from "@/stores/auth.store";
 import { canUserManageDependencies } from "@/utils";
 import { workspaceApi } from "@/apis/workspace.api";
 import { useWorkspaceStore } from "@/stores/workspace.store";
+import {
+  DEFAULT_BOARD_BACKGROUND,
+  getBoardBackgroundPreference,
+  saveBoardBackgroundPreference,
+  type BoardBackgroundPreset,
+} from "@/components/kanban/board-background";
 
 export const BoardDetailPage: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
@@ -97,6 +103,16 @@ export const BoardDetailPage: React.FC = () => {
   } | null>(null);
   const [isBoardMembersOpen, setIsBoardMembersOpen] = React.useState(false);
   const [isGitHubConfigOpen, setIsGitHubConfigOpen] = React.useState(false);
+  const [backgroundPreset, setBackgroundPreset] = React.useState<BoardBackgroundPreset>(DEFAULT_BOARD_BACKGROUND);
+
+  React.useEffect(() => {
+    if (board?.id) setBackgroundPreset(getBoardBackgroundPreference(board.id));
+  }, [board?.id]);
+
+  const handleBackgroundChange = (preset: BoardBackgroundPreset) => {
+    setBackgroundPreset(preset);
+    if (board?.id) saveBoardBackgroundPreference(board.id, preset);
+  };
 
   // Invariant: isWorkspaceOwner is only true if verifiedOwnerContext strictly matches the current workspace and user identity
   const isWorkspaceOwner = Boolean(
@@ -241,6 +257,8 @@ export const BoardDetailPage: React.FC = () => {
           <BoardDetailToolbar
             activeView={activeView}
             onViewChange={setActiveView}
+            backgroundPreset={backgroundPreset}
+            onBackgroundChange={handleBackgroundChange}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             filters={cardFilters}
@@ -268,6 +286,7 @@ export const BoardDetailPage: React.FC = () => {
             <div className="min-h-0 flex-1">
               <KanbanBoard
                 lists={filteredLists}
+                backgroundPreset={backgroundPreset}
                 onCommitMoveCard={handleCommitMoveCard}
                 onAddCard={handleAddCard}
                 onAddColumn={handleAddColumn}

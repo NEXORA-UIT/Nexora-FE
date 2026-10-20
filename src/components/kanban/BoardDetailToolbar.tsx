@@ -7,13 +7,17 @@ import {
   Search,
   SlidersHorizontal,
   X,
+  Image as ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { BoardCardFilters, BoardLabel, BoardMember, CardPriority, ListCategory } from "@/types";
+import { BOARD_BACKGROUNDS, type BoardBackgroundPreset } from "./board-background";
 
 export interface BoardDetailToolbarProps {
   activeView: "board" | "calendar" | "planning";
   onViewChange: (view: "board" | "calendar" | "planning") => void;
+  backgroundPreset: BoardBackgroundPreset;
+  onBackgroundChange: (preset: BoardBackgroundPreset) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   archivedListsCount?: number;
@@ -28,6 +32,8 @@ export interface BoardDetailToolbarProps {
 export const BoardDetailToolbar: React.FC<BoardDetailToolbarProps> = ({
   activeView,
   onViewChange,
+  backgroundPreset,
+  onBackgroundChange,
   searchQuery,
   onSearchChange,
   archivedListsCount = 0,
@@ -91,6 +97,27 @@ export const BoardDetailToolbar: React.FC<BoardDetailToolbarProps> = ({
 
       {/* 2. Utility Actions: Archived Lists, Search, Filter */}
       <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+        <label className="flex h-8 items-center gap-2 rounded-lg border border-neutral-200/90 bg-white px-2.5 text-xs font-medium text-neutral-600 focus-within:border-primary-500 focus-within:ring-1 focus-within:ring-primary-500">
+          <ImageIcon aria-hidden="true" className="h-3.5 w-3.5 text-neutral-500" />
+          <span className="sr-only">Board background</span>
+          <span aria-hidden="true" className="hidden sm:inline">Background</span>
+          <span
+            aria-hidden="true"
+            className="h-4 w-5 rounded border border-black/10"
+            style={{ background: BOARD_BACKGROUNDS[backgroundPreset].swatch }}
+          />
+          <select
+            aria-label="Board background"
+            value={backgroundPreset}
+            onChange={(event) => onBackgroundChange(event.target.value as BoardBackgroundPreset)}
+            className="max-w-24 cursor-pointer bg-transparent text-xs text-neutral-700 outline-none"
+          >
+            {Object.entries(BOARD_BACKGROUNDS).map(([preset, background]) => (
+              <option key={preset} value={preset}>{background.label}</option>
+            ))}
+          </select>
+        </label>
+
         {/* Archived Lists Counter Pill */}
         <Button
           type="button"

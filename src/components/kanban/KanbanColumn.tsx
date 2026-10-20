@@ -25,7 +25,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   const { isOver, setNodeRef } = useDroppable({ id: getListDropTargetId(list.id) });
 
   return (
-    <div className="shadow-2xs flex h-full max-h-[calc(100vh-230px)] w-[320px] min-w-[320px] max-w-[320px] shrink-0 select-none flex-col rounded-2xl border border-neutral-200/90 bg-neutral-50/80 p-3.5">
+    <div className="shadow-md flex h-full max-h-[calc(100vh-230px)] w-[320px] min-w-[320px] max-w-[320px] shrink-0 select-none flex-col rounded-2xl border border-white/80 bg-white/90 p-3.5 backdrop-blur-sm">
       {/* 1. Column Header */}
       <div className="flex items-center justify-between gap-2 border-b border-neutral-200/60 pb-3">
         <div className="flex min-w-0 items-center gap-1.5">

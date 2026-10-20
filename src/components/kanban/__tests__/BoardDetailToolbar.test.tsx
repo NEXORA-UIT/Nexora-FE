@@ -17,6 +17,8 @@ describe("BoardDetailToolbar filters", () => {
       <BoardDetailToolbar
         activeView="board"
         onViewChange={vi.fn()}
+        backgroundPreset="aurora"
+        onBackgroundChange={vi.fn()}
         searchQuery=""
         onSearchChange={vi.fn()}
         filters={filters}
@@ -47,6 +49,8 @@ describe("BoardDetailToolbar filters", () => {
       <BoardDetailToolbar
         activeView="board"
         onViewChange={vi.fn()}
+        backgroundPreset="aurora"
+        onBackgroundChange={vi.fn()}
         searchQuery=""
         onSearchChange={vi.fn()}
         filters={filters}
@@ -60,5 +64,37 @@ describe("BoardDetailToolbar filters", () => {
     labelSelect.options[0]!.selected = true;
     fireEvent.change(labelSelect);
     expect(onFiltersChange).toHaveBeenCalledWith({ ...filters, labelIds: ["label-1"] });
+  });
+
+  it("lets the user choose a board background", () => {
+    const onBackgroundChange = vi.fn();
+    const filters: BoardCardFilters = {
+      statusGroup: "ALL",
+      priority: "ALL",
+      assigneeIds: [],
+      dueDate: "ALL",
+      labelIds: [],
+    };
+
+    render(
+      <BoardDetailToolbar
+        activeView="board"
+        onViewChange={vi.fn()}
+        searchQuery=""
+        onSearchChange={vi.fn()}
+        filters={filters}
+        onFiltersChange={vi.fn()}
+        members={[]}
+        labels={[]}
+        backgroundPreset="aurora"
+        onBackgroundChange={onBackgroundChange}
+      />
+    );
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Board background" }), {
+      target: { value: "coast" },
+    });
+
+    expect(onBackgroundChange).toHaveBeenCalledWith("coast");
   });
 });

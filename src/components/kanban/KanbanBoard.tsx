@@ -19,6 +19,7 @@ import type {
   ListCategory,
   MoveCardInput,
 } from "@/types";
+import { BOARD_BACKGROUNDS, DEFAULT_BOARD_BACKGROUND, type BoardBackgroundPreset } from "./board-background";
 
 const kanbanCollisionDetection: CollisionDetection = (args) => {
   const pointerCollisions = pointerWithin(args);
@@ -38,6 +39,7 @@ export interface KanbanBoardProps {
   onAddColumn: (name: string, category: ListCategory) => Promise<void> | void;
   onCardClick?: (card: KanbanCardType) => void;
   onColumnOptionsClick?: (list: KanbanList) => void;
+  backgroundPreset?: BoardBackgroundPreset;
 }
 
 const SortableCardItem: React.FC<{
@@ -67,6 +69,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onAddColumn,
   onCardClick,
   onColumnOptionsClick,
+  backgroundPreset = DEFAULT_BOARD_BACKGROUND,
 }) => {
   const [addingCardListId, setAddingCardListId] = React.useState<string | null>(null);
 
@@ -166,9 +169,16 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         onPointerMove={handleCanvasPointerMove}
         onPointerUp={handleCanvasPointerUp}
         onPointerCancel={handleCanvasPointerUp}
-        className={`scrollbar-thin flex min-h-[calc(100vh-230px)] items-start gap-5 overflow-x-auto pb-6 pr-10 pt-1 ${
+        className={`scrollbar-thin flex min-h-[calc(100vh-230px)] items-start gap-5 overflow-x-auto rounded-3xl border border-white/70 p-4 pb-6 pr-10 shadow-inner ${
           isPanning ? "cursor-grabbing select-none" : "cursor-grab"
         }`}
+        style={{
+          ...BOARD_BACKGROUNDS[backgroundPreset].style,
+          backgroundSize: "cover",
+          backgroundAttachment: "fixed",
+        }}
+        role="region"
+        aria-label="Board canvas"
       >
         {previewLists.map((list) => (
           <KanbanColumn
