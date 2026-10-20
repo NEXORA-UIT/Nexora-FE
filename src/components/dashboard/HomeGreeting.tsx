@@ -1,58 +1,44 @@
 import * as React from "react";
+import { ArrowRight, Layers3 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Layers } from "lucide-react";
 import { ROUTES } from "@/constants/routes";
 import { useAuthStore } from "@/stores/auth.store";
+import type { Workspace } from "@/types";
 
-export const HomeGreeting: React.FC = () => {
+interface HomeGreetingProps {
+  workspace: Workspace;
+  boardCount: number;
+  openTaskCount: number;
+  isTaskLoading: boolean;
+  taskError: string | null;
+}
+
+export const HomeGreeting: React.FC<HomeGreetingProps> = ({ workspace, boardCount, openTaskCount, isTaskLoading, taskError }) => {
   const user = useAuthStore((state) => state.user);
   const displayName = user?.fullName || user?.email?.split("@")[0] || "there";
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const today = new Intl.DateTimeFormat("en", { weekday: "long", month: "short", day: "numeric" }).format(new Date());
 
   return (
-    <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-      {/* Left: User Welcome & Scope Stats */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl">
-          Good morning, {displayName}
-        </h1>
-        <p className="mt-1 text-sm text-neutral-500">
-          Here's what needs your attention today.
-        </p>
-
-        {/* Metadata Line */}
-        <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs font-medium text-neutral-600">
-          <div className="flex items-center gap-1.5 text-primary-600 font-semibold">
-            <Layers className="h-3.5 w-3.5" />
-            <span>Workspace: Core Platform</span>
-          </div>
-          <span className="text-neutral-300">•</span>
-          <span>4 Boards</span>
-          <span className="text-neutral-300">•</span>
-          <span>12 members</span>
-          <span className="text-neutral-300">•</span>
-          <span className="font-semibold text-neutral-800">28 open tasks</span>
-        </div>
-      </div>
-
-      {/* Right: Today Banner Card */}
-      <div className="flex items-center justify-between gap-4 rounded-xl border border-neutral-200/90 bg-white p-3.5 shadow-xs sm:px-5">
+    <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#172554] via-[#1E40AF] to-[#2563EB] px-6 py-6 text-white shadow-lg shadow-blue-950/10 sm:px-8 sm:py-7">
+      <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-24 h-64 w-64 rounded-full border border-white/10 bg-white/5" />
+      <div className="relative flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
         <div>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
-            Today
-          </span>
-          <p className="text-xs font-semibold text-neutral-800">
-            Wednesday, Oct 11
-          </p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-100">{today}</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">{greeting}, {displayName}</h1>
+          <p className="mt-2 text-sm text-blue-100">Here’s what needs your attention today.</p>
+          <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-blue-50">
+            <span className="inline-flex items-center gap-1.5 font-semibold"><Layers3 aria-hidden="true" className="h-3.5 w-3.5" />{workspace.name}</span>
+            <span aria-hidden="true" className="text-blue-300">·</span><span>{boardCount} {boardCount === 1 ? "active board" : "active boards"}</span>
+            <span aria-hidden="true" className="text-blue-300">·</span>
+            <span>{isTaskLoading ? "Assigned task count loading…" : taskError ? "Assigned task count unavailable" : `${openTaskCount} open assigned ${openTaskCount === 1 ? "task" : "tasks"}`}</span>
+          </div>
         </div>
-
-        <Link
-          to={ROUTES.UNDER_DEVELOPMENT}
-          className="inline-flex items-center gap-1 rounded-lg bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700 hover:bg-primary-100 transition-colors"
-        >
-          <span>4 tasks due today</span>
-          <ArrowRight className="h-3.5 w-3.5" />
+        <Link to={ROUTES.MY_TASKS} className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-blue-800 shadow-sm transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-blue-700">
+          Review my tasks <ArrowRight aria-hidden="true" className="h-4 w-4" />
         </Link>
       </div>
-    </div>
+    </section>
   );
 };

@@ -58,7 +58,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
               {displayName}
             </span>
             <span className="text-[10px] text-neutral-500 font-medium mt-0.5">
-              Owner
+              Account
             </span>
           </div>
           <ChevronDown className="h-3 w-3 text-neutral-400 transition-transform duration-200" />

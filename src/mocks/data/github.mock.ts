@@ -1,0 +1,48 @@
+import type { MockGitActivityItem } from "@/types";
+
+export const mockGitActivity: MockGitActivityItem[] = [
+  {
+    id: "mock-commit-nex-101",
+    cardId: "demo-card-nex-101",
+    cardCode: "NEX-101",
+    type: "COMMIT",
+    identifier: "8f2c1ab",
+    message: "feat: add board member role controls #NEX-101",
+    author: "datphan",
+    url: "https://github.com/nexora-org/nexora-backend/commit/8f2c1ab",
+    timestamp: "2026-10-15T09:30:00.000Z",
+  },
+  {
+    id: "mock-pr-nex-101",
+    cardId: "demo-card-nex-101",
+    cardCode: "NEX-101",
+    type: "PULL_REQUEST",
+    identifier: "#42",
+    message: "Add Board membership endpoints #NEX-101",
+    author: "baonguyen",
+    url: "https://github.com/nexora-org/nexora-backend/pull/42",
+    timestamp: "2026-10-16T13:45:00.000Z",
+  },
+  {
+    id: "mock-commit-nex-104",
+    cardId: "demo-card-nex-104",
+    cardCode: "NEX-104",
+    type: "COMMIT",
+    identifier: "61ca9de",
+    message: "fix: preserve card position after move #NEX-104",
+    author: "baonguyen",
+    url: "https://github.com/nexora-org/nexora-backend/commit/61ca9de",
+    timestamp: "2026-10-14T07:20:00.000Z",
+  },
+  {
+    id: "mock-pr-card-001",
+    cardId: "demo-card-card-001",
+    cardCode: "CARD-001",
+    type: "PULL_REQUEST",
+    identifier: "#18",
+    message: "Improve the sprint board overview #CARD-001",
+    author: "datphan",
+    url: "https://github.com/nexora-org/nexora-frontend/pull/18",
+    timestamp: "2026-10-12T16:05:00.000Z",
+  },
+];

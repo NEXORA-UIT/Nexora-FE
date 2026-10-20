@@ -1,110 +1,64 @@
 import * as React from "react";
+import { ArrowRight, CalendarDays, Clock3 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Calendar as CalendarIcon, ArrowRight } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { ROUTES } from "@/constants/routes";
-import type { UpcomingTimelineItem } from "@/types";
+import { ROUTES, getBoardDetailRoute } from "@/constants/routes";
+import type { MyTaskItem } from "@/types";
 
-const UPCOMING_ITEMS: UpcomingTimelineItem[] = [
-  {
-    id: "item-1",
-    badge: {
-      topText: "TODAY",
-      bottomText: "11",
-      isPrimary: true,
-    },
-    timeCategory: "4:00 PM • Core Platform",
-    title: "Review software requirements & specs",
-  },
-  {
-    id: "item-2",
-    badge: {
-      topText: "THU",
-      bottomText: "12",
-      isPrimary: false,
-    },
-    timeCategory: "10:00 AM • Team meeting",
-    title: "Sprint 42 Planning & Backlog Grooming",
-  },
-  {
-    id: "item-3",
-    badge: {
-      topText: "OCT",
-      bottomText: "15",
-      isPrimary: false,
-    },
-    timeCategory: "End of day • Milestone",
-    title: "Submit SRS document & schema review",
-  },
-  {
-    id: "item-4",
-    badge: {
-      topText: "OCT",
-      bottomText: "18",
-      isPrimary: false,
-    },
-    timeCategory: "Core Platform Release",
-    title: "Beta Deployment Release v2.0",
-  },
-];
+interface UpcomingSectionProps {
+  tasks: MyTaskItem[];
+  isLoading: boolean;
+  error: string | null;
+}
 
-export const UpcomingSection: React.FC = () => {
+function startOfDay(value: Date): Date {
+  return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+}
+
+function formatDueDate(value: string): string {
+  const date = new Date(value);
+  return new Intl.DateTimeFormat("en", { weekday: "short", month: "short", day: "numeric" }).format(date);
+}
+
+export const UpcomingSection: React.FC<UpcomingSectionProps> = ({ tasks, isLoading, error }) => {
+  const today = startOfDay(new Date());
+  const upcomingTasks = tasks
+    .filter((task) => task.statusGroup !== "DONE" && task.dueDate && startOfDay(new Date(task.dueDate)) >= today)
+    .sort((left, right) => (left.dueDate ?? "").localeCompare(right.dueDate ?? ""))
+    .slice(0, 4);
+
   return (
-    <div className="rounded-2xl border border-neutral-200/90 bg-white p-5 shadow-xs sm:p-6">
-      {/* Header: Title & Calendar Link */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <CalendarIcon className="h-4 w-4 text-neutral-500" />
-          <h2 className="text-sm font-bold text-neutral-900">Upcoming</h2>
+    <section aria-labelledby="upcoming-heading" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-50 text-cyan-800"><CalendarDays aria-hidden="true" className="h-4 w-4" /></span>
+          <div><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Due dates</p><h2 id="upcoming-heading" className="text-sm font-semibold text-slate-900">Coming up</h2></div>
         </div>
-
-        <Link
-          to={ROUTES.UNDER_DEVELOPMENT}
-          className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 hover:underline transition-colors"
-        >
-          <span>Calendar</span>
-          <ArrowRight className="h-3 w-3" />
-        </Link>
+        <Link to={ROUTES.CALENDAR} className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 hover:text-blue-800">Calendar <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" /></Link>
       </div>
-
-      {/* Timeline Items */}
-      <div className="mt-4 space-y-3.5">
-        {UPCOMING_ITEMS.map((item) => (
-          <div key={item.id} className="flex items-start gap-3">
-            {/* Styled Date Box Badge */}
-            <div
-              className={cn(
-                "flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl text-center select-none shadow-2xs",
-                item.badge.isPrimary
-                  ? "bg-primary-600 text-white"
-                  : "border border-neutral-200 bg-neutral-50 text-neutral-600"
-              )}
-            >
-              <span
-                className={cn(
-                  "text-[9px] font-bold tracking-tight uppercase leading-none",
-                  item.badge.isPrimary ? "text-primary-100" : "text-neutral-400"
-                )}
-              >
-                {item.badge.topText}
-              </span>
-              <span className="text-sm font-extrabold leading-tight">
-                {item.badge.bottomText}
-              </span>
-            </div>
-
-            {/* Time / Category & Title */}
-            <div className="min-w-0 flex-1 pt-0.5">
-              <span className="block text-[11px] font-medium text-neutral-400 truncate">
-                {item.timeCategory}
-              </span>
-              <span className="block text-xs font-semibold text-neutral-800 truncate">
-                {item.title}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+      {isLoading ? (
+        <p role="status" className="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-500">Loading due dates…</p>
+      ) : error ? (
+        <p role="status" className="mt-5 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">Could not load due dates.</p>
+      ) : upcomingTasks.length === 0 ? (
+        <p className="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-500">No upcoming due dates on your assigned cards.</p>
+      ) : (
+        <ul className="mt-4 space-y-2">
+          {upcomingTasks.map((task) => (
+            <li key={task.id}>
+              <Link to={getBoardDetailRoute(task.boardId)} className="flex items-start gap-3 rounded-xl p-2 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                <span className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-xl bg-blue-50 text-blue-800">
+                  <Clock3 aria-hidden="true" className="h-3.5 w-3.5" />
+                  <span className="mt-0.5 text-[9px] font-bold">{new Date(task.dueDate!).getDate()}</span>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-slate-800">{task.title}</span>
+                  <span className="mt-1 block truncate text-xs text-slate-500">{formatDueDate(task.dueDate!)} · {task.boardName}</span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 };

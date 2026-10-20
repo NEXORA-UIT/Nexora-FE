@@ -1,10 +1,8 @@
 import * as React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  Search,
   Plus,
   Sparkles,
-  Bell,
   ChevronDown,
   Layers,
   LogOut,
@@ -19,7 +17,6 @@ import nexoraLogoSrc from "@/assets/logo/logo.png";
 
 export const Topbar: React.FC = () => {
   const navigate = useNavigate();
-  const [searchValue, setSearchValue] = React.useState("");
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
 
@@ -81,23 +78,6 @@ export const Topbar: React.FC = () => {
         </button>
       </div>
 
-      {/* Center: Global Search Bar */}
-      <div className="mx-4 hidden max-w-md flex-1 md:block">
-        <div className="relative flex items-center">
-          <Search className="pointer-events-none absolute left-3 h-3.5 w-3.5 text-neutral-400" />
-          <input
-            type="text"
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-            placeholder="Search projects, boards, tasks, members..."
-            className="h-8 w-full rounded-lg border border-neutral-200 bg-neutral-50/70 pl-9 pr-9 text-xs text-neutral-800 placeholder-neutral-400 outline-none transition-all focus:border-primary-500 focus:bg-white focus:ring-1 focus:ring-primary-500/20"
-          />
-          <div className="pointer-events-none absolute right-2.5 flex h-5 min-w-5 items-center justify-center rounded border border-neutral-200 bg-white px-1 text-[10px] font-medium text-neutral-400 select-none">
-            /
-          </div>
-        </div>
-      </div>
-
       {/* Right: Actions & User Menu */}
       <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         {/* + Create Button */}
@@ -105,9 +85,9 @@ export const Topbar: React.FC = () => {
           type="button"
           size="sm"
           className="h-8 gap-1 rounded-lg bg-primary-600 px-2.5 sm:px-3 text-xs font-medium text-white shadow-xs hover:bg-primary-700"
-          onClick={() => navigate(ROUTES.UNDER_DEVELOPMENT)}
+          onClick={() => navigate(ROUTES.BOARDS)}
           title="Create"
-          aria-label="Create"
+          aria-label="Create board"
         >
           <Plus className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Create</span>
@@ -119,24 +99,13 @@ export const Topbar: React.FC = () => {
           variant="outline"
           size="sm"
           className="h-8 gap-1.5 rounded-lg border-neutral-200 bg-white px-2 sm:px-2.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 shadow-xs"
-          onClick={() => navigate(ROUTES.UNDER_DEVELOPMENT)}
-          title="AI Assistant"
-          aria-label="AI Assistant"
+          disabled
+          title="AI Assistant is not implemented yet"
+          aria-label="AI Assistant, not implemented"
         >
           <Sparkles className="h-3.5 w-3.5 text-primary-600" />
-          <span className="hidden sm:inline">AI Assistant</span>
+          <span className="hidden sm:inline">AI unavailable</span>
         </Button>
-
-        {/* Notification Bell */}
-        <button
-          type="button"
-          className="relative flex h-8 w-8 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 transition-colors"
-          onClick={() => navigate(ROUTES.UNDER_DEVELOPMENT)}
-          aria-label="Notifications"
-        >
-          <Bell className="h-4 w-4" />
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-error-500 ring-2 ring-white" />
-        </button>
 
         {/* User Account Menu Dropdown */}
         <UserMenu onLogoutClick={() => setShowLogoutConfirm(true)} />

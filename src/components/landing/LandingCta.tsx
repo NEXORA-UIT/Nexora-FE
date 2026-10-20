@@ -31,7 +31,7 @@ export const LandingCta: React.FC = () => {
 
             <p className="mt-4 text-sm text-neutral-300 sm:text-base leading-relaxed max-w-2xl mx-auto">
               Empower your team to plan projects, coordinate tasks, and track
-              progress with clarity and intelligent support.
+              progress with clarity and confidence.
             </p>
 
             {/* Action Buttons */}
@@ -51,9 +51,9 @@ export const LandingCta: React.FC = () => {
                 variant="outline"
                 size="lg"
                 className="h-12 rounded-xl border-neutral-700 bg-neutral-900/80 px-7 text-sm font-semibold text-neutral-200 hover:bg-neutral-800 hover:text-white transition-all cursor-pointer"
-                onClick={() => navigate(ROUTES.UNDER_DEVELOPMENT)}
+                onClick={() => navigate(ROUTES.LOGIN)}
               >
-                <span>Schedule a live demo</span>
+                <span>Sign in to your workspace</span>
               </Button>
             </div>
 
