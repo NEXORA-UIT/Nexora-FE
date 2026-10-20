@@ -774,7 +774,7 @@ describe("CardDetailAttachments & CardDetailActivity", () => {
     it("renders error banner and retries when retry button is clicked", async () => {
       const handleFetchActivities = vi
         .fn()
-        .mockRejectedValueOnce(new Error("Network timeout"))
+        .mockRejectedValueOnce(new Error("Kết nối bị ngắt"))
         .mockResolvedValueOnce({
           items: [
             {
@@ -800,7 +800,8 @@ describe("CardDetailAttachments & CardDetailActivity", () => {
       fireEvent.click(activityTab);
 
       await waitFor(() => {
-        expect(screen.getByText("Network timeout")).toBeDefined();
+        expect(screen.getByText("Failed to load activity logs.")).toBeDefined();
+        expect(screen.queryByText("Kết nối bị ngắt")).toBeNull();
       });
 
       const retryBtn = screen.getByRole("button", { name: /Retry/i });

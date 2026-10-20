@@ -62,3 +62,22 @@ export interface ListWorkspaceMembersResponse {
   items: WorkspaceMemberDto[];
   meta?: WorkspacePaginationMeta;
 }
+
+export type WorkspaceInvitationStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "EXPIRED" | "CANCELED";
+
+export interface WorkspaceInvitationDto {
+  id: string;
+  workspaceId: string;
+  email: string;
+  status: WorkspaceInvitationStatus;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface InviteWorkspaceMemberRequest {
+  email: string;
+}
+
+export interface TransferWorkspaceOwnerRequest {
+  role: "OWNER";
+}

@@ -5,6 +5,7 @@ export * from "./CardDetailChecklist";
 export * from "./CardDetailDependencies";
 export * from "./CardDetailAttachments";
 export * from "./CardDetailActivity";
+export * from "./activity/CardGitActivityTab";
 export * from "./CardDetailDrawer";
 export * from "./metadata";
 export * from "./activity";

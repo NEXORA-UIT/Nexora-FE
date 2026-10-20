@@ -1,6 +1,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { cardApi } from "@/apis";
+import { getUserFacingApiError } from "@/utils/api-error-message";
 import { applyAuthoritativeCardUpdate, updateCardInBoard } from "../utils/cardReconciler";
 import type { BoardDetail } from "@/types";
 
@@ -40,7 +41,7 @@ export function useCardLabels({
       setLabelsError(null);
     } catch (err) {
       if (activeLabelsCardIdRef.current !== cardId) return;
-      setLabelsError(err instanceof Error ? err.message : "Failed to load card labels");
+      setLabelsError(getUserFacingApiError(err, "Failed to load card labels"));
     } finally {
       if (activeLabelsCardIdRef.current === cardId) {
         setIsLabelsLoading(false);

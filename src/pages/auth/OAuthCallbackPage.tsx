@@ -4,6 +4,7 @@ import { Loader2, AlertCircle, ArrowLeft, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { authApi } from "@/apis/auth.api";
 import { ApiError } from "@/apis/client";
+import { getUserFacingApiError } from "@/utils/api-error-message";
 import { useAuthStore } from "@/stores/auth.store";
 import { ROUTES } from "@/constants/routes";
 
@@ -135,8 +136,10 @@ export const OAuthCallbackPage: React.FC = () => {
               break;
             default:
               setErrorMessage(
-                err.message ||
+                getUserFacingApiError(
+                  err,
                   `Failed to complete authentication with ${providerLabel}.`
+                )
               );
               break;
           }

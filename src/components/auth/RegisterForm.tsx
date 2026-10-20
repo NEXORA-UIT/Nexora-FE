@@ -11,6 +11,7 @@ import { evaluatePasswordStrength } from "@/utils/password";
 import { authApi } from "@/apis/auth.api";
 import { ApiError } from "@/apis/client";
 import { ROUTES } from "@/constants/routes";
+import { getUserFacingApiError } from "@/utils/api-error-message";
 import type { RegisterFormData, RegisterFormProps } from "@/types";
 
 export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
@@ -61,24 +62,28 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
           setServerError("This email is already registered. Please sign in or use a different email.");
         } else if (err.code === "MAIL_NOT_CONFIGURED") {
           setServerError("Email verification service is temporarily unconfigured on the server.");
-        } else if (err.code === "VALIDATION_ERROR" && err.details) {
-          err.details.forEach((detail) => {
+        } else if (err.code === "VALIDATION_ERROR") {
+          err.details?.forEach((detail) => {
             if (
               detail.field === "email" ||
               detail.field === "password" ||
               detail.field === "fullName"
             ) {
-              setError(detail.field, { message: detail.message });
+              setError(detail.field, { message: "Please check this field." });
             }
           });
-          setServerError(err.message || "Invalid registration data.");
+          setServerError(
+            getUserFacingApiError(err, "Please check the information and try again.")
+          );
         } else {
-          setServerError(err.message || "Registration failed. Please try again.");
+          setServerError(
+            getUserFacingApiError(err, "Registration failed. Please try again.")
+          );
         }
-      } else if (err instanceof Error) {
-        setServerError(err.message);
       } else {
-        setServerError("An unexpected error occurred. Please try again.");
+        setServerError(
+          getUserFacingApiError(err, "An unexpected error occurred. Please try again.")
+        );
       }
     } finally {
       setIsSubmitting(false);

@@ -33,9 +33,6 @@ export const LandingNavbar: React.FC = () => {
           <a href="#knowledge" className="hover:text-neutral-900 transition-colors">
             Knowledge
           </a>
-          <a href="#pricing" className="hover:text-neutral-900 transition-colors">
-            Pricing
-          </a>
         </nav>
 
         {/* Right: Auth Buttons */}

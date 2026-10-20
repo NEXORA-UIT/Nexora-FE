@@ -10,6 +10,7 @@ import { profileSchema } from "@/schemas";
 import { profileApi } from "@/apis/profile.api";
 import { ApiError } from "@/apis/client";
 import { useAuthStore } from "@/stores/auth.store";
+import { getUserFacingApiError } from "@/utils/api-error-message";
 import type {
   ProfileInformationCardProps,
   ProfileFormData,
@@ -80,10 +81,14 @@ export const ProfileInformationCard: React.FC<ProfileInformationCardProps> = ({
             "Profile update (PATCH /api/v1/auth/me) is currently not supported by the backend server."
           );
         } else {
-          setErrorMessage(err.message || "Failed to update profile information.");
+          setErrorMessage(
+            getUserFacingApiError(err, "Failed to update profile information.")
+          );
         }
       } else {
-        setErrorMessage("An unexpected error occurred. Please try again.");
+        setErrorMessage(
+          getUserFacingApiError(err, "An unexpected error occurred. Please try again.")
+        );
       }
     } finally {
       setIsSubmitting(false);
@@ -111,7 +116,7 @@ export const ProfileInformationCard: React.FC<ProfileInformationCardProps> = ({
       )}
 
       {errorMessage && (
-        <div className="mt-5 flex items-center gap-2 rounded-xl bg-error-50 px-3.5 py-2.5 text-xs font-medium text-error-800 border border-error-200/80 animate-in fade-in duration-200">
+        <div role="alert" className="mt-5 flex items-center gap-2 rounded-xl bg-error-50 px-3.5 py-2.5 text-xs font-medium text-error-800 border border-error-200/80 animate-in fade-in duration-200">
           <AlertCircle className="h-4 w-4 shrink-0 text-error-600" />
           <span>{errorMessage}</span>
         </div>

@@ -200,9 +200,39 @@ describe("Authentication Routes & Flow Tests", () => {
 
       await waitFor(() => {
         expect(screen.getByRole("alert")).toBeDefined();
-        expect(screen.getByText("Incorrect email or password.")).toBeDefined();
+        expect(screen.getByText("The email or password is incorrect.")).toBeDefined();
         expect(onSuccessMock).not.toHaveBeenCalled();
       });
+    });
+
+    it("does not show server validation details verbatim", async () => {
+      vi.spyOn(authApi, "login").mockRejectedValueOnce(
+        new ApiError("Dữ liệu không hợp lệ", "VALIDATION_ERROR", 400, [
+          { field: "email", message: "Email không hợp lệ" },
+        ])
+      );
+
+      render(
+        <MemoryRouter>
+          <LoginForm onSuccess={vi.fn()} />
+        </MemoryRouter>
+      );
+
+      fireEvent.change(screen.getByLabelText(/Email/i), {
+        target: { value: "developer@nexora.io" },
+      });
+      fireEvent.change(screen.getByPlaceholderText("EnterpriseShield2025!"), {
+        target: { value: "Password123!" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: /Sign in/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole("alert").textContent).toContain(
+          "Please check your email and password and try again."
+        );
+      });
+      expect(screen.queryByText("Email không hợp lệ")).toBeNull();
+      expect(screen.queryByText("Dữ liệu không hợp lệ")).toBeNull();
     });
   });
 });

@@ -4,7 +4,11 @@ import { Button } from "@/components/ui/button";
 import { NexoraLogo } from "@/components/common/NexoraLogo";
 import { ROUTES } from "@/constants/routes";
 
-export const UnderDevelopmentPage: React.FC = () => {
+interface UnderDevelopmentPageProps {
+  title?: string;
+}
+
+export const UnderDevelopmentPage: React.FC<UnderDevelopmentPageProps> = ({ title = "This feature is not available" }) => {
   const navigate = useNavigate();
 
   return (
@@ -15,10 +19,10 @@ export const UnderDevelopmentPage: React.FC = () => {
       {/* Screen Heading & Message */}
       <div className="mt-6">
         <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
-          Feature Under Development
+          {title}
         </h1>
         <p className="mt-2 text-sm text-neutral-500 leading-relaxed">
-          This feature is currently under active development and will be available in an upcoming release.
+          This area is not part of the current demo. Core workspace and planning flows are available from the navigation.
         </p>
       </div>
 

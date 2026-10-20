@@ -10,6 +10,7 @@ import { resetPasswordSchema } from "@/schemas/auth.schema";
 import { evaluatePasswordStrength } from "@/utils/password";
 import { authApi } from "@/apis/auth.api";
 import { ApiError } from "@/apis/client";
+import { getUserFacingApiError } from "@/utils/api-error-message";
 import type { ResetPasswordFormData, ResetPasswordFormProps } from "@/types";
 
 export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ onSuccess }) => {
@@ -62,12 +63,10 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ onSuccess 
             "The password reset link is invalid or has expired. Please request a new one."
           );
         } else {
-          setServerError(err.message || "Password reset failed. Please try again.");
+          setServerError(getUserFacingApiError(err, "Password reset failed. Please try again."));
         }
-      } else if (err instanceof Error) {
-        setServerError(err.message);
       } else {
-        setServerError("An unexpected error occurred. Please try again.");
+        setServerError(getUserFacingApiError(err, "An unexpected error occurred. Please try again."));
       }
     } finally {
       setIsSubmitting(false);

@@ -1,4 +1,6 @@
 export * from "./BoardDetailHeader";
+export * from "./BoardMembersDialog";
+export * from "./GitHubConfigModal";
 export * from "./BoardDetailToolbar";
 export * from "./CardPriorityBadge";
 export * from "./CardTagBadge";
@@ -11,6 +13,3 @@ export * from "./KanbanBoard";
 export * from "./detail";
 export * from "./calendar";
 export * from "./planning";
-
-
-

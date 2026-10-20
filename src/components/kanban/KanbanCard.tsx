@@ -1,6 +1,6 @@
 import * as React from "react";
-import { Calendar, CheckCircle2, Lock } from "lucide-react";
-import { formatCardDueDate } from "@/utils/date";
+import { Calendar, CheckCircle2, Lock, MessageCircle, Paperclip } from "lucide-react";
+import { format, parseISO } from "date-fns";
 import { CardPriorityBadge } from "./CardPriorityBadge";
 import { CardTagBadge } from "./CardTagBadge";
 import type { KanbanCard as KanbanCardType } from "@/types";
@@ -19,10 +19,14 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
   const primaryTag = card.labels[0]?.name;
   const primaryAssignee = card.assignees[0];
 
-  const formattedDueDate = React.useMemo(
-    () => formatCardDueDate(card.dueDate),
-    [card.dueDate]
-  );
+  const formattedDueDate = React.useMemo(() => {
+    if (!card.dueDate) return null;
+    try {
+      return format(parseISO(card.dueDate), "MMM dd");
+    } catch {
+      return null;
+    }
+  }, [card.dueDate]);
 
   const hasChecklist = card.tasksCount > 0;
   const isChecklistComplete =
@@ -110,6 +114,19 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
               <span>
                 {card.completedTasksCount}/{card.tasksCount}
               </span>
+            </div>
+          )}
+
+          {(card.commentsCount ?? 0) > 0 && (
+            <div title={`${card.commentsCount} comments`} className="flex items-center gap-1 text-[11px] font-medium text-neutral-500">
+              <MessageCircle className="h-3.5 w-3.5 text-neutral-400" />
+              <span>{card.commentsCount}</span>
+            </div>
+          )}
+          {(card.attachmentsCount ?? 0) > 0 && (
+            <div title={`${card.attachmentsCount} attachments`} className="flex items-center gap-1 text-[11px] font-medium text-neutral-500">
+              <Paperclip className="h-3.5 w-3.5 text-neutral-400" />
+              <span>{card.attachmentsCount}</span>
             </div>
           )}
         </div>

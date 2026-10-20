@@ -1,6 +1,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { cardApi } from "@/apis";
+import { getUserFacingApiError } from "@/utils/api-error-message";
 import {
   mapAttachmentDtoToCardAttachment,
   mapAttachmentDtosToCardAttachments,
@@ -54,7 +55,7 @@ export function useCardAttachments({
       setAttachmentsError(null);
     } catch (err) {
       if (activeAttachmentsCardIdRef.current !== cardId) return;
-      setAttachmentsError(err instanceof Error ? err.message : "Failed to load attachments");
+      setAttachmentsError(getUserFacingApiError(err, "Failed to load attachments"));
     } finally {
       if (activeAttachmentsCardIdRef.current === cardId) {
         setIsAttachmentsLoading(false);

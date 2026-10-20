@@ -56,11 +56,6 @@ export interface AssignBoardPmRequest {
   pmId: string;
 }
 
-export interface BoardDashboardDto {
-  totalCards: number;
-  todo: number;
-  inProgress: number;
-  done: number;
-  overdue: number;
-  completionPercent: number;
+export interface AddBoardMemberRequest {
+  userId: string;
 }

@@ -1,10 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useBoardDetail } from "../useBoardDetail";
+import { ApiError } from "@/apis/client";
 import { boardApi } from "@/apis/board.api";
 import { listApi } from "@/apis/list.api";
 import { cardApi } from "@/apis/card.api";
-import type { Board, KanbanList, KanbanCard, BoardMember, ChecklistItem, CardAssignmentDto, BoardLabel } from "@/types";
+import type {
+  Board,
+  KanbanList,
+  KanbanCard,
+  BoardMember,
+  ChecklistItem,
+  CardAssignmentDto,
+  BoardLabel,
+} from "@/types";
 
 describe("useBoardDetail Live Read Integration & State Orchestration", () => {
   const mockBoard: Board = {
@@ -131,7 +140,7 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
 
     expect(boardApi.getBoard).toHaveBeenCalledWith("b-uuid-1");
     expect(listApi.getBoardLists).toHaveBeenCalledWith("b-uuid-1", { includeArchived: true });
-    expect(cardApi.getBoardCards).toHaveBeenCalledWith("b-uuid-1");
+    expect(cardApi.getBoardCards).toHaveBeenCalledWith("b-uuid-1", undefined, mockMembers);
     expect(boardApi.getBoardMembers).toHaveBeenCalledWith("b-uuid-1");
 
     expect(result.current.error).toBeNull();
@@ -154,6 +163,59 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
     expect(todoList?.cards[1].id).toBe("card-uuid-102");
   });
 
+  it("sends supported search, status, assignee, label, and overdue filters to the Board cards API", async () => {
+    const { result } = renderHook(() => useBoardDetail("b-uuid-1"));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    act(() => {
+      result.current.setSearchQuery("design");
+      result.current.setCardFilters({
+        statusGroup: "DONE",
+        priority: "ALL",
+        assigneeIds: ["user-1"],
+        dueDate: "OVERDUE",
+        labelIds: ["label-1"],
+      });
+    });
+
+    await waitFor(() =>
+      expect(cardApi.getBoardCards).toHaveBeenCalledWith(
+        "b-uuid-1",
+        {
+          q: "design",
+          assigneeId: ["user-1"],
+          labelId: ["label-1"],
+          statusGroup: "DONE",
+          isOverdue: true,
+        },
+        mockMembers
+      )
+    );
+  });
+
+  it("sends multi-select assignees and labels in one server-filtered request", async () => {
+    const { result } = renderHook(() => useBoardDetail("b-uuid-1"));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    act(() =>
+      result.current.setCardFilters({
+        statusGroup: "ALL",
+        priority: "ALL",
+        assigneeIds: ["user-1", "user-2"],
+        dueDate: "ALL",
+        labelIds: ["label-1", "label-2"],
+      })
+    );
+
+    await waitFor(() => expect(cardApi.getBoardCards).toHaveBeenCalledTimes(2));
+    expect(cardApi.getBoardCards).toHaveBeenNthCalledWith(
+      2,
+      "b-uuid-1",
+      { assigneeId: ["user-1", "user-2"], labelId: ["label-1", "label-2"] },
+      mockMembers
+    );
+  });
+
   it("handles loading and error states when board fetch fails", async () => {
     vi.spyOn(boardApi, "getBoard").mockRejectedValueOnce(new Error("Board not found"));
 
@@ -162,7 +224,7 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     expect(result.current.board).toBeNull();
-    expect(result.current.error).toBe("Board not found");
+    expect(result.current.error).toBe("Failed to load board");
   });
 
   it("propagates error when member read fails instead of silently converting to empty array", async () => {
@@ -173,7 +235,7 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     expect(result.current.board).toBeNull();
-    expect(result.current.error).toBe("Access forbidden");
+    expect(result.current.error).toBe("Failed to load board");
   });
 
   it("handles empty board state with no lists or cards gracefully", async () => {
@@ -244,7 +306,8 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
     expect(moved).toBe(true);
 
     // Verify card moved to DONE list with updated server timestamp
-    const doneCards = result.current.board?.lists.find((l) => l.id === "list-uuid-done")?.cards || [];
+    const doneCards =
+      result.current.board?.lists.find((l) => l.id === "list-uuid-done")?.cards || [];
     expect(doneCards.some((c) => c.id === "card-uuid-101")).toBe(true);
   });
 
@@ -263,7 +326,8 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
       });
     });
 
-    const doneCards = result.current.board?.lists.find((l) => l.id === "list-uuid-done")?.cards || [];
+    const doneCards =
+      result.current.board?.lists.find((l) => l.id === "list-uuid-done")?.cards || [];
     expect(doneCards.some((c) => c.id === blockedCard!.id)).toBe(false);
   });
 
@@ -299,7 +363,8 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
       title: "Newly created card",
     });
 
-    const todoCards = result.current.board?.lists.find((l) => l.id === "list-uuid-todo")?.cards || [];
+    const todoCards =
+      result.current.board?.lists.find((l) => l.id === "list-uuid-todo")?.cards || [];
     expect(todoCards.some((c) => c.id === "card-uuid-new")).toBe(true);
   });
 
@@ -308,7 +373,7 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     vi.spyOn(cardApi, "updateCard").mockRejectedValueOnce(
-      new Error("409 CARD_CONFLICT: Card was updated by another user")
+      new ApiError("Thẻ đã được cập nhật", "CARD_CONFLICT", 409)
     );
 
     const reloadSpy = vi.spyOn(boardApi, "getBoard");
@@ -319,7 +384,7 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
           title: "Conflicted title",
           updatedAt: "2020-01-01T00:00:00.000Z",
         })
-      ).rejects.toThrow("CARD_CONFLICT");
+      ).rejects.toMatchObject({ code: "CARD_CONFLICT", status: 409 });
     });
 
     // Verification: reload triggered to refresh stale state
@@ -345,7 +410,8 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
     expect(cardApi.deleteCard).toHaveBeenCalledWith("card-uuid-101");
 
     // Card should be removed from list
-    const todoCards = result.current.board?.lists.find((l) => l.id === "list-uuid-todo")?.cards || [];
+    const todoCards =
+      result.current.board?.lists.find((l) => l.id === "list-uuid-todo")?.cards || [];
     expect(todoCards.some((c) => c.id === "card-uuid-101")).toBe(false);
 
     // Selected card drawer should be closed
@@ -441,7 +507,10 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
         await result.current.handleAddChecklistItem("card-uuid-101", "Write integration tests");
       });
 
-      expect(cardApi.addChecklistItem).toHaveBeenCalledWith("card-uuid-101", "Write integration tests");
+      expect(cardApi.addChecklistItem).toHaveBeenCalledWith(
+        "card-uuid-101",
+        "Write integration tests"
+      );
       expect(cardApi.getCardById).toHaveBeenCalledWith("card-uuid-101");
 
       const cardInBoard = result.current.board?.lists
@@ -465,7 +534,11 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
       });
       await waitFor(() => expect(result.current.selectedCard?.checklist).toHaveLength(1));
 
-      const updatedTask = { ...mockTask1, isCompleted: true, updatedAt: "2026-10-09T03:30:00.000Z" };
+      const updatedTask = {
+        ...mockTask1,
+        isCompleted: true,
+        updatedAt: "2026-10-09T03:30:00.000Z",
+      };
       vi.spyOn(cardApi, "updateChecklistItem").mockResolvedValueOnce(updatedTask);
       vi.spyOn(cardApi, "getCardById").mockResolvedValueOnce({
         ...mockCards[0],
@@ -478,7 +551,9 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
         await result.current.handleToggleChecklistItem("card-uuid-101", "task-uuid-1", true);
       });
 
-      expect(cardApi.updateChecklistItem).toHaveBeenCalledWith("task-uuid-1", { isCompleted: true });
+      expect(cardApi.updateChecklistItem).toHaveBeenCalledWith("task-uuid-1", {
+        isCompleted: true,
+      });
       expect(cardApi.getCardById).toHaveBeenCalledWith("card-uuid-101");
 
       const cardInBoard = result.current.board?.lists
@@ -682,7 +757,9 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
 
       // 1. Task mutation succeeds, but card sync fails
       vi.spyOn(cardApi, "addChecklistItem").mockResolvedValueOnce(mockTask1);
-      vi.spyOn(cardApi, "getCardById").mockRejectedValueOnce(new Error("Card sync network timeout"));
+      vi.spyOn(cardApi, "getCardById").mockRejectedValueOnce(
+        new Error("Card sync network timeout")
+      );
 
       await act(async () => {
         await result.current.handleAddChecklistItem("card-uuid-101", "Write integration tests");
@@ -694,7 +771,9 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
         ?.cards.find((c) => c.id === "card-uuid-101");
       expect(cardInBoard?.checklist?.some((t) => t.id === "task-uuid-1")).toBe(true);
       // tasksError is set so the UI displays the Retry banner
-      expect(result.current.tasksError).toBe("Unable to sync latest card timestamp. Click Retry to sync.");
+      expect(result.current.tasksError).toBe(
+        "Unable to sync latest card timestamp. Click Retry to sync."
+      );
 
       // 2. User clicks Retry: recovering both tasks and parent card
       vi.spyOn(cardApi, "getCardTasks").mockResolvedValueOnce([mockTask1]);
@@ -726,8 +805,20 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
       const sharedTimestamp = "2026-10-09T10:00:00.000Z";
 
       // Card currently has 2 tasks in local state
-      const taskA: ChecklistItem = { id: "t-a", cardId: "card-uuid-101", title: "Task A", isCompleted: false, position: 1024 };
-      const taskB: ChecklistItem = { id: "t-b", cardId: "card-uuid-101", title: "Task B", isCompleted: false, position: 2048 };
+      const taskA: ChecklistItem = {
+        id: "t-a",
+        cardId: "card-uuid-101",
+        title: "Task A",
+        isCompleted: false,
+        position: 1024,
+      };
+      const taskB: ChecklistItem = {
+        id: "t-b",
+        cardId: "card-uuid-101",
+        title: "Task B",
+        isCompleted: false,
+        position: 2048,
+      };
 
       // Populate local card with 2 tasks and shared timestamp
       vi.spyOn(cardApi, "addChecklistItem").mockResolvedValueOnce(taskA);
@@ -753,7 +844,10 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
       });
 
       // An out-of-order response arrives that had identical updatedAt but older tasksCount (1)
-      vi.spyOn(cardApi, "updateChecklistItem").mockResolvedValueOnce({ ...taskA, isCompleted: true });
+      vi.spyOn(cardApi, "updateChecklistItem").mockResolvedValueOnce({
+        ...taskA,
+        isCompleted: true,
+      });
       vi.spyOn(cardApi, "getCardById").mockResolvedValueOnce({
         ...mockCards[0],
         updatedAt: sharedTimestamp, // Identical timestamp
@@ -978,7 +1072,9 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
       expect(card?.assignees[0].id).toBe("user-uuid-pm");
 
       // Separate error state set for reconciliation
-      expect(result.current.assignmentsError).toBe("Unable to sync latest card timestamp. Click Retry to sync.");
+      expect(result.current.assignmentsError).toBe(
+        "Unable to sync latest card timestamp. Click Retry to sync."
+      );
     });
 
     it("retry assignments re-fetches assignments and reconciles card without calling POST/DELETE", async () => {
@@ -1065,7 +1161,9 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
 
     it("assignment error state is completely independent from tasks error state", async () => {
       // Assignments fail, tasks succeed
-      vi.spyOn(cardApi, "getCardAssignments").mockRejectedValueOnce(new Error("Assignments service down"));
+      vi.spyOn(cardApi, "getCardAssignments").mockRejectedValueOnce(
+        new Error("Assignments service down")
+      );
       vi.spyOn(cardApi, "getCardTasks").mockResolvedValueOnce([
         { id: "t-1", cardId: "card-uuid-101", title: "Task 1", isCompleted: true, position: 1024 },
       ]);
@@ -1082,7 +1180,7 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
         expect(result.current.isTasksLoading).toBe(false);
       });
 
-      expect(result.current.assignmentsError).toBe("Assignments service down");
+      expect(result.current.assignmentsError).toBe("Failed to load card assignments");
       expect(result.current.tasksError).toBeNull();
 
       // Tasks checklist still successfully populated
@@ -1165,7 +1263,9 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
         .flatMap((l) => l.cards)
         .find((c) => c.id === "card-uuid-102");
       expect(card102?.labels.some((l) => l.id === "label-uuid-1")).toBe(false);
-      expect(card102?.labels).toEqual([{ id: "label-uuid-2", boardId: "b-uuid-1", name: "Feature" }]);
+      expect(card102?.labels).toEqual([
+        { id: "label-uuid-2", boardId: "b-uuid-1", name: "Feature" },
+      ]);
     });
 
     it("handleAttachCardLabel updates card.labels and reconciles parent card timestamp", async () => {
@@ -1228,7 +1328,9 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
         status: 409,
       });
       vi.spyOn(cardApi, "attachCardLabel").mockRejectedValueOnce(conflictError);
-      const getCardLabelsSpy = vi.spyOn(cardApi, "getCardLabels").mockResolvedValueOnce([mockBoardLabel]);
+      const getCardLabelsSpy = vi
+        .spyOn(cardApi, "getCardLabels")
+        .mockResolvedValueOnce([mockBoardLabel]);
 
       const { result } = renderHook(() => useBoardDetail("b-uuid-1"));
       await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -1260,7 +1362,9 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
         .find((c) => c.id === "card-uuid-101");
       // Label is kept in state
       expect(card?.labels).toEqual([mockBoardLabel]);
-      expect(result.current.labelsError).toBe("Unable to sync latest card timestamp. Click Retry to sync.");
+      expect(result.current.labelsError).toBe(
+        "Unable to sync latest card timestamp. Click Retry to sync."
+      );
       // Assignments error remains null
       expect(result.current.assignmentsError).toBeNull();
     });
@@ -1313,7 +1417,7 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
         expect(result.current.isTasksLoading).toBe(false);
       });
 
-      expect(result.current.labelsError).toBe("Labels failed");
+      expect(result.current.labelsError).toBe("Failed to load card labels");
       expect(result.current.tasksError).toBeNull();
       expect(result.current.assignmentsError).toBeNull();
     });
@@ -1358,7 +1462,10 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
     };
 
     it("auto-loads comments when card is selected and maps members from board", async () => {
-      vi.spyOn(cardApi, "getCardComments").mockResolvedValueOnce([mockCommentDto1, mockCommentDto2]);
+      vi.spyOn(cardApi, "getCardComments").mockResolvedValueOnce([
+        mockCommentDto1,
+        mockCommentDto2,
+      ]);
 
       const { result } = renderHook(() => useBoardDetail("b-uuid-1"));
       await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -1375,15 +1482,17 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
       expect(selectedCard).toBeDefined();
       expect(selectedCard?.comments).toHaveLength(2);
       expect(selectedCard?.comments?.[0].author.name).toBe("Alice PM");
-      expect(selectedCard?.comments?.[0].content).toBe("Hello team, please review this implementation.");
+      expect(selectedCard?.comments?.[0].content).toBe(
+        "Hello team, please review this implementation."
+      );
       expect(selectedCard?.comments?.[1].author.name).toBe("Unknown Member");
       expect(selectedCard?.comments?.[1].isDeleted).toBe(true);
       expect(selectedCard?.comments?.[1].content).toBeNull();
     });
 
     it("stale response guard: previous card response does not overwrite current card", async () => {
-      let resolveCard1!: (val: typeof mockCommentDto1[]) => void;
-      const card1Promise = new Promise<typeof mockCommentDto1[]>((resolve) => {
+      let resolveCard1!: (val: (typeof mockCommentDto1)[]) => void;
+      const card1Promise = new Promise<(typeof mockCommentDto1)[]>((resolve) => {
         resolveCard1 = resolve;
       });
 
@@ -1449,7 +1558,10 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
       vi.spyOn(cardApi, "createCardComment").mockResolvedValueOnce(mockCommentDto1);
 
       await act(async () => {
-        await result.current.handleAddComment(mockCards[0].id, "Hello team, please review this implementation.");
+        await result.current.handleAddComment(
+          mockCards[0].id,
+          "Hello team, please review this implementation."
+        );
       });
 
       expect(cardApi.createCardComment).toHaveBeenCalledWith(
@@ -1505,7 +1617,10 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
         await result.current.handleUpdateComment("comment-uuid-1", "Edited remark content");
       });
 
-      expect(cardApi.updateCardComment).toHaveBeenCalledWith("comment-uuid-1", "Edited remark content");
+      expect(cardApi.updateCardComment).toHaveBeenCalledWith(
+        "comment-uuid-1",
+        "Edited remark content"
+      );
       expect(result.current.selectedCard?.comments?.[0].content).toBe("Edited remark content");
       expect(result.current.selectedCard?.updatedAt).toBe(initialCardUpdatedAt);
     });
@@ -1548,7 +1663,7 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
       });
 
       await waitFor(() => {
-        expect(result.current.commentsError).toBe("Network failed");
+        expect(result.current.commentsError).toBe("Failed to load comments");
       });
 
       act(() => {
@@ -1564,7 +1679,9 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
     });
 
     it("comments failure is isolated and does not break tasks, assignments or labels", async () => {
-      vi.spyOn(cardApi, "getCardComments").mockRejectedValueOnce(new Error("Comments server timeout"));
+      vi.spyOn(cardApi, "getCardComments").mockRejectedValueOnce(
+        new Error("Comments server timeout")
+      );
       vi.spyOn(cardApi, "getCardTasks").mockResolvedValueOnce([]);
       vi.spyOn(cardApi, "getCardAssignments").mockResolvedValueOnce([]);
       vi.spyOn(cardApi, "getCardLabels").mockResolvedValueOnce([]);
@@ -1580,7 +1697,7 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
         expect(result.current.isCommentsLoading).toBe(false);
       });
 
-      expect(result.current.commentsError).toBe("Comments server timeout");
+      expect(result.current.commentsError).toBe("Failed to load comments");
       expect(result.current.tasksError).toBeNull();
       expect(result.current.assignmentsError).toBeNull();
       expect(result.current.labelsError).toBeNull();
@@ -1610,7 +1727,10 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
     };
 
     it("auto-loads attachments when card is selected and maps members from board", async () => {
-      vi.spyOn(cardApi, "getCardAttachments").mockResolvedValueOnce([mockAttachmentDto1, mockAttachmentDto2]);
+      vi.spyOn(cardApi, "getCardAttachments").mockResolvedValueOnce([
+        mockAttachmentDto1,
+        mockAttachmentDto2,
+      ]);
 
       const { result } = renderHook(() => useBoardDetail("b-uuid-1"));
       await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -1633,8 +1753,8 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
     });
 
     it("stale response guard: previous card response does not overwrite current card", async () => {
-      let resolveCard1!: (val: typeof mockAttachmentDto1[]) => void;
-      const card1Promise = new Promise<typeof mockAttachmentDto1[]>((resolve) => {
+      let resolveCard1!: (val: (typeof mockAttachmentDto1)[]) => void;
+      const card1Promise = new Promise<(typeof mockAttachmentDto1)[]>((resolve) => {
         resolveCard1 = resolve;
       });
 
@@ -1784,7 +1904,7 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
       });
 
       await waitFor(() => {
-        expect(result.current.attachmentsError).toBe("Network failed");
+        expect(result.current.attachmentsError).toBe("Failed to load attachments");
       });
 
       act(() => {
@@ -1800,7 +1920,9 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
     });
 
     it("attachments failure is isolated and does not break tasks, assignments, labels, or comments", async () => {
-      vi.spyOn(cardApi, "getCardAttachments").mockRejectedValueOnce(new Error("Attachments server timeout"));
+      vi.spyOn(cardApi, "getCardAttachments").mockRejectedValueOnce(
+        new Error("Attachments server timeout")
+      );
       vi.spyOn(cardApi, "getCardTasks").mockResolvedValueOnce([]);
       vi.spyOn(cardApi, "getCardAssignments").mockResolvedValueOnce([]);
       vi.spyOn(cardApi, "getCardLabels").mockResolvedValueOnce([]);
@@ -1817,7 +1939,7 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
         expect(result.current.isAttachmentsLoading).toBe(false);
       });
 
-      expect(result.current.attachmentsError).toBe("Attachments server timeout");
+      expect(result.current.attachmentsError).toBe("Failed to load attachments");
       expect(result.current.tasksError).toBeNull();
       expect(result.current.assignmentsError).toBeNull();
       expect(result.current.labelsError).toBeNull();
@@ -1869,7 +1991,7 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
       });
 
       await waitFor(() => {
-        expect(result.current.dependenciesError).toBe("Dependencies network failure");
+        expect(result.current.dependenciesError).toBe("Failed to load dependencies");
       });
 
       act(() => {
@@ -1939,7 +2061,7 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
       });
 
       await waitFor(() => {
-        expect(result.current.dependenciesError).toBe("Failed");
+        expect(result.current.dependenciesError).toBe("Failed to load dependencies");
       });
 
       act(() => {

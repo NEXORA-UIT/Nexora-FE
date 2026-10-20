@@ -13,6 +13,7 @@ import {
   HelpCircle,
   FolderKanban,
   Plus,
+  StickyNote,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ROUTES } from "@/constants/routes";
@@ -66,6 +67,11 @@ export const Sidebar: React.FC = () => {
 
   const isHomeActive = location.pathname === ROUTES.HOME;
   const isBoardsActive = location.pathname === ROUTES.BOARDS;
+  const isMyTasksActive = location.pathname === ROUTES.MY_TASKS;
+  const isCalendarActive = location.pathname === ROUTES.CALENDAR;
+  const isQuickNotesActive = location.pathname === ROUTES.QUICK_NOTES;
+  const isKnowledgeActive = location.pathname === ROUTES.KNOWLEDGE_BASE;
+  const isHelpActive = location.pathname === ROUTES.HELP;
   const isSettingsActive =
     location.pathname === ROUTES.SETTINGS ||
     location.pathname === ROUTES.PROFILE;
@@ -94,23 +100,20 @@ export const Sidebar: React.FC = () => {
             </Link>
 
             <Link
-              to={ROUTES.UNDER_DEVELOPMENT}
-              className="flex items-center justify-between rounded-lg px-2.5 py-2 text-xs font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
+              to={ROUTES.MY_TASKS}
+              className={cn("flex items-center justify-between rounded-lg px-2.5 py-2 text-xs transition-colors", isMyTasksActive ? "bg-primary-50 font-semibold text-primary-700" : "font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900")}
             >
               <div className="flex items-center gap-2.5">
-                <CheckCircle2 className="h-4 w-4 text-neutral-500" />
+                <CheckCircle2 className={cn("h-4 w-4", isMyTasksActive ? "text-primary-600" : "text-neutral-500")} />
                 <span>My Tasks</span>
               </div>
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-100 text-[11px] font-semibold text-primary-700">
-                6
-              </span>
             </Link>
 
             <Link
-              to={ROUTES.UNDER_DEVELOPMENT}
-              className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
+              to={ROUTES.CALENDAR}
+              className={cn("flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs transition-colors", isCalendarActive ? "bg-primary-50 font-semibold text-primary-700" : "font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900")}
             >
-              <Calendar className="h-4 w-4 text-neutral-500" />
+              <Calendar className={cn("h-4 w-4", isCalendarActive ? "text-primary-600" : "text-neutral-500")} />
               <span>Calendar</span>
             </Link>
           </nav>
@@ -239,19 +242,27 @@ export const Sidebar: React.FC = () => {
           </span>
           <nav className="mt-2 space-y-1">
             <Link
-              to={ROUTES.UNDER_DEVELOPMENT}
-              className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
+              to={ROUTES.QUICK_NOTES}
+              className={cn("flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs transition-colors", isQuickNotesActive ? "bg-primary-50 font-semibold text-primary-700" : "font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900")}
             >
-              <BookOpen className="h-4 w-4 text-neutral-500" />
+              <StickyNote className={cn("h-4 w-4", isQuickNotesActive ? "text-primary-600" : "text-neutral-500")} />
+              <span>Quick Notes</span>
+            </Link>
+            <Link
+              to={ROUTES.KNOWLEDGE_BASE}
+              className={cn("flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs transition-colors", isKnowledgeActive ? "bg-primary-50 font-semibold text-primary-700" : "font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900")}
+            >
+              <BookOpen className={cn("h-4 w-4", isKnowledgeActive ? "text-primary-600" : "text-neutral-500")} />
               <span>Knowledge Base</span>
             </Link>
 
             <Link
-              to={ROUTES.UNDER_DEVELOPMENT}
-              className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
+              to={ROUTES.AI_ASSISTANT}
+              aria-label="AI Assistant, not implemented"
+              className="flex items-center justify-between gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 transition-colors"
             >
-              <Sparkles className="h-4 w-4 text-neutral-500" />
-              <span>AI Assistant</span>
+              <span className="flex items-center gap-2.5"><Sparkles className="h-4 w-4 text-neutral-400" /><span>AI Assistant</span></span>
+              <span className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[9px] font-semibold text-neutral-500">Not ready</span>
             </Link>
           </nav>
         </div>
@@ -282,9 +293,9 @@ export const Sidebar: React.FC = () => {
           </Link>
           <Link
             to={ROUTES.HELP}
-            className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
+            className={cn("flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs transition-colors", isHelpActive ? "bg-primary-50 font-semibold text-primary-700" : "font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900")}
           >
-            <HelpCircle className="h-4 w-4 text-neutral-500" />
+            <HelpCircle className={cn("h-4 w-4", isHelpActive ? "text-primary-600" : "text-neutral-500")} />
             <span>Help & Docs</span>
           </Link>
         </nav>

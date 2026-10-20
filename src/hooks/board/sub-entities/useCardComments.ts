@@ -1,6 +1,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { cardApi } from "@/apis";
+import { getUserFacingApiError } from "@/utils/api-error-message";
 import {
   mapCommentDtoToCardComment,
   mapCommentDtosToCardComments,
@@ -52,7 +53,7 @@ export function useCardComments({
       setCommentsError(null);
     } catch (err) {
       if (activeCommentsCardIdRef.current !== cardId) return;
-      setCommentsError(err instanceof Error ? err.message : "Failed to load comments");
+      setCommentsError(getUserFacingApiError(err, "Failed to load comments"));
     } finally {
       if (activeCommentsCardIdRef.current === cardId) {
         setIsCommentsLoading(false);

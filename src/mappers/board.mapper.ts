@@ -89,10 +89,10 @@ export function mapBoardDashboardDtoToBoardDashboard(
 ): BoardDashboard {
   return {
     totalCards: dto.totalCards,
-    completedCards: dto.done,
-    inProgressCards: dto.inProgress,
-    todoCards: dto.todo,
-    overdueCards: dto.overdue,
-    completionRate: dto.completionPercent,
+    completedCards: dto.completedCards ?? dto.done ?? 0,
+    inProgressCards: dto.inProgressCards ?? dto.inProgress ?? 0,
+    todoCards: dto.todoCards ?? dto.todo ?? 0,
+    overdueCards: dto.overdueCards ?? dto.overdue ?? 0,
+    completionRate: dto.completionRate ?? dto.completionPercent ?? 0,
   };
 }

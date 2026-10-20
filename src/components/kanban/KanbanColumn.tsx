@@ -1,7 +1,9 @@
 import * as React from "react";
 import { GripVertical, Plus, MoreHorizontal } from "lucide-react";
+import { useDroppable } from "@dnd-kit/core";
 import { AddCardInline } from "./AddCardInline";
 import type { KanbanList } from "@/types";
+import { getListDropTargetId } from "@/hooks/useKanbanDnd";
 
 export interface KanbanColumnProps {
   list: KanbanList;
@@ -20,27 +22,30 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   isAddingCard,
   onSetAddingCard,
 }) => {
+  const { isOver, setNodeRef } = useDroppable({ id: getListDropTargetId(list.id) });
+
   return (
-    <div
-      className="flex h-full w-[320px] min-w-[320px] max-w-[320px] shrink-0 flex-col rounded-2xl border border-neutral-200/90 bg-neutral-50/80 p-3.5 select-none max-h-[calc(100vh-230px)] shadow-2xs"
-    >
+    <div className="shadow-md flex h-full max-h-[calc(100vh-230px)] w-[320px] min-w-[320px] max-w-[320px] shrink-0 select-none flex-col rounded-2xl border border-white/80 bg-white/90 p-3.5 backdrop-blur-sm">
       {/* 1. Column Header */}
-      <div className="flex items-center justify-between gap-2 pb-3 border-b border-neutral-200/60">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <GripVertical className="h-4 w-4 text-neutral-300 shrink-0 pointer-events-none select-none" aria-hidden="true" />
-          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-800 truncate">
+      <div className="flex items-center justify-between gap-2 border-b border-neutral-200/60 pb-3">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <GripVertical
+            className="pointer-events-none h-4 w-4 shrink-0 select-none text-neutral-300"
+            aria-hidden="true"
+          />
+          <h3 className="truncate text-xs font-bold uppercase tracking-wider text-neutral-800">
             {list.name}
           </h3>
-          <span className="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-neutral-200/70 px-1.5 text-[11px] font-semibold text-neutral-700">
+          <span className="h-4.5 min-w-4.5 flex items-center justify-center rounded-full bg-neutral-200/70 px-1.5 text-[11px] font-semibold text-neutral-700">
             {list.cards.length}
           </span>
         </div>
 
-        <div className="flex items-center gap-0.5 shrink-0">
+        <div className="flex shrink-0 items-center gap-0.5">
           <button
             type="button"
             onClick={() => onSetAddingCard(true)}
-            className="flex h-6.5 w-6.5 items-center justify-center rounded-md text-neutral-500 hover:bg-neutral-200/60 hover:text-neutral-800 transition-colors"
+            className="h-6.5 w-6.5 flex items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-neutral-200/60 hover:text-neutral-800"
             title="Add card"
             aria-label="Add card"
           >
@@ -49,7 +54,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
           <button
             type="button"
             onClick={() => onColumnOptionsClick?.(list)}
-            className="flex h-6.5 w-6.5 items-center justify-center rounded-md text-neutral-500 hover:bg-neutral-200/60 hover:text-neutral-800 transition-colors"
+            className="h-6.5 w-6.5 flex items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-neutral-200/60 hover:text-neutral-800"
             title="Column options"
             aria-label="Column options"
           >
@@ -59,9 +64,14 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
       </div>
 
       {/* 2. Scrollable Cards Container */}
-      <div className="flex-1 overflow-y-auto space-y-3 py-3 pr-0.5 scrollbar-thin">
+      <div
+        ref={setNodeRef}
+        className={`scrollbar-thin min-h-28 flex-1 space-y-3 overflow-y-auto rounded-lg py-3 pr-0.5 transition-colors ${
+          isOver ? "bg-primary-50/70" : ""
+        }`}
+      >
         {list.cards.length === 0 && !isAddingCard ? (
-          <div className="rounded-xl border border-dashed border-neutral-200 py-8 text-center text-xs text-neutral-400 font-medium">
+          <div className="rounded-xl border border-dashed border-neutral-200 py-8 text-center text-xs font-medium text-neutral-400">
             No cards in this list
           </div>
         ) : (
@@ -70,17 +80,14 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
       </div>
 
       {/* 3. Column Footer: Inline Card Creator or Add Button */}
-      <div className="pt-2 border-t border-neutral-200/60 shrink-0">
+      <div className="shrink-0 border-t border-neutral-200/60 pt-2">
         {isAddingCard ? (
-          <AddCardInline
-            onAdd={onAddCard}
-            onCancel={() => onSetAddingCard(false)}
-          />
+          <AddCardInline onAdd={onAddCard} onCancel={() => onSetAddingCard(false)} />
         ) : (
           <button
             type="button"
             onClick={() => onSetAddingCard(true)}
-            className="flex w-full items-center gap-1.5 rounded-xl py-1.5 px-2.5 text-xs font-semibold text-neutral-600 hover:bg-neutral-200/60 hover:text-neutral-900 transition-colors"
+            className="flex w-full items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-neutral-600 transition-colors hover:bg-neutral-200/60 hover:text-neutral-900"
           >
             <Plus className="h-3.5 w-3.5" />
             <span>Add card</span>

@@ -8,6 +8,7 @@ import {
   ChangePasswordCard,
 } from "@/components/profile";
 import type { SettingsTab } from "@/types";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export const SettingsPage: React.FC = () => {
   const user = useAuthStore((state) => state.user);
@@ -42,14 +43,10 @@ export const SettingsPage: React.FC = () => {
   return (
     <div className="mx-auto max-w-4xl space-y-6 pb-12">
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
-          Account Settings
-        </h1>
-        <p className="mt-1 text-sm text-neutral-500">
-          Manage your personal identity credentials, profile details, and account security perimeter.
-        </p>
-      </div>
+      <PageHeader
+        title="Account settings"
+        description="Manage your profile details and account security."
+      />
 
       {/* Navigation Tabs */}
       <div className="flex border-b border-neutral-200">

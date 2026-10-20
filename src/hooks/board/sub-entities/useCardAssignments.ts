@@ -1,6 +1,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { cardApi } from "@/apis";
+import { getUserFacingApiError } from "@/utils/api-error-message";
 import { mapCardAssignmentDtosToBoardMembers } from "@/mappers/card.mapper";
 import { applyAuthoritativeCardUpdate, updateCardInBoard } from "../utils/cardReconciler";
 import type { BoardDetail, BoardMember } from "@/types";
@@ -42,7 +43,7 @@ export function useCardAssignments({
       setAssignmentsError(null);
     } catch (err) {
       if (activeAssignmentsCardIdRef.current !== cardId) return;
-      setAssignmentsError(err instanceof Error ? err.message : "Failed to load card assignments");
+      setAssignmentsError(getUserFacingApiError(err, "Failed to load card assignments"));
     } finally {
       if (activeAssignmentsCardIdRef.current === cardId) {
         setIsAssignmentsLoading(false);

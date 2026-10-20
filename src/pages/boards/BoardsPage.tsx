@@ -6,7 +6,10 @@ import {
   WorkspaceHeader,
   WorkspaceTabs,
   CreateWorkspaceModal,
+  WorkspaceMembersPanel,
 } from "@/components/workspace";
+import { WorkspaceOverviewPanel } from "@/components/workspace/WorkspaceOverviewPanel";
+import { WorkspaceSettingsPanel } from "@/components/workspace/WorkspaceSettingsPanel";
 import {
   BoardToolbar,
   BoardCard,
@@ -21,6 +24,7 @@ import { useWorkspaceBoards } from "@/hooks";
 import { useWorkspaceStore } from "@/stores/workspace.store";
 import { ApiError } from "@/apis/client";
 import { getBoardDetailRoute } from "@/constants/routes";
+import { getUserFacingApiError } from "@/utils/api-error-message";
 import type { WorkspaceTabId } from "@/types";
 
 export const BoardsPage: React.FC = () => {
@@ -44,6 +48,7 @@ export const BoardsPage: React.FC = () => {
 
   const {
     workspace,
+    boards,
     isLoading: isBoardsLoading,
     error,
     searchQuery,
@@ -86,7 +91,7 @@ export const BoardsPage: React.FC = () => {
         }
       } else {
         toast.error(
-          err instanceof Error ? err.message : "Failed to archive workspace."
+          getUserFacingApiError(err, "Failed to archive workspace.")
         );
       }
     }
@@ -106,7 +111,7 @@ export const BoardsPage: React.FC = () => {
         }
       } else {
         toast.error(
-          err instanceof Error ? err.message : "Failed to restore workspace."
+          getUserFacingApiError(err, "Failed to restore workspace.")
         );
       }
     }
@@ -207,7 +212,17 @@ export const BoardsPage: React.FC = () => {
       />
 
       {/* 4. Tab Content Area */}
-      {activeTab === "boards" ? (
+      {activeTab === "overview" ? (
+        <WorkspaceOverviewPanel
+          workspace={workspace}
+          boards={boards}
+          onCreateBoardClick={() => setIsCreateOpen(true)}
+        />
+      ) : activeTab === "members" ? (
+        <WorkspaceMembersPanel workspace={workspace} />
+      ) : activeTab === "settings" ? (
+        <WorkspaceSettingsPanel workspace={workspace} />
+      ) : activeTab === "boards" ? (
         <div className="space-y-6 pt-2">
           {/* Section Heading & Subtitle */}
           <div>
@@ -299,17 +314,7 @@ export const BoardsPage: React.FC = () => {
             </div>
           )}
         </div>
-      ) : (
-        /* Placeholder for other workspace tabs (Overview, Members, Settings) */
-        <div className="rounded-2xl border border-neutral-200/90 bg-white p-12 text-center select-none">
-          <p className="text-sm font-semibold text-neutral-800 capitalize">
-            {activeTab} Tab
-          </p>
-          <p className="mt-1 text-xs text-neutral-500">
-            This section is currently under development. Please check back soon.
-          </p>
-        </div>
-      )}
+      ) : null}
 
       {/* 5. Create Board Modal */}
       <CreateBoardModal

@@ -1,6 +1,12 @@
 import type { AttachmentDto, ApiSuccessResponse } from "@/types";
 import { apiClient } from "../client";
 
+function encodeUtf8Base64(value: string): string {
+  const bytes = new TextEncoder().encode(value);
+  const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join("");
+  return btoa(binary);
+}
+
 export const cardAttachmentApi = {
   /**
    * Retrieves all attachments for a card
@@ -27,7 +33,7 @@ export const cardAttachmentApi = {
       {
         headers: {
           "Content-Type": file.type || "application/octet-stream",
-          "x-file-name": file.name,
+          "x-file-name-b64": encodeUtf8Base64(file.name),
         },
         timeout: 60000,
       }

@@ -12,6 +12,13 @@ import { OAuthCallbackPage } from "@/pages/auth/OAuthCallbackPage";
 import { SettingsPage } from "@/pages/settings/SettingsPage";
 import { BoardsPage, BoardDetailPage } from "@/pages/boards";
 import { UnderDevelopmentPage } from "@/pages/UnderDevelopmentPage";
+import { KnowledgeBasePage } from "@/pages/knowledge/KnowledgeBasePage";
+import { HelpPage } from "@/pages/help/HelpPage";
+import { NotFoundPage } from "@/pages/NotFoundPage";
+import { WorkspaceInvitationPage } from "@/pages/workspaces/WorkspaceInvitationPage";
+import { MyTasksPage } from "@/pages/tasks/MyTasksPage";
+import { WorkspaceCalendarPage } from "@/pages/calendar/WorkspaceCalendarPage";
+import { QuickNotesPage } from "@/pages/quick-notes/QuickNotesPage";
 import {
   ProtectedRoute,
   PublicOnlyRoute,
@@ -46,20 +53,28 @@ export const router = createBrowserRouter([
         element: <BoardDetailPage />,
       },
       {
+        path: ROUTES.WORKSPACE_INVITATION,
+        element: <WorkspaceInvitationPage />,
+      },
+      {
         path: ROUTES.MY_TASKS,
-        element: <UnderDevelopmentPage />,
+        element: <MyTasksPage />,
       },
       {
         path: ROUTES.CALENDAR,
-        element: <UnderDevelopmentPage />,
+        element: <WorkspaceCalendarPage />,
+      },
+      {
+        path: ROUTES.QUICK_NOTES,
+        element: <QuickNotesPage />,
       },
       {
         path: ROUTES.KNOWLEDGE_BASE,
-        element: <UnderDevelopmentPage />,
+        element: <KnowledgeBasePage />,
       },
       {
         path: ROUTES.AI_ASSISTANT,
-        element: <UnderDevelopmentPage />,
+        element: <UnderDevelopmentPage title="AI Assistant and Agents are not implemented yet" />,
       },
       {
         path: ROUTES.SETTINGS,
@@ -71,7 +86,7 @@ export const router = createBrowserRouter([
       },
       {
         path: ROUTES.HELP,
-        element: <UnderDevelopmentPage />,
+        element: <HelpPage />,
       },
     ],
   },
@@ -124,10 +139,10 @@ export const router = createBrowserRouter([
         path: ROUTES.UNDER_DEVELOPMENT,
         element: <UnderDevelopmentPage />,
       },
-      {
-        path: "*",
-        element: <UnderDevelopmentPage />,
-      },
     ],
+  },
+  {
+    path: "*",
+    element: <NotFoundPage />,
   },
 ]);

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { workspaceApi } from "@/apis/workspace.api";
+import { getUserFacingApiError } from "@/utils/api-error-message";
 import { useAuthStore } from "@/stores/auth.store";
 import type {
   Workspace,
@@ -105,10 +106,7 @@ export const useWorkspaceStore = create<WorkspaceStoreState>((set, get) => ({
       } catch (err) {
         set({
           isLoading: false,
-          error:
-            err instanceof Error
-              ? err.message
-              : "Failed to load workspaces. Please try again.",
+          error: getUserFacingApiError(err, "Failed to load workspaces. Please try again."),
           isInitialized: true,
         });
         throw err;

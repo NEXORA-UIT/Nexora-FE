@@ -13,3 +13,6 @@ export * from "./board";
 export * from "./kanban";
 export * from "./task";
 export * from "./planning";
+export * from "./my-task";
+export * from "./quick-note";
+export * from "./github";

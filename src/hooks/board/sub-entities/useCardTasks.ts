@@ -1,6 +1,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { cardApi } from "@/apis";
+import { getUserFacingApiError } from "@/utils/api-error-message";
 import { applyAuthoritativeCardUpdate, updateCardInBoard } from "../utils/cardReconciler";
 import type { BoardDetail, ChecklistItem } from "@/types";
 
@@ -64,7 +65,7 @@ export function useCardTasks({
       }
     } catch (err) {
       if (activeTasksCardIdRef.current !== cardId) return;
-      setTasksError(err instanceof Error ? err.message : "Failed to load checklist tasks");
+      setTasksError(getUserFacingApiError(err, "Failed to load checklist tasks"));
     } finally {
       if (activeTasksCardIdRef.current === cardId) {
         setIsTasksLoading(false);

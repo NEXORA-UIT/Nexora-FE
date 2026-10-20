@@ -1,9 +1,11 @@
 import * as React from "react";
 import * as Tabs from "@radix-ui/react-tabs";
-import { MessageSquare, Activity as ActivityIcon } from "lucide-react";
-import type { KanbanCard, CardActivity } from "@/types";
+import { MessageSquare, Activity as ActivityIcon, GitBranch } from "lucide-react";
+import type { KanbanCard, CardActivity, GitActivityFeed } from "@/types";
+import { getUserFacingApiError } from "@/utils/api-error-message";
 import { CardCommentsTab } from "./activity/CardCommentsTab";
 import { CardActivityTab } from "./activity/CardActivityTab";
+import { CardGitActivityTab } from "./activity/CardGitActivityTab";
 
 export interface CardDetailActivityProps {
   card: KanbanCard;
@@ -18,6 +20,7 @@ export interface CardDetailActivityProps {
   commentsError?: string | null;
   onRetryComments?: () => void;
   currentUserId?: string;
+  onFetchGitActivity?: (cardId: string, cardCode: string) => Promise<GitActivityFeed>;
 }
 
 export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
@@ -30,6 +33,7 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
   commentsError = null,
   onRetryComments,
   currentUserId,
+  onFetchGitActivity,
 }) => {
   const [activeTab, setActiveTab] = React.useState<string>("comments");
 
@@ -40,6 +44,9 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
   const [isLoadingMoreActivities, setIsLoadingMoreActivities] = React.useState(false);
   const [activityError, setActivityError] = React.useState<string | null>(null);
   const activeCardIdRef = React.useRef<string>(card.id);
+  const [gitActivity, setGitActivity] = React.useState<GitActivityFeed | null>(null);
+  const [isLoadingGitActivity, setIsLoadingGitActivity] = React.useState(false);
+  const [gitActivityError, setGitActivityError] = React.useState<string | null>(null);
 
   const comments = card.comments || [];
 
@@ -51,7 +58,25 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
     setIsLoadingActivities(false);
     setIsLoadingMoreActivities(false);
     setActivityError(null);
+    setGitActivity(null);
+    setGitActivityError(null);
   }, [card.id]);
+
+  const loadGitActivity = React.useCallback(async () => {
+    if (!onFetchGitActivity) {
+      setGitActivityError("Git activity is not connected yet.");
+      return;
+    }
+    setIsLoadingGitActivity(true);
+    setGitActivityError(null);
+    try {
+      setGitActivity(await onFetchGitActivity(card.id, card.code));
+    } catch (cause) {
+      setGitActivityError(getUserFacingApiError(cause, "Could not load Git activity."));
+    } finally {
+      setIsLoadingGitActivity(false);
+    }
+  }, [card.code, card.id, onFetchGitActivity]);
 
   const loadInitialActivities = React.useCallback(async () => {
     const currentId = card.id;
@@ -71,7 +96,7 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
       }
     } catch (err) {
       if (activeCardIdRef.current !== currentId) return;
-      setActivityError(err instanceof Error ? err.message : "Failed to load activity logs");
+      setActivityError(getUserFacingApiError(err, "Failed to load activity logs."));
     } finally {
       if (activeCardIdRef.current === currentId) {
         setIsLoadingActivities(false);
@@ -98,7 +123,7 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
       setNextCursor(newCursor);
     } catch (err) {
       if (activeCardIdRef.current !== currentId) return;
-      setActivityError(err instanceof Error ? err.message : "Failed to load more activities");
+      setActivityError(getUserFacingApiError(err, "Failed to load more activities."));
     } finally {
       if (activeCardIdRef.current === currentId) {
         setIsLoadingMoreActivities(false);
@@ -110,6 +135,9 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
     setActiveTab(tab);
     if (tab === "activity" && activities === null && !isLoadingActivities) {
       await loadInitialActivities();
+    }
+    if (tab === "code-git" && gitActivity === null && !isLoadingGitActivity) {
+      await loadGitActivity();
     }
   };
 
@@ -134,6 +162,14 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
           >
             <ActivityIcon className="h-3.5 w-3.5" />
             <span>Activity</span>
+          </Tabs.Trigger>
+          <Tabs.Trigger
+            value="code-git"
+            onClick={() => void handleTabChange("code-git")}
+            className="flex items-center gap-1.5 pb-2 text-xs font-semibold text-neutral-500 border-b-2 border-transparent transition-colors hover:text-neutral-900 data-[state=active]:border-primary-600 data-[state=active]:text-primary-600 focus:outline-none"
+          >
+            <GitBranch className="h-3.5 w-3.5" />
+            <span>Code / Git</span>
           </Tabs.Trigger>
         </Tabs.List>
 
@@ -162,6 +198,16 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
             nextCursor={nextCursor}
             onRetry={() => void loadInitialActivities()}
             onLoadMore={handleLoadMoreActivities}
+          />
+        </Tabs.Content>
+
+        <Tabs.Content value="code-git" className="space-y-3 focus:outline-none">
+          <CardGitActivityTab
+            items={gitActivity?.items ?? []}
+            source={gitActivity?.source ?? null}
+            isLoading={isLoadingGitActivity}
+            error={gitActivityError}
+            onRetry={() => void loadGitActivity()}
           />
         </Tabs.Content>
       </Tabs.Root>

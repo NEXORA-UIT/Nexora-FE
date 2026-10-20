@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, AlertCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { ROUTES } from "@/constants/routes";
-import { useBoardDetail } from "@/hooks";
+import { useBoardDetail, useGitHubCardActivity } from "@/hooks";
 import {
   BoardDetailHeader,
   BoardDetailToolbar,
@@ -18,9 +18,16 @@ import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/auth.store";
 import { canUserManageDependencies } from "@/utils";
 import { useWorkspaceOwnership } from "@/hooks/useWorkspaceOwnership";
+import {
+  DEFAULT_BOARD_BACKGROUND,
+  getBoardBackgroundPreference,
+  saveBoardBackgroundPreference,
+  type BoardBackgroundPreset,
+} from "@/components/kanban/board-background";
 
 export const BoardDetailPage: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
+  const { fetchGitActivity } = useGitHubCardActivity();
 
   const {
     board,
@@ -30,6 +37,8 @@ export const BoardDetailPage: React.FC = () => {
     reload,
     searchQuery,
     setSearchQuery,
+    cardFilters,
+    setCardFilters,
     activeView,
     setActiveView,
     selectedCardId,
@@ -85,6 +94,17 @@ export const BoardDetailPage: React.FC = () => {
     board?.workspaceId,
     currentUser?.id
   );
+  const [backgroundPreset, setBackgroundPreset] = React.useState<BoardBackgroundPreset>(DEFAULT_BOARD_BACKGROUND);
+
+  React.useEffect(() => {
+    if (board?.id) setBackgroundPreset(getBoardBackgroundPreference(board.id));
+  }, [board?.id]);
+
+  const handleBackgroundChange = (preset: BoardBackgroundPreset) => {
+    setBackgroundPreset(preset);
+    if (board?.id) saveBoardBackgroundPreference(board.id, preset);
+  };
+
 
   const currentUserRole = React.useMemo(() => {
     if (!board || !currentUser) return undefined;
@@ -180,8 +200,14 @@ export const BoardDetailPage: React.FC = () => {
           <BoardDetailToolbar
             activeView={activeView}
             onViewChange={setActiveView}
+            backgroundPreset={backgroundPreset}
+            onBackgroundChange={handleBackgroundChange}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
+            filters={cardFilters}
+            onFiltersChange={setCardFilters}
+            members={board.members}
+            labels={board.labels}
             archivedListsCount={board.archivedListsCount}
             onArchivedListsClick={handleArchivedListsClick}
             onFilterClick={handleFilterClick}
@@ -207,6 +233,7 @@ export const BoardDetailPage: React.FC = () => {
             <div className="flex-1 min-h-0">
               <KanbanBoard
                 lists={filteredLists}
+                backgroundPreset={backgroundPreset}
                 onCommitMoveCard={handleCommitMoveCard}
                 onAddCard={handleAddCard}
                 onAddColumn={handleAddColumn}
@@ -285,6 +312,7 @@ export const BoardDetailPage: React.FC = () => {
               commentsError,
               onRetryComments: handleRetryComments,
               currentUserId: currentUser?.id,
+              onFetchGitActivity: fetchGitActivity,
             }}
           />
         </>

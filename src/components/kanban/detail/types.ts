@@ -5,6 +5,7 @@ import type {
   ListCategory,
   UpdateCardInput,
   CardActivity,
+  GitActivityFeed,
   BoardLabel,
   PaginatedActivitiesResult,
 } from "@/types";
@@ -75,4 +76,5 @@ export interface CardActivitySectionProps {
     cursor?: string
   ) => Promise<CardActivity[] | PaginatedActivitiesResult>;
   currentUserId?: string;
+  onFetchGitActivity?: (cardId: string, cardCode: string) => Promise<GitActivityFeed>;
 }

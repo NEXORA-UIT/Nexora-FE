@@ -1,5 +1,6 @@
 import type {
   KanbanCard,
+  BoardMember,
   CreateCardInput,
   MoveCardInput,
   UpdateCardInput,
@@ -23,21 +24,30 @@ export const cardCoreApi = {
    */
   async getBoardCards(
     boardId: string,
-    options?: ListCardsQuery
+    options?: ListCardsQuery,
+    membersPool?: BoardMember[],
   ): Promise<KanbanCard[]> {
-    const params: Record<string, string> = {};
+    const params: Record<string, string | string[]> = {};
     if (options?.includeArchived !== undefined) {
       params.includeArchived = options.includeArchived ? "true" : "false";
     }
+    if (options?.q) params.q = options.q;
+    if (options?.statusGroup) params.statusGroup = options.statusGroup;
+    if (options?.isOverdue !== undefined) params.isOverdue = String(options.isOverdue);
+    if (options?.assigneeId) params.assigneeId = options.assigneeId;
+    if (options?.labelId) params.labelId = options.labelId;
 
     const response = await apiClient.get<ApiSuccessResponse<CardDto[]>>(
       `/boards/${boardId}/cards`,
       {
         params: Object.keys(params).length > 0 ? params : undefined,
+        ...(Array.isArray(params.assigneeId) || Array.isArray(params.labelId)
+          ? { paramsSerializer: { indexes: null } }
+          : {}),
       }
     );
 
-    return mapCardDtosToKanbanCards(response.data.data || []);
+    return mapCardDtosToKanbanCards(response.data.data || [], undefined, membersPool);
   },
 
   /**

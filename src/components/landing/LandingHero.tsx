@@ -30,7 +30,7 @@ export const LandingHero: React.FC = () => {
             </h1>
 
             <p className="mt-5 text-base text-neutral-600 sm:text-lg leading-relaxed max-w-2xl">
-              Plan visual boards, track tasks and documents, and collaborate seamlessly across teams — with intelligent assistance when you need it.
+              Plan visual boards, track tasks and documents, and coordinate project work clearly across your team.
             </p>
           </div>
 
@@ -84,7 +84,7 @@ export const LandingHero: React.FC = () => {
                 variant="outline"
                 size="sm"
                 className="h-10 rounded-full border-neutral-300 bg-white text-xs font-medium text-neutral-700 hover:bg-neutral-50 shadow-2xs cursor-pointer"
-                onClick={() => navigate(ROUTES.UNDER_DEVELOPMENT)}
+                onClick={() => navigate(ROUTES.REGISTER)}
               >
                 <GoogleIcon className="mr-1.5 h-3.5 w-3.5" />
                 Google
@@ -94,7 +94,7 @@ export const LandingHero: React.FC = () => {
                 variant="outline"
                 size="sm"
                 className="h-10 rounded-full border-neutral-300 bg-white text-xs font-medium text-neutral-700 hover:bg-neutral-50 shadow-2xs cursor-pointer"
-                onClick={() => navigate(ROUTES.UNDER_DEVELOPMENT)}
+                onClick={() => navigate(ROUTES.REGISTER)}
               >
                 <GitHubIcon className="mr-1.5 h-3.5 w-3.5" />
                 GitHub

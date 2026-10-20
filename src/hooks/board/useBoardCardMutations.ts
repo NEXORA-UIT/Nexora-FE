@@ -198,7 +198,9 @@ export function useBoardCardMutations({
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to update card";
-      if (msg.includes("CARD_CONFLICT") || msg.includes("409")) {
+      const code = (err as { code?: string })?.code;
+      const status = (err as { status?: number })?.status;
+      if (code === "CARD_CONFLICT" || status === 409 || msg.includes("CARD_CONFLICT") || msg.includes("409")) {
         toast.error("Card was modified by another session. Refreshing...");
         void reloadBoard();
       } else {

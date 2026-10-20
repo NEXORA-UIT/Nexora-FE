@@ -19,6 +19,7 @@ import type {
   BoardDashboardDto,
   ListBoardsQuery,
   ApiSuccessResponse,
+  AddBoardMemberRequest,
 } from "@/types";
 
 export const boardApi = {
@@ -67,6 +68,20 @@ export const boardApi = {
     );
 
     return (response.data.data || []).map(mapBoardMemberDtoToBoardMember);
+  },
+
+  async addBoardMember(boardId: string, payload: AddBoardMemberRequest): Promise<BoardMember> {
+    const response = await apiClient.post<ApiSuccessResponse<BoardMemberDto>>(
+      `/boards/${boardId}/members`,
+      payload,
+    );
+    return mapBoardMemberDtoToBoardMember(response.data.data);
+  },
+
+  async removeBoardMember(boardId: string, userId: string): Promise<void> {
+    await apiClient.delete<ApiSuccessResponse<Record<string, never>>>(
+      `/boards/${boardId}/members/${userId}`,
+    );
   },
 
   /**

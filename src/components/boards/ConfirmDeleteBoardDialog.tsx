@@ -2,6 +2,7 @@ import * as React from "react";
 import { AlertTriangle, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { getUserFacingApiError } from "@/utils/api-error-message";
 import type { ConfirmDeleteBoardDialogProps } from "@/types";
 
 export const ConfirmDeleteBoardDialog: React.FC<ConfirmDeleteBoardDialogProps> = ({
@@ -38,7 +39,7 @@ export const ConfirmDeleteBoardDialog: React.FC<ConfirmDeleteBoardDialogProps> =
       await onConfirm(board.id, confirmationInput.trim());
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete board");
+      setError(getUserFacingApiError(err, "Failed to delete Board."));
     }
   };
 

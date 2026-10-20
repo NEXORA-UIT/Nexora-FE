@@ -7,12 +7,14 @@ import type { BoardDetail } from "@/types";
 
 export interface BoardDetailHeaderProps {
   board: BoardDetail;
+  workspaceName?: string;
   onShareClick?: () => void;
   onOptionsClick?: () => void;
 }
 
 export const BoardDetailHeader: React.FC<BoardDetailHeaderProps> = ({
   board,
+  workspaceName = "Workspace",
   onShareClick,
   onOptionsClick,
 }) => {
@@ -21,14 +23,14 @@ export const BoardDetailHeader: React.FC<BoardDetailHeaderProps> = ({
   const remainingCount = Math.max(0, members.length - 4);
 
   return (
-    <div className="space-y-3 select-none">
+    <div className="space-y-3 rounded-2xl border border-blue-100 bg-gradient-to-r from-white via-white to-blue-50/80 p-4 shadow-sm select-none sm:p-5">
       {/* 1. Breadcrumb Hierarchy */}
       <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-neutral-500">
         <Link
           to={ROUTES.BOARDS}
           className="font-medium text-neutral-500 hover:text-neutral-900 transition-colors"
         >
-          Core Platform
+          {workspaceName}
         </Link>
         <ChevronRight className="h-3 w-3 text-neutral-400" />
         <span className="font-semibold text-neutral-900">{board.name}</span>

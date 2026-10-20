@@ -1,6 +1,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { cardApi } from "@/apis";
+import { getUserFacingApiError } from "@/utils/api-error-message";
 import { isCardBlocked } from "@/utils";
 import type { BoardDetail } from "@/types";
 
@@ -53,7 +54,7 @@ export function useCardDependencies({
       setDependenciesError(null);
     } catch (err) {
       if (activeDependenciesCardIdRef.current !== cardId) return;
-      setDependenciesError(err instanceof Error ? err.message : "Failed to load dependencies");
+      setDependenciesError(getUserFacingApiError(err, "Failed to load dependencies"));
     } finally {
       if (activeDependenciesCardIdRef.current === cardId) {
         setIsDependenciesLoading(false);

@@ -34,4 +34,11 @@ export const cardApi = {
   ...cardAttachmentApi,
   ...cardDependencyApi,
   ...cardActivityApi,
+  async getActivities(cardId: string) {
+    const result = await cardActivityApi.getCardActivities(cardId, { limit: 20 });
+    return result.items;
+  },
+  async addComment(cardId: string, content: string) {
+    return cardCommentApi.createCardComment(cardId, content);
+  },
 };

@@ -148,6 +148,7 @@ export const CardDetailDrawer: React.FC<CardDetailDrawerProps> = ({
               card={card}
               onAddComment={activity.onAddComment}
               onFetchActivities={activity.onFetchActivities}
+              onFetchGitActivity={activity.onFetchGitActivity}
               onUpdateComment={activity.onUpdateComment}
               onDeleteComment={activity.onDeleteComment}
               isLoadingComments={activity.isLoadingComments}
