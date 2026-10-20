@@ -108,6 +108,48 @@ describe("cardApi Suite", () => {
       });
     });
 
+    it("serializes supported server-side Board card filters and preserves includeArchived", async () => {
+      vi.spyOn(apiClient, "get").mockResolvedValueOnce({
+        data: { success: true, data: [mockCardDto1] },
+      });
+
+      await cardApi.getBoardCards("board-1", {
+        includeArchived: false,
+        q: "design",
+        assigneeId: ["user-1", "user-2"],
+        labelId: ["label-1", "label-2"],
+        statusGroup: "IN_PROGRESS",
+        isOverdue: true,
+      });
+
+      expect(apiClient.get).toHaveBeenCalledWith("/boards/board-1/cards", {
+        params: {
+          includeArchived: "false",
+          q: "design",
+          assigneeId: ["user-1", "user-2"],
+          labelId: ["label-1", "label-2"],
+          statusGroup: "IN_PROGRESS",
+          isOverdue: "true",
+        },
+        paramsSerializer: { indexes: null },
+      });
+    });
+
+    it("keeps scalar assignee and label query values backward-compatible", async () => {
+      vi.spyOn(apiClient, "get").mockResolvedValueOnce({
+        data: { success: true, data: [mockCardDto1] },
+      });
+
+      await cardApi.getBoardCards("board-1", {
+        assigneeId: "user-1",
+        labelId: "label-1",
+      });
+
+      expect(apiClient.get).toHaveBeenCalledWith("/boards/board-1/cards", {
+        params: { assigneeId: "user-1", labelId: "label-1" },
+      });
+    });
+
     it("propagates API errors without fallback to mock", async () => {
       const mockError = new ApiError("Board not found", "NOT_FOUND", 404);
       vi.spyOn(apiClient, "get").mockRejectedValueOnce(mockError);
@@ -169,9 +211,9 @@ describe("cardApi Suite", () => {
       const mockError = new ApiError("Board đã đạt giới hạn 2.000 Card", "CARD_LIMIT_REACHED", 409);
       vi.spyOn(apiClient, "post").mockRejectedValueOnce(mockError);
 
-      await expect(
-        cardApi.createCard("list-1", { title: "Limit Card" })
-      ).rejects.toThrow(mockError);
+      await expect(cardApi.createCard("list-1", { title: "Limit Card" })).rejects.toThrow(
+        mockError
+      );
     });
 
     it("normalizes empty string dates to null in createCard payload", async () => {
@@ -196,7 +238,11 @@ describe("cardApi Suite", () => {
     });
 
     it("propagates 400 validation error on invalid date order", async () => {
-      const mockError = new ApiError("Ngày bắt đầu phải trước hoặc bằng hạn chót", "VALIDATION_ERROR", 400);
+      const mockError = new ApiError(
+        "Ngày bắt đầu phải trước hoặc bằng hạn chót",
+        "VALIDATION_ERROR",
+        400
+      );
       vi.spyOn(apiClient, "post").mockRejectedValueOnce(mockError);
 
       await expect(
@@ -283,7 +329,11 @@ describe("cardApi Suite", () => {
     });
 
     it("propagates 409 CARD_CONFLICT when OCC timestamp is mismatched", async () => {
-      const mockError = new ApiError("Card đã được cập nhật; hãy tải lại dữ liệu", "CARD_CONFLICT", 409);
+      const mockError = new ApiError(
+        "Card đã được cập nhật; hãy tải lại dữ liệu",
+        "CARD_CONFLICT",
+        409
+      );
       vi.spyOn(apiClient, "patch").mockRejectedValueOnce(mockError);
 
       await expect(
@@ -295,7 +345,11 @@ describe("cardApi Suite", () => {
     });
 
     it("propagates 400 validation error when no editable fields are provided", async () => {
-      const mockError = new ApiError("Phải có ít nhất một trường cần cập nhật", "VALIDATION_ERROR", 400);
+      const mockError = new ApiError(
+        "Phải có ít nhất một trường cần cập nhật",
+        "VALIDATION_ERROR",
+        400
+      );
       vi.spyOn(apiClient, "patch").mockRejectedValueOnce(mockError);
 
       await expect(
@@ -339,7 +393,11 @@ describe("cardApi Suite", () => {
     });
 
     it("propagates 409 CARD_CONFLICT when move OCC fails", async () => {
-      const mockError = new ApiError("Card đã được cập nhật; hãy tải lại dữ liệu", "CARD_CONFLICT", 409);
+      const mockError = new ApiError(
+        "Card đã được cập nhật; hãy tải lại dữ liệu",
+        "CARD_CONFLICT",
+        409
+      );
       vi.spyOn(apiClient, "patch").mockRejectedValueOnce(mockError);
 
       await expect(
@@ -352,7 +410,11 @@ describe("cardApi Suite", () => {
     });
 
     it("propagates 400/409 error when moving blocked card to DONE list", async () => {
-      const mockError = new ApiError("Không thể chuyển sang DONE do điều kiện phụ thuộc", "DEPENDENCY_BLOCK", 400);
+      const mockError = new ApiError(
+        "Không thể chuyển sang DONE do điều kiện phụ thuộc",
+        "DEPENDENCY_BLOCK",
+        400
+      );
       vi.spyOn(apiClient, "patch").mockRejectedValueOnce(mockError);
 
       await expect(
@@ -530,9 +592,9 @@ describe("cardApi Suite", () => {
         const error = new ApiError("Card đạt giới hạn tối đa 50 Tasks", "TASK_LIMIT_REACHED", 409);
         vi.spyOn(apiClient, "post").mockRejectedValueOnce(error);
 
-        await expect(
-          cardApi.addChecklistItem("card-uuid-1", "Another task")
-        ).rejects.toThrow(error);
+        await expect(cardApi.addChecklistItem("card-uuid-1", "Another task")).rejects.toThrow(
+          error
+        );
       });
     });
 
@@ -681,7 +743,11 @@ describe("cardApi Suite", () => {
       });
 
       it("propagates 409 ASSIGNMENT_EXISTS when user is already assigned", async () => {
-        const error = new ApiError("Người dùng đã được phân công vào Card", "ASSIGNMENT_EXISTS", 409);
+        const error = new ApiError(
+          "Người dùng đã được phân công vào Card",
+          "ASSIGNMENT_EXISTS",
+          409
+        );
         vi.spyOn(apiClient, "post").mockRejectedValueOnce(error);
 
         await expect(cardApi.assignCardMember("card-uuid-1", "user-uuid-1")).rejects.toThrow(error);
@@ -704,7 +770,9 @@ describe("cardApi Suite", () => {
           },
         });
 
-        await expect(cardApi.unassignCardMember("card-uuid-1", "user-uuid-1")).resolves.toBeUndefined();
+        await expect(
+          cardApi.unassignCardMember("card-uuid-1", "user-uuid-1")
+        ).resolves.toBeUndefined();
 
         expect(apiClient.delete).toHaveBeenCalledWith("/cards/card-uuid-1/assignments/user-uuid-1");
       });
@@ -713,7 +781,9 @@ describe("cardApi Suite", () => {
         const error = new ApiError("Assignment not found", "NOT_FOUND", 404);
         vi.spyOn(apiClient, "delete").mockRejectedValueOnce(error);
 
-        await expect(cardApi.unassignCardMember("card-uuid-1", "unknown-user")).rejects.toThrow(error);
+        await expect(cardApi.unassignCardMember("card-uuid-1", "unknown-user")).rejects.toThrow(
+          error
+        );
       });
     });
   });
@@ -815,7 +885,9 @@ describe("cardApi Suite", () => {
         const error = new ApiError("Label not found", "NOT_FOUND", 404);
         vi.spyOn(apiClient, "post").mockRejectedValueOnce(error);
 
-        await expect(cardApi.attachCardLabel("card-uuid-1", "label-cross-board")).rejects.toThrow(error);
+        await expect(cardApi.attachCardLabel("card-uuid-1", "label-cross-board")).rejects.toThrow(
+          error
+        );
       });
 
       it("propagates 403 FORBIDDEN when card is archived", async () => {
@@ -835,7 +907,9 @@ describe("cardApi Suite", () => {
           },
         });
 
-        await expect(cardApi.detachCardLabel("card-uuid-1", "label-uuid-1")).resolves.toBeUndefined();
+        await expect(
+          cardApi.detachCardLabel("card-uuid-1", "label-uuid-1")
+        ).resolves.toBeUndefined();
 
         expect(apiClient.delete).toHaveBeenCalledWith("/cards/card-uuid-1/labels/label-uuid-1");
       });
@@ -844,11 +918,12 @@ describe("cardApi Suite", () => {
         const error = new ApiError("CardLabel not found", "NOT_FOUND", 404);
         vi.spyOn(apiClient, "delete").mockRejectedValueOnce(error);
 
-        await expect(cardApi.detachCardLabel("card-uuid-1", "unknown-label")).rejects.toThrow(error);
+        await expect(cardApi.detachCardLabel("card-uuid-1", "unknown-label")).rejects.toThrow(
+          error
+        );
       });
     });
   });
-
 
   describe("Card Dependencies Integration API (Task A)", () => {
     const cardId = "card-uuid-1";
@@ -927,9 +1002,9 @@ describe("cardApi Suite", () => {
       it("rejects self-dependency locally without making HTTP request", async () => {
         const postSpy = vi.spyOn(apiClient, "post");
 
-        await expect(
-          cardApi.addDependency(cardId, { dependsOnCardId: cardId })
-        ).rejects.toThrow("Cannot depend on self");
+        await expect(cardApi.addDependency(cardId, { dependsOnCardId: cardId })).rejects.toThrow(
+          "Cannot depend on self"
+        );
 
         expect(postSpy).not.toHaveBeenCalled();
       });
@@ -978,30 +1053,34 @@ describe("cardApi Suite", () => {
       });
 
       it("propagates 400 validation error (e.g., cross-board dependency)", async () => {
-        const error = new ApiError("Cannot depend on cards from other boards", "VALIDATION_ERROR", 400);
+        const error = new ApiError(
+          "Cannot depend on cards from other boards",
+          "VALIDATION_ERROR",
+          400
+        );
         vi.spyOn(apiClient, "post").mockRejectedValueOnce(error);
 
-        await expect(
-          cardApi.addDependency(cardId, { dependsOnCardId: depCardId })
-        ).rejects.toThrow(error);
+        await expect(cardApi.addDependency(cardId, { dependsOnCardId: depCardId })).rejects.toThrow(
+          error
+        );
       });
 
       it("propagates 403 forbidden error when user lacks permission", async () => {
         const error = new ApiError("Permission denied", "FORBIDDEN", 403);
         vi.spyOn(apiClient, "post").mockRejectedValueOnce(error);
 
-        await expect(
-          cardApi.addDependency(cardId, { dependsOnCardId: depCardId })
-        ).rejects.toThrow(error);
+        await expect(cardApi.addDependency(cardId, { dependsOnCardId: depCardId })).rejects.toThrow(
+          error
+        );
       });
 
       it("propagates 409 conflict error when dependency creates a cycle or is duplicate", async () => {
         const error = new ApiError("Circular dependency detected", "DEPENDENCY_CYCLE", 409);
         vi.spyOn(apiClient, "post").mockRejectedValueOnce(error);
 
-        await expect(
-          cardApi.addDependency(cardId, { dependsOnCardId: depCardId })
-        ).rejects.toThrow(error);
+        await expect(cardApi.addDependency(cardId, { dependsOnCardId: depCardId })).rejects.toThrow(
+          error
+        );
       });
     });
 
@@ -1113,6 +1192,33 @@ describe("cardApi Suite", () => {
         name: "Nguyen Van A",
         initials: "NA",
         role: "MEMBER",
+      });
+    });
+
+    it("uses the actor profile included in the API response when membership is absent", async () => {
+      vi.spyOn(apiClient, "get").mockResolvedValueOnce({
+        data: {
+          success: true,
+          data: [
+            {
+              id: "activity-2",
+              boardId: "board-1",
+              cardId,
+              actorId: "former-member",
+              actor: { id: "former-member", fullName: "Taylor Nguyen", avatarUrl: null },
+              action: "CARD_UPDATED",
+              createdAt: "2026-10-09T00:00:00.000Z",
+            },
+          ],
+          nextCursor: null,
+        },
+      });
+
+      const result = await cardApi.getCardActivities(cardId);
+      expect(result.items[0]?.user).toMatchObject({
+        id: "former-member",
+        name: "Taylor Nguyen",
+        initials: "TN",
       });
     });
 
@@ -1280,7 +1386,9 @@ describe("cardApi Suite", () => {
         const error = new ApiError("Forbidden - not comment author", "FORBIDDEN", 403);
         vi.spyOn(apiClient, "patch").mockRejectedValueOnce(error);
 
-        await expect(cardApi.updateCardComment(commentId, "Unauthorized edit")).rejects.toThrow(error);
+        await expect(cardApi.updateCardComment(commentId, "Unauthorized edit")).rejects.toThrow(
+          error
+        );
       });
     });
 
@@ -1365,21 +1473,17 @@ describe("cardApi Suite", () => {
         });
 
         const result = await cardApi.uploadCardAttachment(cardId, file);
-        expect(apiClient.post).toHaveBeenCalledWith(
-          `/cards/${cardId}/attachments`,
-          file,
-          {
-            headers: {
-              "Content-Type": "application/pdf",
-              "x-file-name": "report.pdf",
-            },
-            timeout: 60000,
-          }
-        );
+        expect(apiClient.post).toHaveBeenCalledWith(`/cards/${cardId}/attachments`, file, {
+          headers: {
+            "Content-Type": "application/pdf",
+            "x-file-name-b64": "cmVwb3J0LnBkZg==",
+          },
+          timeout: 60000,
+        });
         expect(result).toEqual(createdDto);
       });
 
-      it("passes Vietnamese Unicode filename with characters đ, ơ, ư in x-file-name to apiClient", async () => {
+      it("encodes Vietnamese Unicode filenames as UTF-8 Base64 in x-file-name-b64", async () => {
         const unicodeFileName = "Kế hoạch kiểm thử đồ án hướng đối tượng.pdf";
         const file = new File(["test-content"], unicodeFileName, { type: "application/pdf" });
         const createdDto = {
@@ -1397,23 +1501,24 @@ describe("cardApi Suite", () => {
         });
 
         const result = await cardApi.uploadCardAttachment(cardId, file);
-        expect(apiClient.post).toHaveBeenCalledWith(
-          `/cards/${cardId}/attachments`,
-          file,
-          {
-            headers: {
-              "Content-Type": "application/pdf",
-              "x-file-name": unicodeFileName,
-            },
-            timeout: 60000,
-          }
-        );
+        expect(apiClient.post).toHaveBeenCalledWith(`/cards/${cardId}/attachments`, file, {
+          headers: {
+            "Content-Type": "application/pdf",
+            "x-file-name-b64":
+              "S+G6vyBob+G6oWNoIGtp4buDbSB0aOG7rSDEkeG7kyDDoW4gaMaw4bubbmcgxJHhu5FpIHTGsOG7o25nLnBkZg==",
+          },
+          timeout: 60000,
+        });
         expect(result).toEqual(createdDto);
       });
 
       it("propagates 413 PAYLOAD_TOO_LARGE error when file exceeds 25MB", async () => {
         const file = new File(["test-content"], "huge.pdf", { type: "application/pdf" });
-        const error = new ApiError("Dung lượng tệp đính kèm tối đa là 25MB", "PAYLOAD_TOO_LARGE", 413);
+        const error = new ApiError(
+          "Dung lượng tệp đính kèm tối đa là 25MB",
+          "PAYLOAD_TOO_LARGE",
+          413
+        );
         vi.spyOn(apiClient, "post").mockRejectedValueOnce(error);
 
         await expect(cardApi.uploadCardAttachment(cardId, file)).rejects.toThrow(error);
@@ -1469,4 +1574,3 @@ describe("cardApi Suite", () => {
     });
   });
 });
-

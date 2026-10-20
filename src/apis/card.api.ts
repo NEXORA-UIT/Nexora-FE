@@ -34,6 +34,7 @@ import type {
   UpdateCommentRequest,
   AttachmentDto,
 } from "@/types";
+
 import { apiClient } from "./client";
 import {
   mapCardDtoToKanbanCard,
@@ -47,9 +48,13 @@ import {
   mapCardPrerequisiteDtosToCardDependencies,
   mapActivityLogDtosToCardActivities,
 } from "@/mappers/card.mapper";
-import {
-  MOCK_BOARD_MEMBERS,
-} from "@/mocks/data/kanban.mock";
+import { MOCK_BOARD_MEMBERS } from "@/mocks/data/kanban.mock";
+
+function encodeUtf8Base64(value: string): string {
+  const bytes = new TextEncoder().encode(value);
+  const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join("");
+  return btoa(binary);
+}
 
 export const cardApi = {
   /**
@@ -58,21 +63,30 @@ export const cardApi = {
    */
   async getBoardCards(
     boardId: string,
-    options?: ListCardsQuery
+    options?: ListCardsQuery,
+    membersPool?: BoardMember[]
   ): Promise<KanbanCard[]> {
-    const params: Record<string, string> = {};
+    const params: Record<string, string | string[]> = {};
     if (options?.includeArchived !== undefined) {
       params.includeArchived = options.includeArchived ? "true" : "false";
     }
+    if (options?.q) params.q = options.q;
+    if (options?.assigneeId) params.assigneeId = options.assigneeId;
+    if (options?.labelId) params.labelId = options.labelId;
+    if (options?.statusGroup) params.statusGroup = options.statusGroup;
+    if (options?.isOverdue !== undefined) params.isOverdue = String(options.isOverdue);
 
     const response = await apiClient.get<ApiSuccessResponse<CardDto[]>>(
       `/boards/${boardId}/cards`,
       {
         params: Object.keys(params).length > 0 ? params : undefined,
+        ...(Array.isArray(params.assigneeId) || Array.isArray(params.labelId)
+          ? { paramsSerializer: { indexes: null } }
+          : {}),
       }
     );
 
-    return mapCardDtosToKanbanCards(response.data.data || []);
+    return mapCardDtosToKanbanCards(response.data.data || [], undefined, membersPool);
   },
 
   /**
@@ -128,10 +142,7 @@ export const cardApi = {
       body.dueDate = payload.dueDate ? payload.dueDate : null;
     }
 
-    const response = await apiClient.patch<ApiSuccessResponse<CardDto>>(
-      `/cards/${cardId}`,
-      body
-    );
+    const response = await apiClient.patch<ApiSuccessResponse<CardDto>>(`/cards/${cardId}`, body);
 
     return mapCardDtoToKanbanCard(response.data.data);
   },
@@ -155,15 +166,12 @@ export const cardApi = {
     return mapCardDtoToKanbanCard(response.data.data);
   },
 
-
   /**
    * Retrieves single card detail
    * GET /api/v1/cards/:id
    */
   async getCardById(cardId: string): Promise<KanbanCard> {
-    const response = await apiClient.get<ApiSuccessResponse<CardDto>>(
-      `/cards/${cardId}`
-    );
+    const response = await apiClient.get<ApiSuccessResponse<CardDto>>(`/cards/${cardId}`);
     return mapCardDtoToKanbanCard(response.data.data);
   },
 
@@ -172,9 +180,7 @@ export const cardApi = {
    * GET /api/v1/cards/:cardId/tasks
    */
   async getCardTasks(cardId: string): Promise<ChecklistItem[]> {
-    const response = await apiClient.get<ApiSuccessResponse<TaskDto[]>>(
-      `/cards/${cardId}/tasks`
-    );
+    const response = await apiClient.get<ApiSuccessResponse<TaskDto[]>>(`/cards/${cardId}/tasks`);
     return mapTaskDtosToChecklistItems(response.data.data || []);
   },
 
@@ -197,10 +203,7 @@ export const cardApi = {
    * Updates an existing checklist task (title or completion status)
    * PATCH /api/v1/tasks/:taskId
    */
-  async updateChecklistItem(
-    taskId: string,
-    updates: UpdateTaskRequest
-  ): Promise<ChecklistItem> {
+  async updateChecklistItem(taskId: string, updates: UpdateTaskRequest): Promise<ChecklistItem> {
     const body: UpdateTaskRequest = {};
     if (updates.title !== undefined) {
       body.title = updates.title.trim();
@@ -209,10 +212,7 @@ export const cardApi = {
       body.isCompleted = updates.isCompleted;
     }
 
-    const response = await apiClient.patch<ApiSuccessResponse<TaskDto>>(
-      `/tasks/${taskId}`,
-      body
-    );
+    const response = await apiClient.patch<ApiSuccessResponse<TaskDto>>(`/tasks/${taskId}`, body);
     return mapTaskDtoToChecklistItem(response.data.data);
   },
 
@@ -221,9 +221,7 @@ export const cardApi = {
    * DELETE /api/v1/tasks/:taskId
    */
   async deleteChecklistItem(taskId: string): Promise<void> {
-    await apiClient.delete<ApiSuccessResponse<Record<string, never>>>(
-      `/tasks/${taskId}`
-    );
+    await apiClient.delete<ApiSuccessResponse<Record<string, never>>>(`/tasks/${taskId}`);
   },
 
   /**
@@ -241,10 +239,7 @@ export const cardApi = {
    * Assigns a user to a card
    * POST /api/v1/cards/:cardId/assignments
    */
-  async assignCardMember(
-    cardId: string,
-    userId: string
-  ): Promise<CardAssignmentDto> {
+  async assignCardMember(cardId: string, userId: string): Promise<CardAssignmentDto> {
     const body: AssignCardMemberRequest = { userId };
     const response = await apiClient.post<ApiSuccessResponse<CardAssignmentDto>>(
       `/cards/${cardId}/assignments`,
@@ -323,10 +318,7 @@ export const cardApi = {
    * Adds a new comment to a card
    * POST /api/v1/cards/:cardId/comments
    */
-  async createCardComment(
-    cardId: string,
-    content: string
-  ): Promise<CommentDto> {
+  async createCardComment(cardId: string, content: string): Promise<CommentDto> {
     const body: CreateCommentRequest = {
       content: content.trim(),
     };
@@ -341,10 +333,7 @@ export const cardApi = {
    * Updates an existing comment on a card
    * PATCH /api/v1/comments/:commentId
    */
-  async updateCardComment(
-    commentId: string,
-    content: string
-  ): Promise<CommentDto> {
+  async updateCardComment(commentId: string, content: string): Promise<CommentDto> {
     const body: UpdateCommentRequest = {
       content: content.trim(),
     };
@@ -360,9 +349,7 @@ export const cardApi = {
    * DELETE /api/v1/comments/:commentId
    */
   async deleteCardComment(commentId: string): Promise<void> {
-    await apiClient.delete<ApiSuccessResponse<Record<string, never>>>(
-      `/comments/${commentId}`
-    );
+    await apiClient.delete<ApiSuccessResponse<Record<string, never>>>(`/comments/${commentId}`);
   },
 
   /**
@@ -380,17 +367,14 @@ export const cardApi = {
    * Uploads a raw binary attachment file to a card
    * POST /api/v1/cards/:cardId/attachments
    */
-  async uploadCardAttachment(
-    cardId: string,
-    file: File
-  ): Promise<AttachmentDto> {
+  async uploadCardAttachment(cardId: string, file: File): Promise<AttachmentDto> {
     const response = await apiClient.post<ApiSuccessResponse<AttachmentDto>>(
       `/cards/${cardId}/attachments`,
       file,
       {
         headers: {
           "Content-Type": file.type || "application/octet-stream",
-          "x-file-name": file.name,
+          "x-file-name-b64": encodeUtf8Base64(file.name),
         },
         timeout: 60000,
       }
@@ -403,12 +387,9 @@ export const cardApi = {
    * GET /api/v1/attachments/:attachmentId/content
    */
   async downloadCardAttachment(attachmentId: string): Promise<Blob> {
-    const response = await apiClient.get<Blob>(
-      `/attachments/${attachmentId}/content`,
-      {
-        responseType: "blob",
-      }
-    );
+    const response = await apiClient.get<Blob>(`/attachments/${attachmentId}/content`, {
+      responseType: "blob",
+    });
     return response.data;
   },
 
@@ -449,10 +430,7 @@ export const cardApi = {
       params: Object.keys(queryParams).length > 0 ? queryParams : undefined,
     });
 
-    const items = mapActivityLogDtosToCardActivities(
-      response.data.data || [],
-      membersPool
-    );
+    const items = mapActivityLogDtosToCardActivities(response.data.data || [], membersPool);
     const nextCursor = response.data.nextCursor ?? null;
 
     return { items, nextCursor };
@@ -462,10 +440,7 @@ export const cardApi = {
    * Retrieves card activity logs
    * GET /api/v1/cards/:cardId/activity
    */
-  async getActivities(
-    cardId: string,
-    membersPool?: BoardMember[]
-  ): Promise<CardActivity[]> {
+  async getActivities(cardId: string, membersPool?: BoardMember[]): Promise<CardActivity[]> {
     const result = await this.getCardActivities(cardId, { limit: 20 }, membersPool);
     return result.items;
   },
@@ -475,9 +450,7 @@ export const cardApi = {
    * PATCH /api/v1/cards/:id/archive
    */
   async archiveCard(cardId: string): Promise<void> {
-    await apiClient.patch<ApiSuccessResponse<Record<string, never>>>(
-      `/cards/${cardId}/archive`
-    );
+    await apiClient.patch<ApiSuccessResponse<Record<string, never>>>(`/cards/${cardId}/archive`);
   },
 
   /**
@@ -485,9 +458,7 @@ export const cardApi = {
    * PATCH /api/v1/cards/:id/restore
    */
   async restoreCard(cardId: string): Promise<void> {
-    await apiClient.patch<ApiSuccessResponse<Record<string, never>>>(
-      `/cards/${cardId}/restore`
-    );
+    await apiClient.patch<ApiSuccessResponse<Record<string, never>>>(`/cards/${cardId}/restore`);
   },
 
   /**
@@ -495,9 +466,7 @@ export const cardApi = {
    * DELETE /api/v1/cards/:id
    */
   async deleteCard(cardId: string): Promise<void> {
-    await apiClient.delete<ApiSuccessResponse<Record<string, never>>>(
-      `/cards/${cardId}`
-    );
+    await apiClient.delete<ApiSuccessResponse<Record<string, never>>>(`/cards/${cardId}`);
   },
 
   /**
@@ -518,10 +487,7 @@ export const cardApi = {
    * Declares a dependency prerequisite for a card
    * POST /api/v1/cards/:cardId/dependencies
    */
-  async addDependency(
-    cardId: string,
-    payload: CreateDependencyRequest
-  ): Promise<CardDependency> {
+  async addDependency(cardId: string, payload: CreateDependencyRequest): Promise<CardDependency> {
     if (cardId === payload.dependsOnCardId) {
       throw new Error("Cannot depend on self");
     }
@@ -534,9 +500,7 @@ export const cardApi = {
     // Refresh dependencies to get complete prerequisite card metadata
     const freshDependencies = await this.getCardDependencies(cardId);
     const matched = freshDependencies.find(
-      (d) =>
-        d.id === response.data.data?.id ||
-        d.prerequisiteCardId === payload.dependsOnCardId
+      (d) => d.id === response.data.data?.id || d.prerequisiteCardId === payload.dependsOnCardId
     );
 
     if (matched) return matched;

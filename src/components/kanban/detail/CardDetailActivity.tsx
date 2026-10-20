@@ -10,9 +10,12 @@ import {
   Trash2,
   AlertCircle,
   RotateCcw,
+  GitBranch,
 } from "lucide-react";
-import type { KanbanCard, CardActivity } from "@/types";
+import type { KanbanCard, CardActivity, GitActivityFeed } from "@/types";
 import { useAuthStore } from "@/stores/auth.store";
+import { getUserFacingApiError } from "@/utils/api-error-message";
+import { CardGitActivityTab } from "./activity/CardGitActivityTab";
 
 export interface CardDetailActivityProps {
   card: KanbanCard;
@@ -27,6 +30,7 @@ export interface CardDetailActivityProps {
   commentsError?: string | null;
   onRetryComments?: () => void;
   currentUserId?: string;
+  onFetchGitActivity?: (cardId: string, cardCode: string) => Promise<GitActivityFeed>;
 }
 
 export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
@@ -39,8 +43,13 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
   commentsError = null,
   onRetryComments,
   currentUserId,
+  onFetchGitActivity,
 }) => {
   const [activeTab, setActiveTab] = React.useState<string>("comments");
+  const [gitActivity, setGitActivity] = React.useState<GitActivityFeed | null>(null);
+  const [isLoadingGitActivity, setIsLoadingGitActivity] = React.useState(false);
+  const [gitActivityError, setGitActivityError] = React.useState<string | null>(null);
+  const gitActivityRequestInFlight = React.useRef(false);
   const [commentText, setCommentText] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -75,6 +84,8 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
     setIsLoadingActivities(false);
     setIsLoadingMoreActivities(false);
     setActivityError(null);
+    setGitActivity(null);
+    setGitActivityError(null);
     setEditingCommentId(null);
     setEditText("");
     setDeletingCommentId(null);
@@ -98,7 +109,7 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
       }
     } catch (err) {
       if (activeCardIdRef.current !== currentId) return;
-      setActivityError(err instanceof Error ? err.message : "Failed to load activity logs");
+      setActivityError(getUserFacingApiError(err, "Failed to load activity logs."));
     } finally {
       if (activeCardIdRef.current === currentId) {
         setIsLoadingActivities(false);
@@ -125,7 +136,7 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
       setNextCursor(newCursor);
     } catch (err) {
       if (activeCardIdRef.current !== currentId) return;
-      setActivityError(err instanceof Error ? err.message : "Failed to load more activities");
+      setActivityError(getUserFacingApiError(err, "Failed to load more activities."));
     } finally {
       if (activeCardIdRef.current === currentId) {
         setIsLoadingMoreActivities(false);
@@ -137,6 +148,30 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
     setActiveTab(tab);
     if (tab === "activity" && activities === null && !isLoadingActivities) {
       await loadInitialActivities();
+    }
+    if (tab === "code-git" && gitActivity === null && !isLoadingGitActivity) {
+      await loadGitActivity();
+    }
+  };
+
+  const loadGitActivity = async () => {
+    if (gitActivityRequestInFlight.current) return;
+    if (!onFetchGitActivity) {
+      setGitActivityError("Git activity is not connected yet.");
+      return;
+    }
+    gitActivityRequestInFlight.current = true;
+    setIsLoadingGitActivity(true);
+    setGitActivityError(null);
+    try {
+      setGitActivity(await onFetchGitActivity(card.id, card.code));
+    } catch (cause) {
+      setGitActivityError(
+        getUserFacingApiError(cause, "Could not load Git activity.")
+      );
+    } finally {
+      gitActivityRequestInFlight.current = false;
+      setIsLoadingGitActivity(false);
     }
   };
 
@@ -213,7 +248,7 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
           <Tabs.Trigger
             value="comments"
             onClick={() => void handleTabChange("comments")}
-            className="flex items-center gap-1.5 pb-2 text-xs font-semibold text-neutral-500 border-b-2 border-transparent transition-colors hover:text-neutral-900 data-[state=active]:border-primary-600 data-[state=active]:text-primary-600 focus:outline-none"
+            className="data-[state=active]:text-primary-600 flex items-center gap-1.5 border-b-2 border-transparent pb-2 text-xs font-semibold text-neutral-500 transition-colors hover:text-neutral-900 focus:outline-none data-[state=active]:border-primary-600"
           >
             <MessageSquare className="h-3.5 w-3.5" />
             <span>Comments ({comments.length})</span>
@@ -222,10 +257,19 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
           <Tabs.Trigger
             value="activity"
             onClick={() => void handleTabChange("activity")}
-            className="flex items-center gap-1.5 pb-2 text-xs font-semibold text-neutral-500 border-b-2 border-transparent transition-colors hover:text-neutral-900 data-[state=active]:border-primary-600 data-[state=active]:text-primary-600 focus:outline-none"
+            className="data-[state=active]:text-primary-600 flex items-center gap-1.5 border-b-2 border-transparent pb-2 text-xs font-semibold text-neutral-500 transition-colors hover:text-neutral-900 focus:outline-none data-[state=active]:border-primary-600"
           >
             <ActivityIcon className="h-3.5 w-3.5" />
             <span>Activity</span>
+          </Tabs.Trigger>
+
+          <Tabs.Trigger
+            value="code-git"
+            onClick={() => void handleTabChange("code-git")}
+            className="data-[state=active]:text-primary-600 flex items-center gap-1.5 border-b-2 border-transparent pb-2 text-xs font-semibold text-neutral-500 transition-colors hover:text-neutral-900 focus:outline-none data-[state=active]:border-primary-600"
+          >
+            <GitBranch className="h-3.5 w-3.5" />
+            <span>Code / Git</span>
           </Tabs.Trigger>
         </Tabs.List>
 
@@ -252,7 +296,7 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
               <button
                 type="submit"
                 disabled={!commentText.trim() || isSubmitting}
-                className="absolute bottom-2.5 right-2.5 flex h-7 w-7 items-center justify-center rounded-md bg-primary-600 text-white transition-opacity hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                className="absolute bottom-2.5 right-2.5 flex h-7 w-7 cursor-pointer items-center justify-center rounded-md bg-primary-600 text-white transition-opacity hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="Send comment"
               >
                 {isSubmitting ? (
@@ -268,8 +312,8 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
           {isLoadingComments ? (
             <div className="space-y-3 py-2">
               {[1, 2, 3].map((n) => (
-                <div key={n} className="flex gap-2.5 animate-pulse">
-                  <div className="h-6 w-6 rounded-full bg-neutral-200 shrink-0" />
+                <div key={n} className="flex animate-pulse gap-2.5">
+                  <div className="h-6 w-6 shrink-0 rounded-full bg-neutral-200" />
                   <div className="flex-1 space-y-1.5">
                     <div className="h-3 w-28 rounded bg-neutral-200" />
                     <div className="h-8 rounded bg-neutral-100" />
@@ -278,7 +322,7 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
               ))}
             </div>
           ) : commentsError ? (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700 flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 shrink-0" />
                 <span>{commentsError}</span>
@@ -287,7 +331,7 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
                 <button
                   type="button"
                   onClick={onRetryComments}
-                  className="flex items-center gap-1 rounded bg-white px-2 py-1 text-xs font-semibold text-red-700 border border-red-300 hover:bg-red-50 cursor-pointer"
+                  className="flex cursor-pointer items-center gap-1 rounded border border-red-300 bg-white px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-50"
                 >
                   <RotateCcw className="h-3 w-3" />
                   Retry
@@ -295,7 +339,7 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
               )}
             </div>
           ) : comments.length === 0 ? (
-            <p className="text-xs text-neutral-400 italic py-2">
+            <p className="py-2 text-xs italic text-neutral-400">
               No comments yet. Start the conversation!
             </p>
           ) : (
@@ -306,17 +350,17 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
                 );
                 const isAuthor = Boolean(
                   effectiveUserId &&
-                    (comment.userId === effectiveUserId || comment.author?.id === effectiveUserId)
+                  (comment.userId === effectiveUserId || comment.author?.id === effectiveUserId)
                 );
                 const isEditing = editingCommentId === comment.id;
                 const isConfirmingDelete = deletingCommentId === comment.id;
 
                 return (
-                  <div key={comment.id} className="flex gap-2.5 text-xs group">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-100 text-[10px] font-semibold text-primary-700">
+                  <div key={comment.id} className="group flex gap-2.5 text-xs">
+                    <span className="text-primary-700 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-100 text-[10px] font-semibold">
                       {comment.author.initials || comment.author.name.charAt(0)}
                     </span>
-                    <div className="space-y-1 flex-1 min-w-0">
+                    <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-neutral-900">
@@ -328,20 +372,18 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
                           {comment.updatedAt &&
                             comment.updatedAt !== comment.createdAt &&
                             !isDeleted && (
-                              <span className="text-[10px] text-neutral-400 italic">
-                                (edited)
-                              </span>
+                              <span className="text-[10px] italic text-neutral-400">(edited)</span>
                             )}
                         </div>
 
                         {/* Author actions (Edit / Delete) */}
                         {isAuthor && !isDeleted && !isEditing && (
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                             {onUpdateComment && (
                               <button
                                 type="button"
                                 onClick={() => handleStartEdit(comment.id, comment.content)}
-                                className="rounded p-1 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 cursor-pointer"
+                                className="cursor-pointer rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
                                 aria-label="Edit comment"
                                 title="Edit comment"
                               >
@@ -354,7 +396,7 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
                                 onClick={() =>
                                   setDeletingCommentId(isConfirmingDelete ? null : comment.id)
                                 }
-                                className="rounded p-1 text-neutral-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+                                className="cursor-pointer rounded p-1 text-neutral-400 hover:bg-red-50 hover:text-red-600"
                                 aria-label="Delete comment"
                                 title="Delete comment"
                               >
@@ -367,14 +409,14 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
 
                       {/* Delete confirmation banner */}
                       {isConfirmingDelete && (
-                        <div className="rounded-lg border border-red-200 bg-red-50 p-2 text-xs flex items-center justify-between gap-2">
-                          <span className="text-red-700 font-medium">Delete this comment?</span>
+                        <div className="flex items-center justify-between gap-2 rounded-lg border border-red-200 bg-red-50 p-2 text-xs">
+                          <span className="font-medium text-red-700">Delete this comment?</span>
                           <div className="flex items-center gap-1.5">
                             <button
                               type="button"
                               onClick={() => setDeletingCommentId(null)}
                               disabled={isDeleting}
-                              className="px-2 py-0.5 text-[11px] rounded bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50 cursor-pointer"
+                              className="cursor-pointer rounded border border-neutral-200 bg-white px-2 py-0.5 text-[11px] text-neutral-700 hover:bg-neutral-50"
                             >
                               Cancel
                             </button>
@@ -382,7 +424,7 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
                               type="button"
                               onClick={() => void handleConfirmDelete(comment.id)}
                               disabled={isDeleting}
-                              className="px-2 py-0.5 text-[11px] rounded bg-red-600 text-white font-medium hover:bg-red-700 disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+                              className="flex cursor-pointer items-center gap-1 rounded bg-red-600 px-2 py-0.5 text-[11px] font-medium text-white hover:bg-red-700 disabled:opacity-50"
                             >
                               {isDeleting && <Loader2 className="h-2.5 w-2.5 animate-spin" />}
                               Delete
@@ -393,7 +435,7 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
 
                       {/* Content or Edit Form or Deleted Tombstone */}
                       {isDeleted ? (
-                        <p className="rounded-lg bg-neutral-50/70 border border-neutral-100 p-2.5 text-neutral-400 italic leading-relaxed">
+                        <p className="rounded-lg border border-neutral-100 bg-neutral-50/70 p-2.5 italic leading-relaxed text-neutral-400">
                           This comment has been deleted.
                         </p>
                       ) : isEditing ? (
@@ -411,7 +453,7 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
                               type="button"
                               onClick={handleCancelEdit}
                               disabled={isSavingEdit}
-                              className="px-2.5 py-1 text-xs rounded-md border border-neutral-200 text-neutral-700 hover:bg-neutral-50 cursor-pointer"
+                              className="cursor-pointer rounded-md border border-neutral-200 px-2.5 py-1 text-xs text-neutral-700 hover:bg-neutral-50"
                             >
                               Cancel
                             </button>
@@ -419,7 +461,7 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
                               type="button"
                               onClick={() => void handleSaveEdit(comment.id)}
                               disabled={!editText.trim() || isSavingEdit}
-                              className="px-2.5 py-1 text-xs rounded-md bg-primary-600 text-white font-medium hover:bg-primary-700 disabled:opacity-40 flex items-center gap-1 cursor-pointer"
+                              className="flex cursor-pointer items-center gap-1 rounded-md bg-primary-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-primary-700 disabled:opacity-40"
                             >
                               {isSavingEdit && <Loader2 className="h-3 w-3 animate-spin" />}
                               Save
@@ -427,7 +469,7 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
                           </div>
                         </div>
                       ) : (
-                        <p className="rounded-lg bg-neutral-50 p-2.5 text-neutral-800 leading-relaxed whitespace-pre-wrap break-words">
+                        <p className="whitespace-pre-wrap break-words rounded-lg bg-neutral-50 p-2.5 leading-relaxed text-neutral-800">
                           {comment.content}
                         </p>
                       )}
@@ -444,8 +486,8 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
           {isLoadingActivities ? (
             <div className="space-y-3 py-2">
               {[1, 2, 3].map((n) => (
-                <div key={n} className="flex items-center gap-2.5 animate-pulse">
-                  <div className="h-5 w-5 rounded-full bg-neutral-200 shrink-0" />
+                <div key={n} className="flex animate-pulse items-center gap-2.5">
+                  <div className="h-5 w-5 shrink-0 rounded-full bg-neutral-200" />
                   <div className="flex-1 space-y-1.5">
                     <div className="h-3 w-3/4 rounded bg-neutral-200" />
                     <div className="h-2.5 w-1/3 rounded bg-neutral-100" />
@@ -459,7 +501,7 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
               <button
                 type="button"
                 onClick={() => void loadInitialActivities()}
-                className="inline-flex items-center gap-1 font-medium text-primary-600 hover:text-primary-700 underline cursor-pointer"
+                className="text-primary-600 hover:text-primary-700 inline-flex cursor-pointer items-center gap-1 font-medium underline"
               >
                 <RotateCcw className="h-3 w-3" />
                 <span>Retry</span>
@@ -487,7 +529,7 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
                     type="button"
                     onClick={() => void handleLoadMoreActivities()}
                     disabled={isLoadingMoreActivities}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-700 disabled:opacity-50 cursor-pointer transition-colors"
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-50 disabled:opacity-50"
                   >
                     {isLoadingMoreActivities ? (
                       <>
@@ -502,8 +544,18 @@ export const CardDetailActivity: React.FC<CardDetailActivityProps> = ({
               )}
             </div>
           ) : (
-            <p className="text-xs text-neutral-400 italic">No activity recorded yet.</p>
+            <p className="text-xs italic text-neutral-400">No activity recorded yet.</p>
           )}
+        </Tabs.Content>
+
+        <Tabs.Content value="code-git" className="space-y-3 focus:outline-none">
+          <CardGitActivityTab
+            items={gitActivity?.items ?? []}
+            source={gitActivity?.source ?? null}
+            isLoading={isLoadingGitActivity}
+            error={gitActivityError}
+            onRetry={() => void loadGitActivity()}
+          />
         </Tabs.Content>
       </Tabs.Root>
     </div>

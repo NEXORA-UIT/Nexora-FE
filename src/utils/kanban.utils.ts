@@ -1,4 +1,4 @@
-import type { KanbanCard } from "@/types";
+import type { BoardCardFilters, KanbanCard } from "@/types";
 
 /**
  * Calculates new floating position coordinate using midpoint spacing strategy,
@@ -46,5 +46,23 @@ export function filterCardsByQuery(cards: KanbanCard[], rawQuery: string): Kanba
     );
 
     return matchesTitle || matchesCode || matchesLabel || matchesAssignee;
+  });
+}
+
+export function filterCards(cards: KanbanCard[], filters: BoardCardFilters, now = new Date()): KanbanCard[] {
+  return cards.filter((card) => {
+    if (filters.statusGroup !== "ALL" && card.statusGroup !== filters.statusGroup) return false;
+    if (filters.priority !== "ALL" && card.priority !== filters.priority) return false;
+    if (filters.assigneeIds.length > 0 && !filters.assigneeIds.some((id) => card.assignees.some((assignee) => assignee.id === id))) return false;
+    if (filters.labelIds.length > 0 && !filters.labelIds.some((id) => card.labels.some((label) => label.id === id))) return false;
+
+    if (filters.dueDate === "UNSCHEDULED" && card.dueDate) return false;
+    if (filters.dueDate === "SCHEDULED" && !card.dueDate) return false;
+    if (filters.dueDate === "OVERDUE") {
+      if (!card.dueDate || card.statusGroup === "DONE") return false;
+      const dueDate = new Date(card.dueDate);
+      if (Number.isNaN(dueDate.getTime()) || dueDate >= now) return false;
+    }
+    return true;
   });
 }

@@ -91,7 +91,7 @@ export const WorkspaceOverviewPanel: React.FC<WorkspaceOverviewPanelProps> = ({
             </div>
             <h2
               id="workspace-overview-heading"
-              className="text-2xl font-semibold tracking-tight sm:text-3xl"
+              className="text-2xl font-semibold tracking-tight text-white sm:text-3xl"
             >
               {workspace.name}
             </h2>

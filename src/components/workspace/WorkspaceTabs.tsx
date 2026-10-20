@@ -30,7 +30,7 @@ export const WorkspaceTabs: React.FC<WorkspaceTabsProps> = ({
               type="button"
               onClick={() => onTabChange(tab.id)}
               className={cn(
-                "group relative inline-flex items-center gap-2 py-3 text-xs font-medium transition-colors outline-none",
+                "group relative inline-flex items-center gap-2 rounded-sm py-3 text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2",
                 isActive
                   ? "text-primary-700 font-semibold"
                   : "text-neutral-500 hover:text-neutral-800"

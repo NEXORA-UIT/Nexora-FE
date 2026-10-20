@@ -206,6 +206,41 @@ describe("boardApi Suite", () => {
     });
   });
 
+  describe("boardApi membership mutations", () => {
+    it("adds a workspace member to the board and maps the returned member", async () => {
+      vi.spyOn(apiClient, "post").mockResolvedValueOnce({
+        data: {
+          success: true,
+          data: {
+            id: "board-membership-1",
+            boardId: "board-uuid-1",
+            userId: "user-uuid-1",
+            role: "MEMBER",
+            createdAt: "2026-10-09T08:00:00.000Z",
+            user: {
+              id: "user-uuid-1",
+              email: "alice@example.com",
+              fullName: "Alice Wonderland",
+              avatarUrl: null,
+            },
+          },
+        },
+      });
+
+      const result = await boardApi.addBoardMember("board-uuid-1", { userId: "user-uuid-1" });
+      expect(apiClient.post).toHaveBeenCalledWith("/boards/board-uuid-1/members", {
+        userId: "user-uuid-1",
+      });
+      expect(result).toMatchObject({ id: "user-uuid-1", name: "Alice Wonderland", role: "MEMBER" });
+    });
+
+    it("removes a member from the board", async () => {
+      vi.spyOn(apiClient, "delete").mockResolvedValueOnce({ data: { success: true, data: {} } });
+      await boardApi.removeBoardMember("board-uuid-1", "user-uuid-1");
+      expect(apiClient.delete).toHaveBeenCalledWith("/boards/board-uuid-1/members/user-uuid-1");
+    });
+  });
+
   describe("boardApi.createBoard", () => {
     it("sends POST /workspaces/:workspaceId/boards with sanitized payload and maps created board", async () => {
       vi.spyOn(apiClient, "post").mockResolvedValueOnce({
@@ -427,24 +462,35 @@ describe("boardApi Suite", () => {
   });
 
   describe("boardApi.getBoardDashboard", () => {
-    it("derives BoardDashboard from existing board detail state", async () => {
-      const dashboard = await boardApi.getBoardDashboard(
-        "board-website-redesign"
-      );
-      expect(dashboard).toBeDefined();
-      expect(dashboard.totalCards).toBeGreaterThanOrEqual(1);
-      expect(typeof dashboard.completedCards).toBe("number");
-      expect(typeof dashboard.inProgressCards).toBe("number");
-      expect(typeof dashboard.todoCards).toBe("number");
-      expect(typeof dashboard.overdueCards).toBe("number");
-      expect(typeof dashboard.completionRate).toBe("number");
-    });
+    it("requests the dashboard endpoint and maps canonical response fields", async () => {
+      vi.spyOn(apiClient, "get").mockResolvedValueOnce({
+        data: {
+          success: true,
+          data: {
+            totalCards: 12,
+            todoCards: 4,
+            inProgressCards: 5,
+            completedCards: 3,
+            overdueCards: 2,
+            completionRate: 25,
+            todo: 4,
+            inProgress: 5,
+            done: 3,
+            overdue: 2,
+            completionPercent: 25,
+          },
+        },
+      });
 
-    it("handles non-existent board gracefully by returning zero metrics", async () => {
-      const dashboard = await boardApi.getBoardDashboard("non-existent-board");
-      expect(dashboard).toBeDefined();
-      expect(dashboard.totalCards).toBe(0);
-      expect(dashboard.completionRate).toBe(0);
+      await expect(boardApi.getBoardDashboard("board-uuid-1")).resolves.toEqual({
+        totalCards: 12,
+        todoCards: 4,
+        inProgressCards: 5,
+        completedCards: 3,
+        overdueCards: 2,
+        completionRate: 25,
+      });
+      expect(apiClient.get).toHaveBeenCalledWith("/boards/board-uuid-1/dashboard");
     });
   });
 });

@@ -114,7 +114,7 @@ describe("WorkspaceOverviewPanel", () => {
   it("shows workspace details and counts from the loaded workspace, boards, and members", () => {
     renderOverview();
 
-    expect(screen.getByRole("heading", { name: "Core Platform" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Core Platform" }).className).toMatch(/text-white/);
     expect(screen.getByText("A shared product workspace.")).toBeTruthy();
     expect(screen.getByText("Active boards").parentElement?.textContent).toContain("2");
     expect(screen.getByText("Archived boards").parentElement?.textContent).toContain("1");

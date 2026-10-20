@@ -8,6 +8,15 @@ import type {
 
 export type CardPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 export type ListCategory = "TODO" | "IN_PROGRESS" | "DONE";
+export type CardDueDateFilter = "ALL" | "OVERDUE" | "SCHEDULED" | "UNSCHEDULED";
+
+export interface BoardCardFilters {
+  statusGroup: ListCategory | "ALL";
+  priority: CardPriority | "ALL";
+  assigneeIds: string[];
+  dueDate: CardDueDateFilter;
+  labelIds: string[];
+}
 
 export interface BoardLabel {
   id: string;
@@ -30,7 +39,10 @@ export interface KanbanCard {
   status: "ACTIVE" | "ARCHIVED";
   statusGroup?: ListCategory;
   assignees: BoardMember[];
+  assigneeIds?: string[];
   labels: BoardLabel[];
+  commentsCount?: number;
+  attachmentsCount?: number;
   tasksCount: number;
   completedTasksCount: number;
   isBlocked?: boolean;

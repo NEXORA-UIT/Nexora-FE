@@ -9,6 +9,9 @@ import type {
   UpdateWorkspaceRequest,
   WorkspacePaginationMeta,
   ApiSuccessResponse,
+  WorkspaceInvitationDto,
+  InviteWorkspaceMemberRequest,
+  TransferWorkspaceOwnerRequest,
 } from "@/types";
 
 export interface ListWorkspacesResponse {
@@ -148,6 +151,75 @@ export const workspaceApi = {
 
     workspaceMembersCache.set(cacheKey, { timestamp: Date.now(), data: result });
     return result;
+  },
+
+  async inviteWorkspaceMember(
+    workspaceId: string,
+    payload: InviteWorkspaceMemberRequest
+  ): Promise<WorkspaceInvitationDto> {
+    const response = await apiClient.post<ApiSuccessResponse<WorkspaceInvitationDto>>(
+      `/workspaces/${workspaceId}/invitations`,
+      payload
+    );
+    return response.data.data;
+  },
+
+  async listWorkspaceInvitations(workspaceId: string): Promise<WorkspaceInvitationDto[]> {
+    const response = await apiClient.get<ApiSuccessResponse<WorkspaceInvitationDto[]>>(
+      `/workspaces/${workspaceId}/invitations`
+    );
+    return response.data.data || [];
+  },
+
+  async cancelWorkspaceInvitation(
+    workspaceId: string,
+    invitationId: string
+  ): Promise<WorkspaceInvitationDto> {
+    const response = await apiClient.delete<ApiSuccessResponse<WorkspaceInvitationDto>>(
+      `/workspaces/${workspaceId}/invitations/${invitationId}`
+    );
+    return response.data.data;
+  },
+
+  async resendWorkspaceInvitation(invitationId: string): Promise<WorkspaceInvitationDto> {
+    const response = await apiClient.post<ApiSuccessResponse<WorkspaceInvitationDto>>(
+      `/workspaces/invitations/${invitationId}/resend`
+    );
+    return response.data.data;
+  },
+
+  async acceptWorkspaceInvitation(token: string): Promise<WorkspaceInvitationDto> {
+    const response = await apiClient.post<ApiSuccessResponse<WorkspaceInvitationDto>>(
+      `/workspaces/invitations/${encodeURIComponent(token)}/accept`
+    );
+    clearWorkspaceMembersCache();
+    return response.data.data;
+  },
+
+  async rejectWorkspaceInvitation(token: string): Promise<WorkspaceInvitationDto> {
+    const response = await apiClient.post<ApiSuccessResponse<WorkspaceInvitationDto>>(
+      `/workspaces/invitations/${encodeURIComponent(token)}/reject`
+    );
+    return response.data.data;
+  },
+
+  async removeWorkspaceMember(workspaceId: string, userId: string): Promise<void> {
+    await apiClient.delete<ApiSuccessResponse<Record<string, never>>>(
+      `/workspaces/${workspaceId}/members/${userId}`
+    );
+    clearWorkspaceMembersCache();
+  },
+
+  async transferWorkspaceOwner(
+    workspaceId: string,
+    userId: string,
+    payload: TransferWorkspaceOwnerRequest = { role: "OWNER" }
+  ): Promise<void> {
+    await apiClient.patch<ApiSuccessResponse<Record<string, never>>>(
+      `/workspaces/${workspaceId}/members/${userId}`,
+      payload
+    );
+    clearWorkspaceMembersCache();
   },
 };
 

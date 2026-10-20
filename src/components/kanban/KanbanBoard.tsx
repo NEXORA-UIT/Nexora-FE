@@ -3,18 +3,33 @@ import {
   DndContext,
   DragOverlay,
   closestCorners,
+  pointerWithin,
+  type CollisionDetection,
 } from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  useSortable,
-} from "@dnd-kit/sortable";
+import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { KanbanColumn } from "./KanbanColumn";
 import { KanbanCard } from "./KanbanCard";
 import { AddColumnInline } from "./AddColumnInline";
 import { useKanbanDnd } from "@/hooks/useKanbanDnd";
-import type { KanbanList, KanbanCard as KanbanCardType, ListCategory, MoveCardInput } from "@/types";
+import { LIST_DROP_TARGET_PREFIX } from "@/hooks/useKanbanDnd";
+import type {
+  KanbanList,
+  KanbanCard as KanbanCardType,
+  ListCategory,
+  MoveCardInput,
+} from "@/types";
+
+const kanbanCollisionDetection: CollisionDetection = (args) => {
+  const pointerCollisions = pointerWithin(args);
+  const cardCollisions = pointerCollisions.filter(
+    (collision) => !String(collision.id).startsWith(LIST_DROP_TARGET_PREFIX)
+  );
+
+  if (cardCollisions.length > 0) return cardCollisions;
+  if (pointerCollisions.length > 0) return pointerCollisions;
+  return closestCorners(args);
+};
 
 export interface KanbanBoardProps {
   lists: KanbanList[];
@@ -29,14 +44,9 @@ const SortableCardItem: React.FC<{
   card: KanbanCardType;
   onClick?: (card: KanbanCardType) => void;
 }> = ({ card, onClick }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: card.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: card.id,
+  });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -74,6 +84,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     handleDragStart,
     handleDragOver,
     handleDragEnd,
+    handleDragCancel,
   } = useKanbanDnd({
     lists,
     onCommitMoveCard,
@@ -143,10 +154,11 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={kanbanCollisionDetection}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
     >
       <div
         ref={scrollContainerRef}
@@ -154,7 +166,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         onPointerMove={handleCanvasPointerMove}
         onPointerUp={handleCanvasPointerUp}
         onPointerCancel={handleCanvasPointerUp}
-        className={`flex gap-5 overflow-x-auto pb-6 pt-1 pr-10 items-start scrollbar-thin min-h-[calc(100vh-230px)] ${
+        className={`scrollbar-thin flex min-h-[calc(100vh-230px)] items-start gap-5 overflow-x-auto pb-6 pr-10 pt-1 ${
           isPanning ? "cursor-grabbing select-none" : "cursor-grab"
         }`}
       >
@@ -163,9 +175,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             key={list.id}
             list={list}
             isAddingCard={addingCardListId === list.id}
-            onSetAddingCard={(isAdding) =>
-              setAddingCardListId(isAdding ? list.id : null)
-            }
+            onSetAddingCard={(isAdding) => setAddingCardListId(isAdding ? list.id : null)}
             onAddCard={(title) => onAddCard(list.id, title)}
             onColumnOptionsClick={onColumnOptionsClick}
           >
@@ -174,11 +184,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               strategy={verticalListSortingStrategy}
             >
               {list.cards.map((card) => (
-                <SortableCardItem
-                  key={card.id}
-                  card={card}
-                  onClick={onCardClick}
-                />
+                <SortableCardItem key={card.id} card={card} onClick={onCardClick} />
               ))}
             </SortableContext>
           </KanbanColumn>
@@ -188,7 +194,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         <AddColumnInline onAdd={onAddColumn} />
 
         {/* Rightmost padding spacer to guarantee full visibility without clipping */}
-        <div className="w-8 shrink-0 pointer-events-none" aria-hidden="true" />
+        <div className="pointer-events-none w-8 shrink-0" aria-hidden="true" />
       </div>
 
       {/* Floating Drag Overlay */}

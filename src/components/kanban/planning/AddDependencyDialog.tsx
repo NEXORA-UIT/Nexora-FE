@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Search, X, Loader2, AlertCircle, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getUserFacingApiError } from "@/utils/api-error-message";
 import { Input } from "@/components/ui/input";
 import type { KanbanCard } from "@/types";
 import { wouldCreateCycle } from "@/utils";
@@ -71,7 +72,7 @@ export const AddDependencyDialog: React.FC<AddDependencyDialogProps> = ({
       await onAddDependency(selectedCardId);
       onOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add dependency");
+      setError(getUserFacingApiError(err, "Failed to add dependency."));
     } finally {
       setIsSubmitting(false);
     }

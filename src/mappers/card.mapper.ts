@@ -36,8 +36,10 @@ export function deriveCardStatus(dto: CardDto): "ACTIVE" | "ARCHIVED" {
  */
 export function mapCardDtoToKanbanCard(
   dto: CardDto,
-  overrides?: Partial<KanbanCard>
+  overrides?: Partial<KanbanCard>,
+  membersPool?: BoardMember[]
 ): KanbanCard {
+  const assigneeIds = dto.assigneeIds ?? [];
   return {
     id: dto.id,
     listId: dto.listId,
@@ -51,8 +53,19 @@ export function mapCardDtoToKanbanCard(
     position: dto.position,
     status: deriveCardStatus(dto),
     statusGroup: overrides?.statusGroup ?? dto.statusGroup,
-    assignees: overrides?.assignees ?? [],
-    labels: overrides?.labels ?? [],
+    assignees: overrides?.assignees ?? assigneeIds.flatMap((id) => {
+      const member = membersPool?.find((candidate) => candidate.id === id);
+      return member ? [member] : [];
+    }),
+    assigneeIds,
+    labels: overrides?.labels ?? (dto.labels ?? []).map((label) => ({
+      id: label.id,
+      boardId: label.boardId ?? dto.boardId,
+      name: label.name,
+      color: label.color,
+    })),
+    commentsCount: dto.commentsCount,
+    attachmentsCount: dto.attachmentsCount,
     tasksCount: overrides?.tasksCount ?? dto.taskProgress?.total ?? 0,
     completedTasksCount:
       overrides?.completedTasksCount ?? dto.taskProgress?.completed ?? 0,
@@ -72,10 +85,11 @@ export function mapCardDtoToKanbanCard(
  */
 export function mapCardDtosToKanbanCards(
   dtos: CardDto[],
-  overridesMap?: Record<string, Partial<KanbanCard>>
+  overridesMap?: Record<string, Partial<KanbanCard>>,
+  membersPool?: BoardMember[]
 ): KanbanCard[] {
   return (dtos || []).map((dto) =>
-    mapCardDtoToKanbanCard(dto, overridesMap?.[dto.id])
+    mapCardDtoToKanbanCard(dto, overridesMap?.[dto.id], membersPool)
   );
 }
 
@@ -434,13 +448,18 @@ export function mapActivityLogDtoToCardActivity(
   dto: ActivityLogDto,
   membersPool?: BoardMember[]
 ): CardActivity {
-  const actor = membersPool?.find((m) => m.id === dto.actorId) ?? {
+  const actor = membersPool?.find((m) => m.id === dto.actorId) ?? (dto.actor ? {
+    id: dto.actor.id,
+    name: dto.actor.fullName,
+    initials: dto.actor.fullName.trim().split(/\s+/).slice(0, 2).map((part) => part[0] ?? "").join("").toUpperCase() || "U",
+    avatarUrl: dto.actor.avatarUrl ?? undefined,
+    role: "MEMBER",
+  } : {
     id: dto.actorId,
     name: "User",
-    email: "",
-    role: "MEMBER",
     initials: "U",
-  };
+    role: "MEMBER",
+  });
 
   return {
     id: dto.id,

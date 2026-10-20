@@ -328,6 +328,77 @@ describe("workspaceApi Suite", () => {
     });
   });
 
+  describe("workspace membership and invitations", () => {
+    const invitation = {
+      id: "invitation-1",
+      workspaceId: "ws-uuid-1",
+      email: "member@example.com",
+      status: "PENDING" as const,
+      expiresAt: "2026-10-16T00:00:00.000Z",
+      createdAt: "2026-10-09T00:00:00.000Z",
+    };
+
+    it("invites a workspace member using the documented email request", async () => {
+      vi.spyOn(apiClient, "post").mockResolvedValueOnce({
+        data: { success: true, data: invitation },
+      });
+
+      await expect(
+        workspaceApi.inviteWorkspaceMember("ws-uuid-1", { email: invitation.email })
+      ).resolves.toEqual(invitation);
+      expect(apiClient.post).toHaveBeenCalledWith(
+        "/workspaces/ws-uuid-1/invitations",
+        { email: invitation.email }
+      );
+    });
+
+    it("lists and cancels workspace invitations using their documented routes", async () => {
+      vi.spyOn(apiClient, "get").mockResolvedValueOnce({
+        data: { success: true, data: [invitation] },
+      });
+      vi.spyOn(apiClient, "delete").mockResolvedValueOnce({
+        data: { success: true, data: { ...invitation, status: "CANCELED" } },
+      });
+
+      await expect(workspaceApi.listWorkspaceInvitations("ws-uuid-1")).resolves.toEqual([invitation]);
+      await workspaceApi.cancelWorkspaceInvitation("ws-uuid-1", "invitation-1");
+      expect(apiClient.get).toHaveBeenCalledWith("/workspaces/ws-uuid-1/invitations");
+      expect(apiClient.delete).toHaveBeenCalledWith(
+        "/workspaces/ws-uuid-1/invitations/invitation-1"
+      );
+    });
+
+    it("accepts and rejects an invitation with the supplied token encoded in the route", async () => {
+      vi.spyOn(apiClient, "post").mockResolvedValue({
+        data: { success: true, data: invitation },
+      });
+
+      await workspaceApi.acceptWorkspaceInvitation("token/with spaces");
+      await workspaceApi.rejectWorkspaceInvitation("token/with spaces");
+      expect(apiClient.post).toHaveBeenNthCalledWith(
+        1,
+        "/workspaces/invitations/token%2Fwith%20spaces/accept"
+      );
+      expect(apiClient.post).toHaveBeenNthCalledWith(
+        2,
+        "/workspaces/invitations/token%2Fwith%20spaces/reject"
+      );
+    });
+
+    it("removes a member and transfers ownership with the documented payload", async () => {
+      vi.spyOn(apiClient, "delete").mockResolvedValueOnce({ data: { success: true, data: {} } });
+      vi.spyOn(apiClient, "patch").mockResolvedValueOnce({ data: { success: true, data: {} } });
+
+      await workspaceApi.removeWorkspaceMember("ws-uuid-1", "user-2");
+      await workspaceApi.transferWorkspaceOwner("ws-uuid-1", "user-2");
+      expect(apiClient.delete).toHaveBeenCalledWith("/workspaces/ws-uuid-1/members/user-2");
+      expect(apiClient.patch).toHaveBeenCalledWith(
+        "/workspaces/ws-uuid-1/members/user-2",
+        { role: "OWNER" }
+      );
+    });
+  });
+
   describe("Error Propagation", () => {
     it("re-throws ApiError without falling back to mock data", async () => {
       const apiError = new ApiError("Only owner can archive", "FORBIDDEN", 403);

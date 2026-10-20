@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import type { BoardCardFilters, BoardLabel, BoardMember, CardPriority, ListCategory } from "@/types";
 
 export interface BoardDetailToolbarProps {
   activeView: "board" | "calendar" | "planning";
@@ -18,6 +19,10 @@ export interface BoardDetailToolbarProps {
   archivedListsCount?: number;
   onArchivedListsClick?: () => void;
   onFilterClick?: () => void;
+  filters: BoardCardFilters;
+  onFiltersChange: (filters: BoardCardFilters) => void;
+  members: BoardMember[];
+  labels: BoardLabel[];
 }
 
 export const BoardDetailToolbar: React.FC<BoardDetailToolbarProps> = ({
@@ -28,9 +33,20 @@ export const BoardDetailToolbar: React.FC<BoardDetailToolbarProps> = ({
   archivedListsCount = 0,
   onArchivedListsClick,
   onFilterClick,
+  filters,
+  onFiltersChange,
+  members,
+  labels,
 }) => {
+  const [isFilterOpen, setIsFilterOpen] = React.useState(false);
+  const activeFilterCount = Object.values(filters).filter((value) => Array.isArray(value) ? value.length > 0 : value !== "ALL").length;
+
+  const updateFilter = <K extends keyof BoardCardFilters>(key: K, value: BoardCardFilters[K]) => {
+    onFiltersChange({ ...filters, [key]: value });
+  };
+
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-200/80 pb-4 select-none">
+    <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between select-none">
       {/* 1. View Switcher Tabs (Board vs Calendar vs Planning) */}
       <div className="flex items-center gap-1 rounded-xl bg-neutral-100/80 p-1 border border-neutral-200/60 self-start">
         <button
@@ -121,16 +137,58 @@ export const BoardDetailToolbar: React.FC<BoardDetailToolbarProps> = ({
         </div>
 
         {/* Filter Button */}
+        <div className="relative">
         <Button
           type="button"
           variant="outline"
           size="sm"
-          onClick={onFilterClick}
+          aria-expanded={isFilterOpen}
+          aria-controls="board-card-filter-panel"
+          onClick={() => {
+            setIsFilterOpen((open) => !open);
+            onFilterClick?.();
+          }}
           className="h-8 gap-1.5 rounded-lg border-neutral-200/90 bg-white text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
         >
           <SlidersHorizontal className="h-3.5 w-3.5 text-neutral-500" />
-          <span>Filter</span>
+          <span>Filter{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}</span>
         </Button>
+        {isFilterOpen && (
+          <div id="board-card-filter-panel" role="region" className="absolute right-0 top-10 z-30 w-72 space-y-3 rounded-xl border border-neutral-200 bg-white p-4 shadow-lg" aria-label="Card filters">
+            <label className="block space-y-1 text-xs font-medium text-neutral-700">
+              <span>Status</span>
+              <select aria-label="Filter by status" value={filters.statusGroup} onChange={(event) => updateFilter("statusGroup", event.target.value as ListCategory | "ALL")} className="h-9 w-full rounded-lg border border-neutral-300 bg-white px-2 text-sm">
+                <option value="ALL">All statuses</option><option value="TODO">To do</option><option value="IN_PROGRESS">In progress</option><option value="DONE">Done</option>
+              </select>
+            </label>
+            <label className="block space-y-1 text-xs font-medium text-neutral-700">
+              <span>Priority</span>
+              <select aria-label="Filter by priority" value={filters.priority} onChange={(event) => updateFilter("priority", event.target.value as CardPriority | "ALL")} className="h-9 w-full rounded-lg border border-neutral-300 bg-white px-2 text-sm">
+                <option value="ALL">All priorities</option><option value="LOW">Low</option><option value="MEDIUM">Medium</option><option value="HIGH">High</option><option value="URGENT">Urgent</option>
+              </select>
+            </label>
+            <label className="block space-y-1 text-xs font-medium text-neutral-700">
+              <span>Assignees</span>
+              <select multiple aria-label="Filter by assignee" value={filters.assigneeIds} onChange={(event) => updateFilter("assigneeIds", Array.from(event.target.selectedOptions, (option) => option.value))} className="min-h-20 w-full rounded-lg border border-neutral-300 bg-white px-2 text-sm">
+                {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
+              </select>
+            </label>
+            <label className="block space-y-1 text-xs font-medium text-neutral-700">
+              <span>Labels</span>
+              <select multiple aria-label="Filter by label" value={filters.labelIds} onChange={(event) => updateFilter("labelIds", Array.from(event.target.selectedOptions, (option) => option.value))} className="min-h-20 w-full rounded-lg border border-neutral-300 bg-white px-2 text-sm">
+                {labels.map((label) => <option key={label.id} value={label.id}>{label.name}</option>)}
+              </select>
+            </label>
+            <label className="block space-y-1 text-xs font-medium text-neutral-700">
+              <span>Due date</span>
+              <select aria-label="Filter by due date" value={filters.dueDate} onChange={(event) => updateFilter("dueDate", event.target.value as BoardCardFilters["dueDate"])} className="h-9 w-full rounded-lg border border-neutral-300 bg-white px-2 text-sm">
+                <option value="ALL">Any date</option><option value="OVERDUE">Overdue</option><option value="SCHEDULED">Scheduled</option><option value="UNSCHEDULED">No due date</option>
+              </select>
+            </label>
+            <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => onFiltersChange({ statusGroup: "ALL", priority: "ALL", assigneeIds: [], dueDate: "ALL", labelIds: [] })}>Clear filters</Button>
+          </div>
+        )}
+        </div>
       </div>
     </div>
   );

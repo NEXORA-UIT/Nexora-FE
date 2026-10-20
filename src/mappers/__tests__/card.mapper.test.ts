@@ -106,7 +106,10 @@ describe("Card Mapper Suite", () => {
         tasksCount: 3,
         completedTasksCount: 1,
         assignees: [],
+        assigneeIds: [],
         labels: [],
+        commentsCount: undefined,
+        attachmentsCount: undefined,
         isBlocked: false,
         blockReason: undefined,
         checklist: [],
@@ -129,6 +132,23 @@ describe("Card Mapper Suite", () => {
       expect(card.dueDate).toBeNull();
       expect(card.tasksCount).toBe(0);
       expect(card.completedTasksCount).toBe(0);
+    });
+
+    it("maps aggregate assignees, labels, and child counts from Board Cards response", () => {
+      const dto: CardDto = {
+        ...sampleActiveCardDto,
+        assigneeIds: ["user-1"],
+        labels: [{ id: "label-1", name: "Backend", color: "#2563EB" }],
+        commentsCount: 2,
+        attachmentsCount: 1,
+      };
+      const member: BoardMember = { id: "user-1", name: "Alex Kim", initials: "AK", role: "MEMBER" };
+
+      const card = mapCardDtoToKanbanCard(dto, undefined, [member]);
+      expect(card.assignees).toEqual([member]);
+      expect(card.labels).toEqual([{ id: "label-1", boardId: "board-uuid-1", name: "Backend", color: "#2563EB" }]);
+      expect(card.commentsCount).toBe(2);
+      expect(card.attachmentsCount).toBe(1);
     });
 
     it("allows overrides for related child entities like assignees and labels", () => {

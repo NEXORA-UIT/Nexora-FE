@@ -16,6 +16,7 @@ import type {
   CardActivity,
   BoardLabel,
   PaginatedActivitiesResult,
+  GitActivityFeed,
 } from "@/types";
 
 export interface CardDetailDrawerProps {
@@ -71,6 +72,7 @@ export interface CardDetailDrawerProps {
   isUploadingAttachment?: boolean;
   currentUserRole?: string;
   isWorkspaceOwner?: boolean;
+  onFetchGitActivity?: (cardId: string, cardCode: string) => Promise<GitActivityFeed>;
 }
 
 export const CardDetailDrawer: React.FC<CardDetailDrawerProps> = ({
@@ -123,6 +125,7 @@ export const CardDetailDrawer: React.FC<CardDetailDrawerProps> = ({
   isUploadingAttachment = false,
   currentUserRole,
   isWorkspaceOwner = false,
+  onFetchGitActivity,
 }) => {
   if (!card) return null;
 
@@ -130,12 +133,12 @@ export const CardDetailDrawer: React.FC<CardDetailDrawerProps> = ({
     <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
         {/* Soft Dimming Backdrop */}
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-neutral-900/40 backdrop-blur-2xs transition-opacity duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <Dialog.Overlay className="backdrop-blur-2xs data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-40 bg-neutral-900/40 transition-opacity duration-200" />
 
         {/* Right-Side Slide-Over Panel Container */}
         <Dialog.Content
           data-no-pan
-          className="fixed inset-y-0 right-0 z-50 flex w-full max-w-full sm:max-w-xl lg:max-w-2xl flex-col border-l border-neutral-200 bg-white shadow-2xl focus:outline-none transition-all duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right"
+          className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right fixed inset-y-0 right-0 z-50 flex w-full max-w-full flex-col border-l border-neutral-200 bg-white shadow-2xl transition-all duration-200 focus:outline-none sm:max-w-xl lg:max-w-2xl"
         >
           {/* Accessible Dialog Title */}
           <Dialog.Title className="sr-only">
@@ -143,7 +146,7 @@ export const CardDetailDrawer: React.FC<CardDetailDrawerProps> = ({
           </Dialog.Title>
 
           {/* Pinned Sticky Header */}
-          <div className="shrink-0 bg-white border-b border-neutral-200 px-4 sm:px-6 pt-4 pb-1">
+          <div className="shrink-0 border-b border-neutral-200 bg-white px-4 pb-1 pt-4 sm:px-6">
             <CardDetailHeader
               card={card}
               onUpdate={onUpdate}
@@ -153,7 +156,7 @@ export const CardDetailDrawer: React.FC<CardDetailDrawerProps> = ({
           </div>
 
           {/* Independent Vertical Scroll Area */}
-          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-2 space-y-2 scrollbar-thin">
+          <div className="scrollbar-thin flex-1 space-y-2 overflow-y-auto px-4 py-2 sm:px-6">
             {/* Core Metadata: Status select (moveCard), Priority, Assignee, Dates, Labels */}
             <CardDetailMetadata
               card={card}
@@ -234,6 +237,7 @@ export const CardDetailDrawer: React.FC<CardDetailDrawerProps> = ({
               commentsError={commentsError}
               onRetryComments={onRetryComments}
               currentUserId={currentUserId}
+              onFetchGitActivity={onFetchGitActivity}
             />
           </div>
         </Dialog.Content>

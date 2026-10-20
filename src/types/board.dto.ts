@@ -55,3 +55,7 @@ export interface ConfirmDeleteBoardRequest {
 export interface AssignBoardPmRequest {
   pmId: string;
 }
+
+export interface AddBoardMemberRequest {
+  userId: string;
+}

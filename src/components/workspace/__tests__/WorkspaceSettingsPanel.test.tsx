@@ -60,7 +60,7 @@ describe("WorkspaceSettingsPanel", () => {
     vi.mocked(useAuthStore).mockImplementation(((selector: (state: { user: { id: string } }) => unknown) =>
       selector({ user: { id: "owner-1" } })) as typeof useAuthStore);
     vi.mocked(useWorkspaceMembership).mockReturnValue(membershipState);
-    vi.mocked(useWorkspaceStore.getState).mockReturnValue({ updateWorkspace } as ReturnType<typeof useWorkspaceStore.getState>);
+    vi.mocked(useWorkspaceStore.getState).mockReturnValue({ updateWorkspace } as unknown as ReturnType<typeof useWorkspaceStore.getState>);
   });
 
   it("lets the active workspace owner edit workspace details", () => {
@@ -77,7 +77,7 @@ describe("WorkspaceSettingsPanel", () => {
     ["archived workspace", membershipState, { ...workspace, status: "archived" as const }],
     ["frozen workspace", membershipState, { ...workspace, isFrozen: true }],
   ])("keeps settings read-only for a %s", (_reason, membership, targetWorkspace) => {
-    vi.mocked(useWorkspaceMembership).mockReturnValue(membership);
+    vi.mocked(useWorkspaceMembership).mockReturnValue(membership as ReturnType<typeof useWorkspaceMembership>);
     render(<WorkspaceSettingsPanel workspace={targetWorkspace} />);
 
     expect(screen.getByText(/only the workspace owner can edit/i)).toBeTruthy();
@@ -105,5 +105,21 @@ describe("WorkspaceSettingsPanel", () => {
 
     expect(await screen.findByRole("alert")).toBeTruthy();
     expect(screen.getByRole("alert").textContent).toMatch(/could not update workspace/i);
+  });
+
+  it("disables editing if membership refresh fails after switching workspaces", () => {
+    const { rerender } = render(<WorkspaceSettingsPanel workspace={workspace} />);
+    const nextWorkspace = { ...workspace, id: "workspace-2", name: "Another workspace" };
+    vi.mocked(useWorkspaceMembership).mockReturnValue({
+      ...membershipState,
+      error: "Could not load members.",
+      isLoading: false,
+    });
+    rerender(<WorkspaceSettingsPanel workspace={nextWorkspace} />);
+
+    expect(screen.getByRole("alert").textContent).toContain("Could not load members.");
+    expect((screen.getByRole("textbox", { name: /workspace name/i }) as HTMLInputElement).value).toBe("Another workspace");
+    expect(screen.getByRole("textbox", { name: /workspace name/i }).hasAttribute("disabled")).toBe(true);
+    expect(screen.getByRole("button", { name: /save changes/i }).hasAttribute("disabled")).toBe(true);
   });
 });

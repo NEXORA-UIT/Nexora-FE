@@ -16,10 +16,11 @@ import type {
   ConfirmDeleteBoardRequest,
   AssignBoardPmRequest,
   BoardDashboard,
+  BoardDashboardResponse,
   ListBoardsQuery,
   ApiSuccessResponse,
+  AddBoardMemberRequest,
 } from "@/types";
-import { getBoardDashboardMetrics } from "@/utils/planning.utils";
 import { MOCK_BOARDS } from "@/mocks/data/boards.mock";
 import { MOCK_BOARD_DETAIL } from "@/mocks/data/kanban.mock";
 
@@ -75,6 +76,23 @@ export const boardApi = {
     );
 
     return (response.data.data || []).map(mapBoardMemberDtoToBoardMember);
+  },
+
+  async addBoardMember(
+    boardId: string,
+    payload: AddBoardMemberRequest
+  ): Promise<BoardMember> {
+    const response = await apiClient.post<ApiSuccessResponse<BoardMemberDto>>(
+      `/boards/${boardId}/members`,
+      payload
+    );
+    return mapBoardMemberDtoToBoardMember(response.data.data);
+  },
+
+  async removeBoardMember(boardId: string, userId: string): Promise<void> {
+    await apiClient.delete<ApiSuccessResponse<Record<string, never>>>(
+      `/boards/${boardId}/members/${userId}`
+    );
   },
 
   /**
@@ -280,31 +298,17 @@ export const boardApi = {
     );
   },
 
-  /**
-   * Retrieves aggregated statistical metrics of a project board
-   * (Mirrors GET /api/v1/boards/{id}/dashboard -> BoardDashboardResponse)
-   */
+  /** Retrieves aggregated statistics from GET /api/v1/boards/:id/dashboard. */
   async getBoardDashboard(boardId: string): Promise<BoardDashboard> {
-    let detail = inMemoryBoardDetails[boardId];
-    if (!detail) {
-      try {
-        detail = await this.getBoardDetail(boardId);
-      } catch {
-        // board not found
-      }
-    }
-
-    if (detail && detail.lists) {
-      return getBoardDashboardMetrics(detail.lists);
-    }
-
+    const response = await apiClient.get<BoardDashboardResponse>(`/boards/${boardId}/dashboard`);
+    const dashboard = response.data.data;
     return {
-      totalCards: 0,
-      completedCards: 0,
-      inProgressCards: 0,
-      todoCards: 0,
-      overdueCards: 0,
-      completionRate: 0,
+      totalCards: dashboard.totalCards,
+      todoCards: dashboard.todoCards,
+      inProgressCards: dashboard.inProgressCards,
+      completedCards: dashboard.completedCards,
+      overdueCards: dashboard.overdueCards,
+      completionRate: dashboard.completionRate,
     };
   },
 };

@@ -22,10 +22,19 @@ export interface CardDto {
   updatedAt: string;
   statusGroup: "TODO" | "IN_PROGRESS" | "DONE";
   taskProgress: CardTaskProgressDto;
+  assigneeIds?: string[];
+  labels?: Array<{ id: string; boardId?: string; name: string; color: string }>;
+  commentsCount?: number;
+  attachmentsCount?: number;
 }
 
 export interface ListCardsQuery {
   includeArchived?: boolean;
+  q?: string;
+  assigneeId?: string | string[];
+  labelId?: string | string[];
+  statusGroup?: "TODO" | "IN_PROGRESS" | "DONE";
+  isOverdue?: boolean;
 }
 
 export interface CreateCardRequest {
@@ -168,6 +177,7 @@ export interface ActivityLogDto {
   boardId: string;
   cardId: string | null;
   actorId: string;
+  actor?: { id: string; fullName: string; avatarUrl: string | null };
   action: string;
   details?: Record<string, unknown>;
   createdAt: string;
@@ -187,4 +197,3 @@ export interface PaginatedActivitiesResult {
   items: import("./task").CardActivity[];
   nextCursor: string | null;
 }
-

@@ -32,11 +32,18 @@ export const WorkspaceSettingsPanel: React.FC<WorkspaceSettingsPanelProps> = ({ 
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  React.useEffect(() => {
+    setName(workspace.name);
+    setDescription(workspace.description);
+    setDomainCategory(getDomainCategory(workspace.teamType));
+    setError(null);
+  }, [workspace.id, workspace.name, workspace.description, workspace.teamType]);
+
   const isOwner = membership.members.some(
     (member) => member.userId === currentUserId && member.role === "OWNER"
   );
   const canEdit =
-    isOwner && workspace.status === "active" && !workspace.isFrozen && !membership.isLoading;
+    isOwner && workspace.status === "active" && !workspace.isFrozen && !membership.isLoading && !membership.error;
   const changedFields: UpdateWorkspaceRequest = {};
 
   if (name.trim() !== workspace.name) changedFields.name = name.trim();
