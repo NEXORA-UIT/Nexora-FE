@@ -10,6 +10,7 @@ import { ROUTES } from "@/constants/routes";
 import { authApi } from "@/apis/auth.api";
 import { ApiError } from "@/apis/client";
 import { useAuthStore } from "@/stores/auth.store";
+import { getUserFacingApiError } from "@/utils/api-error-message";
 import type { LoginFormData, LoginFormProps } from "@/types";
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
@@ -47,26 +48,27 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       onSuccess();
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        if (err.code === "INVALID_CREDENTIALS") {
-          setServerError("Incorrect email or password.");
-        } else if (err.code === "ACCOUNT_LOCKED") {
-          setServerError("Your account has been locked. Please contact support.");
-        } else if (err.code === "RATE_LIMITED") {
-          setServerError("Too many login attempts. Please try again in 1 minute.");
-        } else if (err.code === "VALIDATION_ERROR" && err.details) {
-          err.details.forEach((detail) => {
+        if (err.code === "VALIDATION_ERROR") {
+          err.details?.forEach((detail) => {
             if (detail.field === "email" || detail.field === "password") {
-              setError(detail.field, { message: detail.message });
+              setError(detail.field, { message: "Please check this field." });
             }
           });
-          setServerError(err.message || "Invalid input data.");
+          setServerError(
+            getUserFacingApiError(
+              err,
+              "Please check your email and password and try again."
+            )
+          );
         } else {
-          setServerError(err.message || "Sign in failed. Please try again.");
+          setServerError(
+            getUserFacingApiError(err, "Sign in failed. Please try again.")
+          );
         }
-      } else if (err instanceof Error) {
-        setServerError(err.message);
       } else {
-        setServerError("An unexpected error occurred. Please try again.");
+        setServerError(
+          getUserFacingApiError(err, "An unexpected error occurred. Please try again.")
+        );
       }
     } finally {
       setIsSubmitting(false);

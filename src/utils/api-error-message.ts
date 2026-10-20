@@ -5,6 +5,9 @@ type ApiErrorLike = {
 
 const ERROR_MESSAGES_BY_CODE: Record<string, string> = {
   INVALID_CREDENTIALS: "The email or password is incorrect.",
+  ACCOUNT_LOCKED: "Your account has been locked. Please contact support.",
+  RATE_LIMITED: "Too many attempts. Please wait a moment and try again.",
+  MAIL_NOT_CONFIGURED: "Email verification is temporarily unavailable. Please try again later.",
   EMAIL_ALREADY_EXISTS: "An account with this email already exists.",
   VERIFIED_EMAIL_REQUIRED: "Verify your email before continuing.",
   ACCOUNT_LINK_REQUIRED: "Sign in to the existing account to link this provider.",
