@@ -1,5 +1,6 @@
 import { toast } from "sonner";
 import { ApiError } from "@/apis/client";
+import { getUserFacingApiError } from "@/utils/api-error-message";
 import type { Workspace } from "@/types";
 
 export type WorkspaceAction = "create" | "modify" | "restore" | "delete";
@@ -77,12 +78,12 @@ export function handleWorkspaceActionError(
       return;
     }
     if (err.status === 400) {
-      toast.error(err.message || "Invalid request.");
+      toast.error(getUserFacingApiError(err, "Invalid request."));
       return;
     }
-    toast.error(err.message || defaultRoleMessage);
+    toast.error(getUserFacingApiError(err, defaultRoleMessage));
     return;
   }
 
-  toast.error(err instanceof Error ? err.message : defaultRoleMessage);
+  toast.error(getUserFacingApiError(err, defaultRoleMessage));
 }

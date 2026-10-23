@@ -94,21 +94,18 @@ export function useCardDependencies({
         const nextLists = prev.lists.map((list) => ({
           ...list,
           cards: list.cards.map((c) => {
-            if (c.id === cardId) {
-              const updatedDeps = [...(c.dependencies || []), newDep];
-              const updatedCard = { ...c, dependencies: updatedDeps };
-              const { isBlocked, blockReason } = isCardBlocked(updatedCard, prev.lists);
-              return { ...updatedCard, isBlocked, blockReason };
-            }
-            return c;
+            if (c.id !== cardId) return c;
+            const updatedDeps = [...(c.dependencies || []), newDep];
+            const updatedCard = { ...c, dependencies: updatedDeps };
+            const { isBlocked, blockReason } = isCardBlocked(updatedCard, prev.lists);
+            return { ...updatedCard, isBlocked, blockReason };
           }),
         }));
         return { ...prev, lists: nextLists };
       });
       toast.success("Dependency added");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to add dependency";
-      toast.error(msg);
+      toast.error(getUserFacingApiError(err, "Failed to add dependency."));
       throw err;
     }
   }, [setBoard]);
@@ -122,21 +119,18 @@ export function useCardDependencies({
         const nextLists = prev.lists.map((list) => ({
           ...list,
           cards: list.cards.map((c) => {
-            if (c.id === cardId) {
-              const updatedDeps = (c.dependencies || []).filter((d) => d.id !== dependencyId);
-              const updatedCard = { ...c, dependencies: updatedDeps };
-              const { isBlocked, blockReason } = isCardBlocked(updatedCard, prev.lists);
-              return { ...updatedCard, isBlocked, blockReason };
-            }
-            return c;
+            if (c.id !== cardId) return c;
+            const updatedDeps = (c.dependencies || []).filter((d) => d.id !== dependencyId);
+            const updatedCard = { ...c, dependencies: updatedDeps };
+            const { isBlocked, blockReason } = isCardBlocked(updatedCard, prev.lists);
+            return { ...updatedCard, isBlocked, blockReason };
           }),
         }));
         return { ...prev, lists: nextLists };
       });
       toast.success("Dependency removed");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to delete dependency";
-      toast.error(msg);
+      toast.error(getUserFacingApiError(err, "Failed to delete dependency."));
       throw err;
     }
   }, [setBoard]);

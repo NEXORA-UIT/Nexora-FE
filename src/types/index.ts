@@ -16,3 +16,4 @@ export * from "./planning";
 export * from "./my-task";
 export * from "./quick-note";
 export * from "./github";
+export * from "./websocket";

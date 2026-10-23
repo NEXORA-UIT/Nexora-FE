@@ -40,7 +40,12 @@ export function mapCardDtoToKanbanCard(
   overrides?: Partial<KanbanCard>,
   membersPool?: BoardMember[]
 ): KanbanCard {
-  const assigneeIds = dto.assigneeIds ?? [];
+  // Partial-response awareness: if dto does not include assigneeIds (undefined), preserve existing from overrides
+  const assigneeIds =
+    dto.assigneeIds !== undefined
+      ? dto.assigneeIds
+      : (overrides?.assigneeIds ?? overrides?.assignees?.map((a) => a.id) ?? []);
+
   return {
     id: dto.id,
     listId: dto.listId,
@@ -54,19 +59,25 @@ export function mapCardDtoToKanbanCard(
     position: dto.position,
     status: deriveCardStatus(dto),
     statusGroup: overrides?.statusGroup ?? dto.statusGroup,
-    assignees: overrides?.assignees ?? assigneeIds.flatMap((id) => {
-      const member = membersPool?.find((candidate) => candidate.id === id);
-      return member ? [member] : [];
-    }),
+    assignees:
+      overrides?.assignees ??
+      assigneeIds.flatMap((id) => {
+        const member = membersPool?.find((candidate) => candidate.id === id);
+        return member ? [member] : [];
+      }),
     assigneeIds,
-    labels: overrides?.labels ?? (dto.labels ?? []).map((label) => ({
-      id: label.id,
-      boardId: label.boardId ?? dto.boardId,
-      name: label.name,
-      color: label.color,
-    })),
-    commentsCount: dto.commentsCount,
-    attachmentsCount: dto.attachmentsCount,
+    labels:
+      dto.labels !== undefined
+        ? dto.labels.map((label) => ({
+            id: label.id,
+            boardId: label.boardId ?? dto.boardId,
+            name: label.name,
+            color: label.color,
+          }))
+        : (overrides?.labels ?? []),
+    commentsCount: dto.commentsCount !== undefined ? dto.commentsCount : overrides?.commentsCount,
+    attachmentsCount:
+      dto.attachmentsCount !== undefined ? dto.attachmentsCount : overrides?.attachmentsCount,
     tasksCount: overrides?.tasksCount ?? dto.taskProgress?.total ?? 0,
     completedTasksCount:
       overrides?.completedTasksCount ?? dto.taskProgress?.completed ?? 0,
@@ -274,12 +285,15 @@ export function mapCommentDtoToCardComment(
   membersPool?: BoardMember[]
 ): CardComment {
   const member = membersPool?.find((m) => m.id === dto.userId);
+  const rawUser = (dto as CommentDto & { user?: { id?: string; fullName?: string } }).user;
+  const authorName = member?.name ?? rawUser?.fullName ?? "Unknown Member";
+  const authorInitials = member?.initials ?? (rawUser?.fullName ? generateMemberInitials(rawUser.fullName) : "U");
   const author: BoardMember = member
     ? { ...member }
     : {
         id: dto.userId,
-        name: "Unknown Member",
-        initials: "U",
+        name: authorName,
+        initials: authorInitials,
       };
 
   const isDeleted = Boolean(dto.deletedAt || dto.content === null);

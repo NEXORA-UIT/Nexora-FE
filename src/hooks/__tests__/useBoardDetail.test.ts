@@ -13,7 +13,9 @@ import type {
   ChecklistItem,
   CardAssignmentDto,
   BoardLabel,
+  RealtimeEnvelope,
 } from "@/types";
+import { webSocketClient } from "@/lib/websocket/websocket-client";
 
 describe("useBoardDetail Live Read Integration & State Orchestration", () => {
   const mockBoard: Board = {
@@ -2104,6 +2106,228 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
         expect.any(Array)
       );
       expect(activitiesResult).toEqual(mockResult);
+    });
+  });
+
+  describe("Realtime Reload Failure & Board Switching Integration Suite", () => {
+    it("preserves current board and replays buffered realtime events when reload fails", async () => {
+      const { result } = renderHook(() => useBoardDetail("b-uuid-1"));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.board).not.toBeNull();
+      expect(result.current.board?.id).toBe("b-uuid-1");
+
+      // Simulate: Next loadBoard fails. While snapshot is in flight, receive a realtime CARD_CREATED event
+      let rejectPromise: ((err: Error) => void) | null = null;
+      vi.spyOn(boardApi, "getBoard").mockImplementationOnce(() => {
+        return new Promise((_, reject) => {
+          rejectPromise = reject;
+        });
+      });
+
+      // 2. Start reload
+      let reloadPromise: Promise<void> | null = null;
+      act(() => {
+        reloadPromise = result.current.reload();
+      });
+
+      expect(result.current.isLoading).toBe(true);
+
+      // 3. Receive realtime event while reload is in-flight
+      const newCardId = "card-realtime-reload-fail";
+      const newCardEnvelope: RealtimeEnvelope = {
+        event: "CARD_CREATED",
+        eventId: "evt-card-reload-fail-1",
+        boardId: "b-uuid-1",
+        occurredAt: "2026-10-20T10:00:00.000Z",
+        actor: { userId: "user-uuid-pm", fullName: "Alice PM" },
+        data: {
+          card: {
+            id: newCardId,
+            boardId: "b-uuid-1",
+            listId: "list-uuid-todo",
+            cardKey: "NEX-999",
+            title: "Card Created During Reload Failure",
+            description: null,
+            startDate: null,
+            dueDate: null,
+            priority: "HIGH",
+            position: 9999,
+            archivedAt: null,
+            createdAt: "2026-10-20T10:00:00.000Z",
+            updatedAt: "2026-10-20T10:00:00.000Z",
+            statusGroup: "TODO",
+            taskProgress: { total: 0, completed: 0 },
+          },
+        },
+      };
+
+      act(() => {
+        (webSocketClient as unknown as { handleIncomingMessage: (msg: unknown) => void }).handleIncomingMessage(JSON.stringify(newCardEnvelope));
+      });
+
+      // 4. REST fails
+      await act(async () => {
+        rejectPromise!(new Error("Network connection dropped during reload"));
+        try {
+          await reloadPromise;
+        } catch {
+          // Expected
+        }
+      });
+
+      // 5. Board state for b-uuid-1 must NOT be wiped to null; buffered event must be applied!
+      expect(result.current.board).not.toBeNull();
+      expect(result.current.board?.id).toBe("b-uuid-1");
+      expect(result.current.error).toBe("Failed to load board");
+
+      const todoCards = result.current.board?.lists.find((l) => l.id === "list-uuid-todo")?.cards ?? [];
+      const createdCard = todoCards.find((c) => c.id === newCardId);
+      expect(createdCard).toBeDefined();
+      expect(createdCard?.title).toBe("Card Created During Reload Failure");
+    });
+
+    it("clears board state when switching to a different board that fails to load", async () => {
+      let currentBoardId = "b-uuid-1";
+      const { result, rerender } = renderHook(() => useBoardDetail(currentBoardId));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.board?.id).toBe("b-uuid-1");
+
+      // Switch to b-uuid-2 which fails to load
+      vi.spyOn(boardApi, "getBoard").mockRejectedValueOnce(new Error("Board not found"));
+
+      currentBoardId = "b-uuid-2";
+      await act(async () => {
+        rerender();
+      });
+
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      // Must NOT retain b-uuid-1 data for b-uuid-2
+      expect(result.current.board).toBeNull();
+      expect(result.current.error).toBe("Failed to load board");
+    });
+  });
+
+  describe("Board Metadata Updates (handleUpdateBoard)", () => {
+    it("updates board name and description while preserving lists, cards, members, labels, and status", async () => {
+      const { result } = renderHook(() => useBoardDetail("b-uuid-1"));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.board?.name).toBe("Engineering Kanban");
+      expect(result.current.board?.description).toBe("Core sprint board");
+      const originalLists = result.current.board?.lists;
+      const originalMembers = result.current.board?.members;
+      const originalLabels = result.current.board?.labels;
+
+      const updateSpy = vi.spyOn(boardApi, "updateBoard").mockResolvedValueOnce({
+        ...mockBoard,
+        name: "Renamed Kanban",
+        title: "Renamed Kanban",
+        description: "Updated sprint description",
+        updatedAt: "2026-10-23T10:00:00.000Z",
+      });
+
+      let updatedBoard: Board | undefined;
+      await act(async () => {
+        updatedBoard = await result.current.handleUpdateBoard({
+          name: "Renamed Kanban",
+          description: "Updated sprint description",
+        });
+      });
+
+      expect(updateSpy).toHaveBeenCalledWith("b-uuid-1", {
+        name: "Renamed Kanban",
+        description: "Updated sprint description",
+      });
+      expect(updatedBoard?.name).toBe("Renamed Kanban");
+      expect(result.current.board?.name).toBe("Renamed Kanban");
+      expect(result.current.board?.description).toBe("Updated sprint description");
+      expect(result.current.board?.updatedAt).toBe("2026-10-23T10:00:00.000Z");
+
+      // Verify lists, cards, members, labels, status preserved
+      expect(result.current.board?.lists).toEqual(originalLists);
+      expect(result.current.board?.members).toEqual(originalMembers);
+      expect(result.current.board?.labels).toEqual(originalLabels);
+      expect(result.current.board?.status).toBe("ACTIVE");
+    });
+
+    it("correctly clears description when description is null", async () => {
+      const { result } = renderHook(() => useBoardDetail("b-uuid-1"));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      vi.spyOn(boardApi, "updateBoard").mockResolvedValueOnce({
+        ...mockBoard,
+        name: "Engineering Kanban",
+        title: "Engineering Kanban",
+        description: null,
+        updatedAt: "2026-10-23T10:05:00.000Z",
+      });
+
+      await act(async () => {
+        await result.current.handleUpdateBoard({
+          description: null,
+        });
+      });
+
+      expect(result.current.board?.description).toBeNull();
+      expect(result.current.board?.name).toBe("Engineering Kanban");
+    });
+
+    it("guards against race conditions when switching boards during an in-flight save", async () => {
+      let currentBoardId = "b-uuid-1";
+      const { result, rerender } = renderHook(() => useBoardDetail(currentBoardId));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      let resolveUpdate: (value: Board) => void;
+      const updatePromise = new Promise<Board>((resolve) => {
+        resolveUpdate = resolve;
+      });
+      vi.spyOn(boardApi, "updateBoard").mockReturnValueOnce(updatePromise);
+
+      // Trigger update for b-uuid-1
+      let updateActionPromise: Promise<Board>;
+      act(() => {
+        updateActionPromise = result.current.handleUpdateBoard({
+          name: "Stale Name From b-uuid-1",
+        });
+      });
+
+      // User immediately switches to b-uuid-2 before update completes
+      const mockBoard2: Board = {
+        ...mockBoard,
+        id: "b-uuid-2",
+        name: "Board Two",
+        title: "Board Two",
+      };
+      vi.spyOn(boardApi, "getBoard").mockResolvedValueOnce(mockBoard2);
+      vi.spyOn(listApi, "getBoardLists").mockResolvedValueOnce([]);
+      vi.spyOn(boardApi, "getBoardMembers").mockResolvedValueOnce([]);
+      vi.spyOn(cardApi, "getBoardLabels").mockResolvedValueOnce([]);
+      vi.spyOn(cardApi, "getBoardCards").mockResolvedValueOnce([]);
+
+      currentBoardId = "b-uuid-2";
+      await act(async () => {
+        rerender();
+      });
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+      expect(result.current.board?.id).toBe("b-uuid-2");
+      expect(result.current.board?.name).toBe("Board Two");
+
+      // Now the in-flight update for b-uuid-1 finishes
+      await act(async () => {
+        resolveUpdate!({
+          ...mockBoard,
+          id: "b-uuid-1",
+          name: "Stale Name From b-uuid-1",
+        });
+        await updateActionPromise!;
+      });
+
+      // Board 2's name must NOT be overwritten by b-uuid-1's response!
+      expect(result.current.board?.id).toBe("b-uuid-2");
+      expect(result.current.board?.name).toBe("Board Two");
     });
   });
 });

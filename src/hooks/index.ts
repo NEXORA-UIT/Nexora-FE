@@ -1,6 +1,7 @@
 export * from "./useCountdown";
 export * from "./useWorkspaceBoards";
 export * from "./useBoardDetail";
+export * from "./useBoardRealtime";
 export * from "./useBoardMembership";
 export * from "./useWorkspaceMembership";
 export * from "./useMyTasks";

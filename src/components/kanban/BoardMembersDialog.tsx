@@ -10,14 +10,17 @@ interface BoardMembersDialogProps {
   board: BoardDetail;
   isOpen: boolean;
   isWorkspaceOwner: boolean;
+  currentUserId?: string;
   onClose: () => void;
+  onMembersChange?: () => void;
 }
 
-export const BoardMembersDialog: React.FC<BoardMembersDialogProps> = ({
+const BoardMembersDialogContent: React.FC<BoardMembersDialogProps> = ({
   board,
-  isOpen,
   isWorkspaceOwner,
+  currentUserId,
   onClose,
+  onMembersChange,
 }) => {
   const { members, workspaceMembers, isLoading, error, addMember, removeMember, assignPm } =
     useBoardMembership(board.id, board.workspaceId);
@@ -28,18 +31,21 @@ export const BoardMembersDialog: React.FC<BoardMembersDialogProps> = ({
     (member) => member.user.status === "ACTIVE" && !boardMemberIds.has(member.userId)
   );
   const currentPm = members.find((member) => member.role === "PM");
-  const canManageMembers = isWorkspaceOwner || members.some((member) => member.role === "PM");
+  const isCurrentUserPm = Boolean(currentUserId && currentPm?.id === currentUserId);
+  const canManageMembers = isWorkspaceOwner || isCurrentUserPm;
 
   const copyBoardLink = async () => {
+    if (!navigator.clipboard?.writeText) {
+      toast.error("Clipboard copy is not supported by your browser.");
+      return;
+    }
     try {
       await navigator.clipboard.writeText(window.location.href);
       toast.success("Board link copied to clipboard.");
     } catch {
-      toast.error("Could not copy the board link.");
+      toast.error("Failed to copy board link.");
     }
   };
-
-  if (!isOpen) return null;
 
   const runAction = async (action: () => Promise<unknown>, successMessage: string) => {
     setIsSaving(true);
@@ -47,7 +53,7 @@ export const BoardMembersDialog: React.FC<BoardMembersDialogProps> = ({
       await action();
       toast.success(successMessage);
     } catch (cause) {
-      toast.error(getUserFacingApiError(cause, "Could not update Board members."));
+      toast.error(getUserFacingApiError(cause, "Failed to update Board members."));
     } finally {
       setIsSaving(false);
     }
@@ -67,16 +73,16 @@ export const BoardMembersDialog: React.FC<BoardMembersDialogProps> = ({
         <header className="flex items-start justify-between gap-4">
           <div>
             <h2 id="board-members-title" className="text-base font-bold text-neutral-900">
-              Board members
+              Board Members
             </h2>
             <p className="mt-1 text-xs text-neutral-500">
-              {board.name}. The Owner can access every Board; the assigned PM manages this Board.
+              {board.name}. Only members with board access can open this link.
             </p>
           </div>
           <div className="flex items-center gap-2">
             <Button type="button" variant="outline" size="sm" onClick={() => void copyBoardLink()}>
               <Copy className="h-3.5 w-3.5" />
-              Copy board link
+              Copy link
             </Button>
             <button
               type="button"
@@ -104,12 +110,15 @@ export const BoardMembersDialog: React.FC<BoardMembersDialogProps> = ({
                 onChange={(event) => {
                   const userId = event.target.value;
                   if (userId && userId !== currentPm?.id)
-                    void runAction(() => assignPm(userId), "Board PM updated.");
+                    void runAction(async () => {
+                      await assignPm(userId);
+                      onMembersChange?.();
+                    }, "Board PM updated successfully.");
                 }}
                 disabled={isLoading || isSaving}
                 className="h-9 min-w-0 flex-1 rounded-lg border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               >
-                <option value="">Select a PM</option>
+                <option value="">Select Board PM</option>
                 {workspaceMembers
                   .filter((member) => member.user.status === "ACTIVE")
                   .map((member) => (
@@ -123,7 +132,7 @@ export const BoardMembersDialog: React.FC<BoardMembersDialogProps> = ({
               )}
             </div>
             <p className="mt-1.5 text-[11px] text-neutral-500">
-              Assigning a PM does not change the workspace Owner.
+              Assigning a PM does not affect Workspace Owner permissions.
             </p>
           </div>
         )}
@@ -132,11 +141,12 @@ export const BoardMembersDialog: React.FC<BoardMembersDialogProps> = ({
           <form
             onSubmit={(event) => {
               event.preventDefault();
-              if (!selectedUserId) return;
+              if (!selectedUserId || isSaving) return;
               void runAction(async () => {
                 await addMember(selectedUserId);
                 setSelectedUserId("");
-              }, "Member added to Board.");
+                onMembersChange?.();
+              }, "Member added to board.");
             }}
             className="flex items-end gap-2"
           >
@@ -145,7 +155,7 @@ export const BoardMembersDialog: React.FC<BoardMembersDialogProps> = ({
                 htmlFor="board-member-select"
                 className="mb-1.5 block text-xs font-semibold text-neutral-700"
               >
-                Add a workspace member to this Board
+                Add Workspace member to this board
               </label>
               <select
                 id="board-member-select"
@@ -155,7 +165,7 @@ export const BoardMembersDialog: React.FC<BoardMembersDialogProps> = ({
                 className="h-9 w-full rounded-lg border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               >
                 <option value="">
-                  {availableMembers.length ? "Select a member" : "No more members to add"}
+                  {availableMembers.length ? "Select a member to add" : "No available members to add"}
                 </option>
                 {availableMembers.map((member) => (
                   <option key={member.userId} value={member.userId}>
@@ -165,8 +175,8 @@ export const BoardMembersDialog: React.FC<BoardMembersDialogProps> = ({
               </select>
             </div>
             <Button type="submit" size="sm" disabled={!selectedUserId || isSaving}>
-              <UserPlus className="h-4 w-4" />
-              Add member
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+              Add to board
             </Button>
           </form>
         )}
@@ -201,12 +211,15 @@ export const BoardMembersDialog: React.FC<BoardMembersDialogProps> = ({
                     onClick={() => {
                       if (
                         window.confirm(
-                          `Remove ${member.name} from this Board? Their Board assignments will also be removed.`
+                          `Remove ${member.name} from this board? Their assignments on this board will also be removed.`
                         )
                       ) {
                         void runAction(
-                          () => removeMember(member.id),
-                          "Member removed from Board."
+                          async () => {
+                            await removeMember(member.id);
+                            onMembersChange?.();
+                          },
+                          "Member removed from board."
                         );
                       }
                     }}
@@ -218,7 +231,7 @@ export const BoardMembersDialog: React.FC<BoardMembersDialogProps> = ({
             ))}
             {members.length === 0 && (
               <p className="px-4 py-6 text-center text-sm text-neutral-500">
-                No Board members yet.
+                No board members yet.
               </p>
             )}
           </div>
@@ -232,4 +245,9 @@ export const BoardMembersDialog: React.FC<BoardMembersDialogProps> = ({
       </section>
     </div>
   );
+};
+
+export const BoardMembersDialog: React.FC<BoardMembersDialogProps> = (props) => {
+  if (!props.isOpen) return null;
+  return <BoardMembersDialogContent {...props} />;
 };

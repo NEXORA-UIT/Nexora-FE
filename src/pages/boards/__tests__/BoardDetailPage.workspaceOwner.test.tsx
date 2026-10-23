@@ -175,6 +175,21 @@ describe("BoardDetailPage Workspace Owner Permission & Dependency Access Suite",
       handleRetryDependencies: vi.fn(),
       handleAddDependency: vi.fn(),
       handleDeleteDependency: vi.fn(),
+      handleCreateBoardLabel: vi.fn(),
+      handleUpdateBoard: vi.fn(),
+      wsStatus: "CONNECTED",
+      isLive: true,
+      realtime: {
+        wsStatus: "CONNECTED",
+        isLive: true,
+        beginSnapshot: vi.fn().mockReturnValue(1),
+        commitSnapshot: vi.fn().mockReturnValue(true),
+        cancelSnapshot: vi.fn(),
+        isCurrentGeneration: vi.fn().mockReturnValue(true),
+        isCardDeleted: vi.fn().mockReturnValue(false),
+        getBufferedEventsCount: vi.fn().mockReturnValue(0),
+        getTombstoneCount: vi.fn().mockReturnValue(0),
+      },
     });
   };
 
