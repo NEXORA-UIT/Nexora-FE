@@ -4,12 +4,15 @@ import { boardApi, cardApi, listApi } from "@/apis";
 import { associateCardsWithLists } from "@/mappers/card.mapper";
 import { filterCards, filterCardsByQuery, getUserFacingApiError } from "@/utils";
 import type {
+  Board,
   BoardCardFilters,
   BoardDetail,
   KanbanCard,
   KanbanList,
+  UpdateBoardRequest,
 } from "@/types";
 import { useBoardCardMutations, useCardSubEntities } from "./board";
+import { useBoardRealtime, type UseBoardRealtimeReturn } from "./useBoardRealtime";
 
 export function useBoardDetail(boardId?: string) {
   const [board, setBoard] = React.useState<BoardDetail | null>(null);
@@ -32,6 +35,18 @@ export function useBoardDetail(boardId?: string) {
   // Selected Card for Drawer
   const [selectedCardId, setSelectedCardId] = React.useState<string | null>(null);
 
+  const realtimeRef = React.useRef<UseBoardRealtimeReturn | null>(null);
+
+  // Clear board state immediately when switching to a different boardId
+  const prevLoadedBoardIdRef = React.useRef<string | undefined>(boardId);
+  React.useEffect(() => {
+    if (prevLoadedBoardIdRef.current !== boardId) {
+      prevLoadedBoardIdRef.current = boardId;
+      setBoard(null);
+      setSelectedCardId(null);
+    }
+  }, [boardId]);
+
   const loadBoard = React.useCallback(async () => {
     if (!boardId) {
       setError("Board ID is required");
@@ -39,6 +54,7 @@ export function useBoardDetail(boardId?: string) {
       return;
     }
 
+    const generationId = realtimeRef.current ? realtimeRef.current.beginSnapshot() : 0;
     setIsLoading(true);
     setError(null);
     try {
@@ -50,31 +66,62 @@ export function useBoardDetail(boardId?: string) {
       ]);
       const allCards = await cardApi.getBoardCards(boardId, undefined, members);
 
+      // Filter out any cards that were deleted while the snapshot was loading
+      const validCards = realtimeRef.current
+        ? allCards.filter((c) => !realtimeRef.current!.isCardDeleted(c.id))
+        : allCards;
+
       const activeLists = allLists.filter((l) => l.status === "ACTIVE");
       const archivedListsCount = allLists.filter((l) => l.status === "ARCHIVED").length;
 
-      const { lists: populatedLists } = associateCardsWithLists(activeLists, allCards);
+      const { lists: populatedLists } = associateCardsWithLists(activeLists, validCards);
 
-      setBoard({
-        id: boardData.id,
-        workspaceId: boardData.workspaceId,
-        name: boardData.name || boardData.title,
-        description: boardData.description,
-        status: boardData.status === "active" ? "ACTIVE" : "ARCHIVED",
-        members,
-        labels: boardLabels,
-        lists: populatedLists,
-        archivedListsCount,
-        createdAt: boardData.createdAt,
-        updatedAt: boardData.updatedAt,
-      });
+      const apply = () => {
+        setBoard({
+          id: boardData.id,
+          workspaceId: boardData.workspaceId,
+          name: boardData.name || boardData.title,
+          description: boardData.description,
+          status: boardData.status === "active" ? "ACTIVE" : "ARCHIVED",
+          members,
+          labels: boardLabels,
+          lists: populatedLists,
+          archivedListsCount,
+          createdAt: boardData.createdAt,
+          updatedAt: boardData.updatedAt,
+        });
+      };
+
+      if (realtimeRef.current) {
+        const committed = realtimeRef.current.commitSnapshot(generationId, apply);
+        if (!committed) {
+          // Stale snapshot: a newer snapshot has already started; discard this response
+          return;
+        }
+      } else {
+        apply();
+      }
     } catch (err) {
-      setBoard(null);
-      setError(getUserFacingApiError(err, "Failed to load board"));
+      if (!realtimeRef.current || realtimeRef.current.isCurrentGeneration(generationId)) {
+        setError(getUserFacingApiError(err, "Failed to load board"));
+        // Retain current board if it matches boardId so buffered events can replay.
+        // If initial load or boardId mismatch, clear the board state.
+        setBoard((prev) => (prev && prev.id === boardId ? prev : null));
+        realtimeRef.current?.cancelSnapshot(generationId);
+      }
     } finally {
-      setIsLoading(false);
+      if (!realtimeRef.current || realtimeRef.current.isCurrentGeneration(generationId)) {
+        setIsLoading(false);
+      }
     }
   }, [boardId]);
+
+  const realtime = useBoardRealtime({
+    boardId,
+    setBoard,
+    reloadBoard: loadBoard,
+  });
+  realtimeRef.current = realtime;
 
   React.useEffect(() => {
     void loadBoard();
@@ -151,6 +198,32 @@ export function useBoardDetail(boardId?: string) {
     setSelectedCardId(null);
   }, []);
 
+  // Effect: When selectedCard is removed (deleted or archived), clear selectedCardId and notify user
+  const prevExistingCardsRef = React.useRef<Set<string>>(new Set());
+
+  React.useEffect(() => {
+    if (!board) {
+      prevExistingCardsRef.current.clear();
+      return;
+    }
+    const currentCardIds = new Set(board.lists.flatMap((l) => l.cards.map((c) => c.id)));
+
+    if (
+      selectedCardId &&
+      !currentCardIds.has(selectedCardId) &&
+      prevExistingCardsRef.current.has(selectedCardId)
+    ) {
+      if (realtime.isCardDeleted(selectedCardId)) {
+        toast.info("The card you were viewing was deleted.");
+      } else {
+        toast.info("The card you were viewing was archived.");
+      }
+      setSelectedCardId(null);
+    }
+
+    prevExistingCardsRef.current = currentCardIds;
+  }, [board, selectedCardId, realtime]);
+
   // Derived all board cards for planning and dependency picker
   const allBoardCards = React.useMemo<KanbanCard[]>(() => {
     if (!board) return [];
@@ -174,7 +247,31 @@ export function useBoardDetail(boardId?: string) {
     setBoard,
   });
 
+  const handleUpdateBoard = React.useCallback(
+    async (payload: UpdateBoardRequest): Promise<Board> => {
+      if (!boardId) {
+        throw new Error("Board ID is required");
+      }
+      const requestedBoardId = boardId;
+      const updated = await boardApi.updateBoard(requestedBoardId, payload);
+      setBoard((prev) => {
+        if (!prev || prev.id !== requestedBoardId) return prev;
+        return {
+          ...prev,
+          name: updated.name || updated.title || prev.name,
+          description: updated.description !== undefined ? updated.description : prev.description,
+          updatedAt: updated.updatedAt || prev.updatedAt,
+        };
+      });
+      return updated;
+    },
+    [boardId]
+  );
+
   return {
+    wsStatus: realtime.wsStatus,
+    isLive: realtime.isLive,
+    realtime,
     board,
     filteredLists,
     allBoardCards,
@@ -197,6 +294,7 @@ export function useBoardDetail(boardId?: string) {
     handleCloseCardDetail,
 
     // Operations
+    handleUpdateBoard,
     ...mutations,
 
     // Sub-entities

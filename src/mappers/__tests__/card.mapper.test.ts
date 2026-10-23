@@ -177,6 +177,43 @@ describe("Card Mapper Suite", () => {
       expect(card.isBlocked).toBe(true);
       expect(card.blockReason).toBe("Waiting on API spec");
     });
+
+    it("preserves existing assigneeIds and labels when mapping a partial DTO with overrides", () => {
+      const partialDto: CardDto = {
+        id: "card-uuid-1",
+        boardId: "board-uuid-1",
+        listId: "list-uuid-1",
+        cardKey: "NEX-101",
+        title: "Updated Title",
+        description: "New description",
+        startDate: null,
+        dueDate: null,
+        priority: "HIGH",
+        position: 1024,
+        archivedAt: null,
+        statusGroup: "TODO",
+        taskProgress: { total: 0, completed: 0, percent: 0 },
+        createdAt: "2026-10-09T08:00:00.000Z",
+        updatedAt: "2026-10-09T10:00:00.000Z",
+        // Notice: assigneeIds and labels are undefined in partial DTO
+      };
+
+      const existingCard = {
+        assignees: [{ id: "u-1", name: "Alice", initials: "A", role: "ADMIN" as const }],
+        assigneeIds: ["u-1"],
+        labels: [{ id: "lbl-1", boardId: "board-uuid-1", name: "Frontend", color: "#3B82F6" }],
+        commentsCount: 3,
+        attachmentsCount: 1,
+      };
+
+      const mapped = mapCardDtoToKanbanCard(partialDto, existingCard);
+
+      expect(mapped.assignees).toEqual(existingCard.assignees);
+      expect(mapped.assigneeIds).toEqual(["u-1"]);
+      expect(mapped.labels).toEqual(existingCard.labels);
+      expect(mapped.commentsCount).toBe(3);
+      expect(mapped.attachmentsCount).toBe(1);
+    });
   });
 
   describe("mapCardDtosToKanbanCards", () => {

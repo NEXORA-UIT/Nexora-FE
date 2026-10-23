@@ -86,6 +86,15 @@ export interface CreateBoardModalProps {
   isSubmitting?: boolean;
 }
 
+export interface EditBoardModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (input: { name: string; description: string | null }) => Promise<void> | void;
+  initialName: string;
+  initialDescription?: string | null;
+  isSubmitting?: boolean;
+}
+
 export interface ConfirmDeleteBoardDialogProps {
   board: Board | null;
   isOpen: boolean;

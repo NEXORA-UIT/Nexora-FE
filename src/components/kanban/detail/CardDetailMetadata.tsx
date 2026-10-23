@@ -29,6 +29,7 @@ export interface CardDetailMetadataProps {
   boardLabels?: BoardLabel[];
   onAttachLabel?: (cardId: string, labelId: string) => Promise<void>;
   onDetachLabel?: (cardId: string, labelId: string) => Promise<void>;
+  onCreateBoardLabel?: (name: string, color: string) => Promise<BoardLabel | void>;
   isLoadingLabels?: boolean;
   labelsError?: string | null;
   onRetryLabels?: () => void;
@@ -48,6 +49,7 @@ export const CardDetailMetadata: React.FC<CardDetailMetadataProps> = ({
   boardLabels = [],
   onAttachLabel,
   onDetachLabel,
+  onCreateBoardLabel,
   isLoadingLabels = false,
   labelsError = null,
   onRetryLabels,
@@ -92,6 +94,7 @@ export const CardDetailMetadata: React.FC<CardDetailMetadataProps> = ({
           boardLabels={boardLabels}
           onAttachLabel={onAttachLabel}
           onDetachLabel={onDetachLabel}
+          onCreateBoardLabel={onCreateBoardLabel}
           isLoadingLabels={isLoadingLabels}
           labelsError={labelsError}
           onRetryLabels={onRetryLabels}

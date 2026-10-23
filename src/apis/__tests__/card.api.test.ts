@@ -831,6 +831,30 @@ describe("cardApi Suite", () => {
       });
     });
 
+    describe("createBoardLabel", () => {
+      it("requests POST /boards/:boardId/labels and maps response data", async () => {
+        vi.spyOn(apiClient, "post").mockResolvedValueOnce({
+          data: {
+            success: true,
+            data: mockBoardLabelDto,
+          },
+        });
+
+        const label = await cardApi.createBoardLabel("board-uuid-1", {
+          name: "Bug",
+          color: "#ef4444",
+        });
+
+        expect(apiClient.post).toHaveBeenCalledWith("/boards/board-uuid-1/labels", {
+          name: "Bug",
+          color: "#ef4444",
+        });
+        expect(label.id).toBe("label-uuid-1");
+        expect(label.name).toBe("Bug");
+        expect(label.color).toBe("#ef4444");
+      });
+    });
+
     describe("getCardLabels", () => {
       it("requests GET /cards/:cardId/labels and unwraps mapped labels", async () => {
         vi.spyOn(apiClient, "get").mockResolvedValueOnce({

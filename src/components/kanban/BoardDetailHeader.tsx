@@ -1,22 +1,41 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
-import { ChevronRight, UserPlus, MoreHorizontal } from "lucide-react";
+import { ChevronRight, UserPlus, MoreHorizontal, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { ROUTES } from "@/constants/routes";
-import type { BoardDetail } from "@/types";
+import { cn } from "@/lib/utils";
+import type { BoardDetail, WebSocketStatus } from "@/types";
 
 export interface BoardDetailHeaderProps {
   board: BoardDetail;
   workspaceName?: string;
+  wsStatus?: WebSocketStatus;
+  isLive?: boolean;
   onShareClick?: () => void;
   onOptionsClick?: () => void;
+  canManageBoard?: boolean;
+  onEditBoardClick?: () => void;
+  isEditDisabled?: boolean;
+  editDisabledReason?: string;
 }
 
 export const BoardDetailHeader: React.FC<BoardDetailHeaderProps> = ({
   board,
   workspaceName = "Workspace",
+  wsStatus,
+  isLive,
   onShareClick,
   onOptionsClick,
+  canManageBoard = false,
+  onEditBoardClick,
+  isEditDisabled = false,
+  editDisabledReason,
 }) => {
   const members = board.members || [];
   const visibleMembers = members.slice(0, 4);
@@ -51,6 +70,38 @@ export const BoardDetailHeader: React.FC<BoardDetailHeaderProps> = ({
                 Active
               </span>
             )}
+
+            {wsStatus && (() => {
+              const live = isLive ?? wsStatus === "CONNECTED";
+              return (
+                <span
+                  data-testid="realtime-status-pill"
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold border transition-colors",
+                    live && "bg-emerald-50 text-emerald-700 border-emerald-200/60",
+                    !live && (wsStatus === "CONNECTING" || wsStatus === "RECONNECTING" || wsStatus === "CONNECTED") && "bg-amber-50 text-amber-700 border-amber-200/60",
+                    wsStatus === "DISCONNECTED" && "bg-neutral-100 text-neutral-600 border-neutral-200"
+                  )}
+                  title={`Realtime Status: ${live ? "Live" : wsStatus}`}
+                >
+                  <span
+                    className={cn(
+                      "h-1.5 w-1.5 rounded-full",
+                      live && "bg-emerald-600",
+                      !live && (wsStatus === "CONNECTING" || wsStatus === "RECONNECTING" || wsStatus === "CONNECTED") && "bg-amber-500 animate-pulse",
+                      wsStatus === "DISCONNECTED" && "bg-neutral-400"
+                    )}
+                  />
+                  {live
+                    ? "Live"
+                    : wsStatus === "RECONNECTING"
+                    ? "Reconnecting..."
+                    : wsStatus === "DISCONNECTED"
+                    ? "Offline"
+                    : "Connecting..."}
+                </span>
+              );
+            })()}
           </div>
 
           {board.description && (
@@ -98,15 +149,36 @@ export const BoardDetailHeader: React.FC<BoardDetailHeaderProps> = ({
             <span>Share / Members</span>
           </Button>
 
-          {/* More options button */}
-          <button
-            type="button"
-            onClick={onOptionsClick}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-300 text-neutral-600 hover:bg-neutral-50 transition-colors"
-            aria-label="Board options"
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </button>
+          {/* More options dropdown menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                onClick={onOptionsClick}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-300 text-neutral-600 hover:bg-neutral-50 transition-colors cursor-pointer"
+                aria-label="Board options"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem
+                onClick={!isEditDisabled && canManageBoard ? onEditBoardClick : undefined}
+                disabled={!canManageBoard || isEditDisabled}
+                title={
+                  !canManageBoard
+                    ? "Only Workspace Owners and Board PMs can edit board details."
+                    : isEditDisabled
+                    ? editDisabledReason
+                    : undefined
+                }
+                className="gap-2 text-xs cursor-pointer"
+              >
+                <Pencil className="h-3.5 w-3.5 text-neutral-500" />
+                <span>Edit Board Details</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </div>

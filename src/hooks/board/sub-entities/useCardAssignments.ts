@@ -82,6 +82,7 @@ export function useCardAssignments({
       });
       setAssignmentsError(null);
     } catch {
+      if (activeAssignmentsCardIdRef.current !== selectedCardId) return;
       setAssignmentsError("Unable to sync latest card timestamp with server.");
     }
   }, [selectedCardId, loadAssignmentsForCard, setBoard]);
@@ -134,18 +135,18 @@ export function useCardAssignments({
       // Reconcile parent Card timestamp
       await reconcileCardTimestamp(cardId);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to assign member";
+      const rawMsg = err instanceof Error ? err.message : "";
       const code = (err as { code?: string })?.code;
       const status = (err as { status?: number })?.status;
 
-      if (code === "ASSIGNMENT_EXISTS" || status === 409 || msg.includes("ASSIGNMENT_EXISTS") || msg.includes("409")) {
+      if (code === "ASSIGNMENT_EXISTS" || status === 409 || rawMsg.includes("ASSIGNMENT_EXISTS") || rawMsg.includes("409")) {
         toast.info("This member is already assigned to this card.");
-      } else if (code === "FORBIDDEN" || status === 403 || msg.includes("FORBIDDEN") || msg.includes("403")) {
+      } else if (code === "FORBIDDEN" || status === 403 || rawMsg.includes("FORBIDDEN") || rawMsg.includes("403")) {
         toast.error("You do not have permission, or this member is not eligible.");
-      } else if (code === "NOT_FOUND" || status === 404 || msg.includes("NOT_FOUND") || msg.includes("404")) {
+      } else if (code === "NOT_FOUND" || status === 404 || rawMsg.includes("NOT_FOUND") || rawMsg.includes("404")) {
         toast.error("Card or member not found, or assignment data has changed.");
       } else {
-        toast.error(msg);
+        toast.error(getUserFacingApiError(err, "Failed to assign member."));
       }
       throw err;
     } finally {
@@ -174,16 +175,16 @@ export function useCardAssignments({
       // Reconcile parent Card timestamp
       await reconcileCardTimestamp(cardId);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to unassign member";
+      const rawMsg = err instanceof Error ? err.message : "";
       const code = (err as { code?: string })?.code;
       const status = (err as { status?: number })?.status;
 
-      if (code === "FORBIDDEN" || status === 403 || msg.includes("FORBIDDEN") || msg.includes("403")) {
+      if (code === "FORBIDDEN" || status === 403 || rawMsg.includes("FORBIDDEN") || rawMsg.includes("403")) {
         toast.error("You do not have permission to unassign this member.");
-      } else if (code === "NOT_FOUND" || status === 404 || msg.includes("NOT_FOUND") || msg.includes("404")) {
+      } else if (code === "NOT_FOUND" || status === 404 || rawMsg.includes("NOT_FOUND") || rawMsg.includes("404")) {
         toast.error("Card or assignment not found.");
       } else {
-        toast.error(msg);
+        toast.error(getUserFacingApiError(err, "Failed to unassign member."));
       }
       throw err;
     } finally {

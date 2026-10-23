@@ -7,6 +7,7 @@ import { useBoardDetail, useGitHubCardActivity } from "@/hooks";
 import {
   BoardDetailHeader,
   BoardDetailToolbar,
+  BoardMembersDialog,
   KanbanBoard,
   KanbanColumnSkeleton,
   CardDetailDrawer,
@@ -15,8 +16,11 @@ import {
 } from "@/components/kanban";
 
 import { Button } from "@/components/ui/button";
+import { EditBoardModal } from "@/components/boards";
 import { useAuthStore } from "@/stores/auth.store";
+import { useWorkspaceStore } from "@/stores/workspace.store";
 import { canUserManageDependencies } from "@/utils";
+import { isWorkspaceArchived, isWorkspaceFrozen, assertWorkspaceIsOperable } from "@/utils/workspace";
 import { useWorkspaceOwnership } from "@/hooks/useWorkspaceOwnership";
 import {
   DEFAULT_BOARD_BACKGROUND,
@@ -35,6 +39,8 @@ export const BoardDetailPage: React.FC = () => {
     isLoading,
     error,
     reload,
+    wsStatus,
+    isLive,
     searchQuery,
     setSearchQuery,
     cardFilters,
@@ -67,6 +73,7 @@ export const BoardDetailPage: React.FC = () => {
     handleRetryLabels,
     handleAttachCardLabel,
     handleDetachCardLabel,
+    handleCreateBoardLabel,
     isCommentsLoading,
     commentsError,
     handleRetryComments,
@@ -87,6 +94,7 @@ export const BoardDetailPage: React.FC = () => {
     handleRetryDependencies,
     handleAddDependency,
     handleDeleteDependency,
+    handleUpdateBoard,
   } = useBoardDetail(boardId);
 
   const currentUser = useAuthStore((state) => state.user);
@@ -94,7 +102,12 @@ export const BoardDetailPage: React.FC = () => {
     board?.workspaceId,
     currentUser?.id
   );
+  const workspace = useWorkspaceStore((state) =>
+    state.workspaces.find((w) => w.id === board?.workspaceId) || state.getActiveWorkspace()
+  );
   const [backgroundPreset, setBackgroundPreset] = React.useState<BoardBackgroundPreset>(DEFAULT_BOARD_BACKGROUND);
+  const [isMembersDialogOpen, setIsMembersDialogOpen] = React.useState(false);
+  const [isEditBoardModalOpen, setIsEditBoardModalOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (board?.id) setBackgroundPreset(getBoardBackgroundPreference(board.id));
@@ -126,13 +139,51 @@ export const BoardDetailPage: React.FC = () => {
     return canUserManageDependencies(role);
   }, [board, currentUser, isWorkspaceOwner]);
 
-  const handleShareClick = () => {
-    if (navigator.clipboard) {
-      void navigator.clipboard.writeText(window.location.href);
-      toast.success("Board link copied to clipboard");
-    } else {
-      toast.success("Board link ready to share");
+  const canManageBoard = Boolean(isWorkspaceOwner || currentUserRole === "PM");
+  const isBoardArchived = board?.status === "ARCHIVED";
+  const isWorkspaceArchivedVal = isWorkspaceArchived(workspace);
+  const isWorkspaceFrozenVal = isWorkspaceFrozen(workspace);
+
+  const isEditDisabled = isBoardArchived || isWorkspaceArchivedVal || isWorkspaceFrozenVal;
+  const editDisabledReason = React.useMemo(() => {
+    if (isBoardArchived) return "Cannot edit an archived board.";
+    if (isWorkspaceArchivedVal) return "Cannot modify boards in an archived workspace.";
+    if (isWorkspaceFrozenVal) return "This workspace is frozen and cannot be modified.";
+    return undefined;
+  }, [isBoardArchived, isWorkspaceArchivedVal, isWorkspaceFrozenVal]);
+
+  const handleEditBoardClick = () => {
+    if (!canManageBoard) {
+      toast.error("You do not have permission to edit board details.");
+      return;
     }
+    if (isBoardArchived) {
+      toast.error("Cannot edit an archived board.");
+      return;
+    }
+    if (!assertWorkspaceIsOperable(workspace, "modify")) {
+      return;
+    }
+    setIsEditBoardModalOpen(true);
+  };
+
+  const handleSubmitEditBoard = async (data: { name: string; description: string | null }) => {
+    if (!assertWorkspaceIsOperable(workspace, "modify")) {
+      throw new Error(
+        isWorkspaceArchivedVal
+          ? "Cannot modify boards in an archived workspace."
+          : "This workspace is frozen and cannot be modified."
+      );
+    }
+    await handleUpdateBoard({
+      name: data.name,
+      description: data.description,
+    });
+    toast.success("Board updated successfully.");
+  };
+
+  const handleShareClick = () => {
+    setIsMembersDialogOpen(true);
   };
 
   const handleOptionsClick = () => {
@@ -192,6 +243,13 @@ export const BoardDetailPage: React.FC = () => {
           {/* Header */}
           <BoardDetailHeader
             board={board}
+            workspaceName={workspace?.name || "Workspace"}
+            wsStatus={wsStatus}
+            isLive={isLive}
+            canManageBoard={canManageBoard}
+            onEditBoardClick={handleEditBoardClick}
+            isEditDisabled={isEditDisabled}
+            editDisabledReason={editDisabledReason}
             onShareClick={handleShareClick}
             onOptionsClick={handleOptionsClick}
           />
@@ -270,6 +328,7 @@ export const BoardDetailPage: React.FC = () => {
               onRetryAssignments: handleRetryAssignments,
               onAttachLabel: handleAttachCardLabel,
               onDetachLabel: handleDetachCardLabel,
+              onCreateBoardLabel: handleCreateBoardLabel,
               isLoadingLabels: isLabelsLoading,
               labelsError,
               onRetryLabels: handleRetryLabels,
@@ -315,6 +374,29 @@ export const BoardDetailPage: React.FC = () => {
               onFetchGitActivity: fetchGitActivity,
             }}
           />
+
+          {/* Board Members Management Dialog */}
+          {isMembersDialogOpen && (
+            <BoardMembersDialog
+              board={board}
+              isOpen={isMembersDialogOpen}
+              isWorkspaceOwner={isWorkspaceOwner}
+              currentUserId={currentUser?.id}
+              onClose={() => setIsMembersDialogOpen(false)}
+              onMembersChange={() => void reload()}
+            />
+          )}
+
+          {/* Edit Board Modal */}
+          {board && (
+            <EditBoardModal
+              isOpen={isEditBoardModalOpen}
+              onClose={() => setIsEditBoardModalOpen(false)}
+              onSubmit={handleSubmitEditBoard}
+              initialName={board.name}
+              initialDescription={board.description}
+            />
+          )}
         </>
       )}
     </div>

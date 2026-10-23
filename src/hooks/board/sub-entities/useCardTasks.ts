@@ -145,11 +145,11 @@ export function useCardTasks({
         prev.some((t) => t.id === newItem.id) ? prev : [...prev, newItem]
       );
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to add checklist item";
-      if (msg.includes("TASK_LIMIT_REACHED") || (err as { code?: string })?.code === "TASK_LIMIT_REACHED") {
+      const rawMsg = err instanceof Error ? err.message : "";
+      if (rawMsg.includes("TASK_LIMIT_REACHED") || (err as { code?: string })?.code === "TASK_LIMIT_REACHED") {
         toast.error("Checklist limit reached: A card can have at most 50 tasks.");
       } else {
-        toast.error(msg);
+        toast.error(getUserFacingApiError(err, "Failed to add checklist item."));
       }
       throw err;
     }
@@ -163,7 +163,7 @@ export function useCardTasks({
         prev.map((t) => (t.id === taskId ? updated : t))
       );
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update checklist item");
+      toast.error(getUserFacingApiError(err, "Failed to update checklist item."));
       throw err;
     }
   }, [reconcileParentCard]);
@@ -174,7 +174,7 @@ export function useCardTasks({
       await cardApi.deleteChecklistItem(taskId);
       await reconcileParentCard(cardId, (prev) => prev.filter((t) => t.id !== taskId));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete checklist item");
+      toast.error(getUserFacingApiError(err, "Failed to delete checklist item."));
       throw err;
     }
   }, [reconcileParentCard]);

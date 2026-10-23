@@ -2,6 +2,7 @@ import * as React from "react";
 import { toast } from "sonner";
 import { cardApi, listApi } from "@/apis";
 import { canMoveCardToDone } from "@/utils";
+import { getUserFacingApiError } from "@/utils/api-error-message";
 import type {
   BoardDetail,
   KanbanCard,
@@ -31,33 +32,44 @@ export function useBoardCardMutations({
 }: UseBoardCardMutationsOptions) {
   // Action: Add Card
   const handleAddCard = React.useCallback(async (listId: string, title: string) => {
+    if (!boardId) return;
     try {
-      const newCard = await cardApi.createCard(listId, { title });
+      const newCard = await cardApi.createCard(listId, {
+        title,
+      });
+
       setBoard((prev) => {
-        if (!prev) return prev;
+        if (!prev || (boardId && prev.id !== boardId)) return prev;
+
+        // If card already exists on ANY list on the board (e.g. added/moved via realtime),
+        // do not duplicate or force it back to the creation list
+        const cardAlreadyOnBoard = prev.lists.some((list) =>
+          list.cards.some((c) => c.id === newCard.id)
+        );
+        if (cardAlreadyOnBoard) return prev;
+
         return {
           ...prev,
-          lists: prev.lists.map((list) =>
-            list.id === listId
-              ? {
-                  ...list,
-                  cards: [
-                    ...list.cards,
-                    {
-                      ...newCard,
-                      statusGroup: newCard.statusGroup ?? list.category,
-                    },
-                  ],
-                }
-              : list
-          ),
+          lists: prev.lists.map((list) => {
+            if (list.id !== listId) return list;
+            return {
+              ...list,
+              cards: [
+                ...list.cards,
+                {
+                  ...newCard,
+                  statusGroup: newCard.statusGroup ?? list.category,
+                },
+              ],
+            };
+          }),
         };
       });
       toast.success(`Card "${newCard.code}" created.`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create card");
+      toast.error(getUserFacingApiError(err, "Failed to create card."));
     }
-  }, [setBoard]);
+  }, [boardId, setBoard]);
 
   // Action: Add Column / List
   const handleAddColumn = React.useCallback(async (name: string, category: ListCategory) => {
@@ -65,7 +77,7 @@ export function useBoardCardMutations({
     try {
       const newList = await listApi.createList(boardId, { name, category });
       setBoard((prev) => {
-        if (!prev) return prev;
+        if (!prev || (boardId && prev.id !== boardId)) return prev;
         return {
           ...prev,
           lists: [...prev.lists, newList],
@@ -73,7 +85,7 @@ export function useBoardCardMutations({
       });
       toast.success(`List "${newList.name}" added.`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to add list");
+      toast.error(getUserFacingApiError(err, "Failed to add list."));
     }
   }, [boardId, setBoard]);
 
@@ -113,6 +125,15 @@ export function useBoardCardMutations({
         const movedCard: KanbanCard = {
           ...foundCard,
           ...serverMovedCard,
+          assignees: foundCard.assignees,
+          assigneeIds: foundCard.assigneeIds,
+          labels: foundCard.labels,
+          checklist: foundCard.checklist,
+          dependencies: foundCard.dependencies,
+          attachments: foundCard.attachments,
+          comments: foundCard.comments,
+          commentsCount: foundCard.commentsCount,
+          attachmentsCount: foundCard.attachmentsCount,
           listId: payload.targetListId,
           position: payload.position,
           statusGroup: targetList?.category ?? serverMovedCard.statusGroup ?? foundCard.statusGroup,
@@ -139,7 +160,7 @@ export function useBoardCardMutations({
         };
       });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to move card");
+      toast.error(getUserFacingApiError(err, "Failed to move card."));
       void reloadBoard(); // Revert on failure
     }
   }, [board, reloadBoard, setBoard]);
@@ -154,27 +175,28 @@ export function useBoardCardMutations({
       return false;
     }
 
-    if (card.listId === targetList.id) return true;
-
-    // Prerequisite validation: if moving to DONE and card is blocked, reject transition
+    // Enforce business rule: Blocked card cannot be moved to DONE (UC-PLAN-11)
     const check = canMoveCardToDone(card, targetCategory);
     if (!check.allowed) {
       toast.error(check.reason);
       return false;
     }
 
-    const maxPos = targetList.cards.reduce((max, c) => Math.max(max, c.position), 0);
-    const position = maxPos + 1024;
-
-    await handleCommitMoveCard(card.id, {
+    const payload: MoveCardInput = {
       targetListId: targetList.id,
-      position,
+      position: targetList.cards.length,
       updatedAt: card.updatedAt,
-    });
-    return true;
+    };
+
+    try {
+      await handleCommitMoveCard(card.id, payload);
+      return true;
+    } catch {
+      return false;
+    }
   }, [board, handleCommitMoveCard]);
 
-  // Action: Update Card fields with OCC
+  // Action: Update Card Details
   const handleUpdateCard = React.useCallback(async (cardId: string, payload: UpdateCardInput): Promise<void> => {
     try {
       const updatedCard = await cardApi.updateCard(cardId, payload);
@@ -189,6 +211,16 @@ export function useBoardCardMutations({
                 ? {
                     ...c,
                     ...updatedCard,
+                    // Preserve relations and sub-entities that are not modified by core card field updates:
+                    assignees: c.assignees,
+                    assigneeIds: c.assigneeIds,
+                    labels: c.labels,
+                    checklist: c.checklist,
+                    dependencies: c.dependencies,
+                    attachments: c.attachments,
+                    comments: c.comments,
+                    commentsCount: c.commentsCount,
+                    attachmentsCount: c.attachmentsCount,
                     statusGroup: updatedCard.statusGroup ?? c.statusGroup ?? list.category,
                   }
                 : c
@@ -197,14 +229,14 @@ export function useBoardCardMutations({
         };
       });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to update card";
+      const rawMsg = err instanceof Error ? err.message : "";
       const code = (err as { code?: string })?.code;
       const status = (err as { status?: number })?.status;
-      if (code === "CARD_CONFLICT" || status === 409 || msg.includes("CARD_CONFLICT") || msg.includes("409")) {
+      if (code === "CARD_CONFLICT" || status === 409 || rawMsg.includes("CARD_CONFLICT") || rawMsg.includes("409")) {
         toast.error("Card was modified by another session. Refreshing...");
         void reloadBoard();
       } else {
-        toast.error(msg);
+        toast.error(getUserFacingApiError(err, "Failed to update card."));
       }
       throw err;
     }
@@ -229,7 +261,7 @@ export function useBoardCardMutations({
       }
       toast.success("Card deleted.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete card");
+      toast.error(getUserFacingApiError(err, "Failed to delete card."));
     }
   }, [selectedCardId, setBoard, setSelectedCardId]);
 
