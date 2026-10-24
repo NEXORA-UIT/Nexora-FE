@@ -6,5 +6,6 @@ export * from "./board.api";
 export * from "./planning.api";
 export * from "./quick-note.api";
 export * from "./github.api";
+export * from "./notifications.api";
 export * from "./list.api";
 export * from "./card.api";

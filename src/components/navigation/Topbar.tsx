@@ -1,12 +1,6 @@
 import * as React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  Plus,
-  Sparkles,
-  ChevronDown,
-  Layers,
-  LogOut,
-} from "lucide-react";
+import { Plus, Sparkles, ChevronDown, Layers, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/constants/routes";
 import { useAuthStore } from "@/stores/auth.store";
@@ -14,6 +8,7 @@ import { useWorkspaceStore } from "@/stores/workspace.store";
 import { authApi } from "@/apis/auth.api";
 import { UserMenu } from "./UserMenu";
 import nexoraLogoSrc from "@/assets/logo/logo.png";
+import { NotificationCenter } from "./NotificationCenter";
 
 export const Topbar: React.FC = () => {
   const navigate = useNavigate();
@@ -48,43 +43,41 @@ export const Topbar: React.FC = () => {
   }, [showLogoutConfirm, isLoggingOut]);
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-neutral-200 bg-white px-4 sm:px-6 select-none">
+    <header className="sticky top-0 z-30 flex h-14 w-full select-none items-center justify-between border-b border-neutral-200 bg-white px-4 sm:px-6">
       {/* Left: Brand Logo & Workspace Selector */}
-      <div className="flex items-center gap-2 sm:gap-3.5 min-w-0">
-        <Link to={ROUTES.HOME} className="flex items-center gap-2 shrink-0">
+      <div className="flex min-w-0 items-center gap-2 sm:gap-3.5">
+        <Link to={ROUTES.HOME} className="flex shrink-0 items-center gap-2">
           <img
             src={nexoraLogoSrc}
             alt="Nexora Logo"
             className="h-6 w-6 rounded-md object-contain"
           />
-          <span className="text-base font-bold tracking-tight text-neutral-900">
-            Nexora
-          </span>
+          <span className="text-base font-bold tracking-tight text-neutral-900">Nexora</span>
         </Link>
 
         {/* Subtle Divider */}
-        <div className="h-4 w-px bg-neutral-200 hidden sm:block" />
+        <div className="hidden h-4 w-px bg-neutral-200 sm:block" />
 
         {/* Workspace Dropdown Button */}
         <button
           type="button"
-          className="hidden sm:flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-neutral-700 hover:bg-neutral-100 transition-colors max-w-[200px]"
+          className="hidden max-w-[200px] items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-neutral-700 transition-colors hover:bg-neutral-100 sm:flex"
           onClick={() => navigate(ROUTES.BOARDS)}
           title={`Active Workspace: ${activeWorkspace?.name || "None"}`}
         >
-          <Layers className="h-3.5 w-3.5 text-primary-600 shrink-0" />
+          <Layers className="text-primary-600 h-3.5 w-3.5 shrink-0" />
           <span className="truncate">{activeWorkspace?.name || "Select Workspace"}</span>
-          <ChevronDown className="h-3 w-3 text-neutral-400 shrink-0" />
+          <ChevronDown className="h-3 w-3 shrink-0 text-neutral-400" />
         </button>
       </div>
 
       {/* Right: Actions & User Menu */}
-      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
         {/* + Create Button */}
         <Button
           type="button"
           size="sm"
-          className="h-8 gap-1 rounded-lg bg-primary-600 px-2.5 sm:px-3 text-xs font-medium text-white shadow-xs hover:bg-primary-700"
+          className="shadow-xs h-8 gap-1 rounded-lg bg-primary-600 px-2.5 text-xs font-medium text-white hover:bg-primary-700 sm:px-3"
           onClick={() => navigate(ROUTES.BOARDS)}
           title="Create"
           aria-label="Create board"
@@ -93,17 +86,19 @@ export const Topbar: React.FC = () => {
           <span className="hidden sm:inline">Create</span>
         </Button>
 
+        <NotificationCenter />
+
         {/* AI Assistant Quick Launcher */}
         <Button
           type="button"
           variant="outline"
           size="sm"
-          className="h-8 gap-1.5 rounded-lg border-neutral-200 bg-white px-2 sm:px-2.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 shadow-xs"
+          className="shadow-xs h-8 gap-1.5 rounded-lg border-neutral-200 bg-white px-2 text-xs font-medium text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 sm:px-2.5"
           disabled
           title="AI Assistant is not implemented yet"
           aria-label="AI Assistant, not implemented"
         >
-          <Sparkles className="h-3.5 w-3.5 text-primary-600" />
+          <Sparkles className="text-primary-600 h-3.5 w-3.5" />
           <span className="hidden sm:inline">AI unavailable</span>
         </Button>
 
@@ -117,34 +112,30 @@ export const Topbar: React.FC = () => {
           role="dialog"
           aria-modal="true"
           aria-labelledby="logout-confirm-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/40 backdrop-blur-xs animate-in fade-in duration-150"
+          className="backdrop-blur-xs animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40 p-4 duration-150"
           onClick={() => {
             if (!isLoggingOut) setShowLogoutConfirm(false);
           }}
         >
           <div
-            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl border border-neutral-200/80 animate-in zoom-in-95 duration-150 select-text"
+            className="animate-in zoom-in-95 w-full max-w-sm select-text rounded-2xl border border-neutral-200/80 bg-white p-6 shadow-xl duration-150"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-3.5 mb-3">
+            <div className="mb-3 flex items-center gap-3.5">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-error-50 text-error-600">
                 <LogOut className="h-5 w-5 text-rose-600" />
               </div>
               <div>
-                <h3
-                  id="logout-confirm-title"
-                  className="text-base font-bold text-neutral-900"
-                >
+                <h3 id="logout-confirm-title" className="text-base font-bold text-neutral-900">
                   Confirm Sign Out
                 </h3>
-                <p className="text-xs text-neutral-500">
-                  Your current session will end
-                </p>
+                <p className="text-xs text-neutral-500">Your current session will end</p>
               </div>
             </div>
 
-            <p className="text-sm text-neutral-600 leading-relaxed">
-              Are you sure you want to sign out of Nexora? You will need to sign in again to access your workspace.
+            <p className="text-sm leading-relaxed text-neutral-600">
+              Are you sure you want to sign out of Nexora? You will need to sign in again to access
+              your workspace.
             </p>
 
             <div className="mt-6 flex items-center justify-end gap-2.5">
@@ -152,7 +143,7 @@ export const Topbar: React.FC = () => {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="h-9 px-4 rounded-xl border-neutral-200 text-neutral-700 hover:bg-neutral-50 font-medium text-xs"
+                className="h-9 rounded-xl border-neutral-200 px-4 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
                 disabled={isLoggingOut}
                 onClick={() => setShowLogoutConfirm(false)}
               >
@@ -161,7 +152,7 @@ export const Topbar: React.FC = () => {
               <Button
                 type="button"
                 size="sm"
-                className="h-9 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-medium text-xs shadow-xs"
+                className="shadow-xs h-9 rounded-xl bg-rose-600 px-4 text-xs font-medium text-white hover:bg-rose-700"
                 disabled={isLoggingOut}
                 onClick={handleConfirmLogout}
               >
