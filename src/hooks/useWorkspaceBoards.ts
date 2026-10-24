@@ -3,10 +3,7 @@ import { toast } from "sonner";
 import { boardApi } from "@/apis/board.api";
 import { ApiError } from "@/apis/client";
 import { useWorkspaceStore } from "@/stores/workspace.store";
-import {
-  assertWorkspaceIsOperable,
-  handleWorkspaceActionError,
-} from "@/utils/workspace";
+import { assertWorkspaceIsOperable, handleWorkspaceActionError } from "@/utils/workspace";
 import type {
   Board,
   BoardFilterTab,
@@ -14,6 +11,7 @@ import type {
   CreateBoardInput,
   UpdateBoardRequest,
 } from "@/types";
+import { useWorkspaceRealtime } from "@/providers/RealtimeProvider";
 
 export function useWorkspaceBoards(customWorkspaceId?: string) {
   const storeWorkspaces = useWorkspaceStore((state) => state.workspaces);
@@ -58,9 +56,7 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
       });
       setBoards(boardsData);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load workspace boards"
-      );
+      setError(err instanceof Error ? err.message : "Failed to load workspace boards");
     } finally {
       setIsLoading(false);
     }
@@ -69,6 +65,8 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
   React.useEffect(() => {
     void loadData();
   }, [loadData]);
+
+  useWorkspaceRealtime(resolvedWorkspaceId, loadData);
 
   // Derived filtered & sorted datasets
   const { filteredActiveBoards, filteredArchivedBoards, counts, totalActiveBoards } =
@@ -95,9 +93,7 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
             return (b.openTasksCount ?? 0) - (a.openTasksCount ?? 0);
           case "recently_updated":
           default:
-            return (
-              new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-            );
+            return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
         }
       };
 
@@ -151,7 +147,11 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
       toast.success(`Board "${updated.name}" updated successfully.`);
       return updated;
     } catch (err) {
-      handleWorkspaceActionError(err, "Only workspace owners or PMs can update this board.", "modify");
+      handleWorkspaceActionError(
+        err,
+        "Only workspace owners or PMs can update this board.",
+        "modify"
+      );
       throw err;
     }
   };
@@ -167,14 +167,16 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
       await boardApi.archiveBoard(boardId);
       setBoards((prev) =>
         prev.map((b) =>
-          b.id === boardId
-            ? { ...b, status: "archived", updatedAt: new Date().toISOString() }
-            : b
+          b.id === boardId ? { ...b, status: "archived", updatedAt: new Date().toISOString() } : b
         )
       );
       toast.success(`Board "${target?.name || "Board"}" archived.`);
     } catch (err) {
-      handleWorkspaceActionError(err, "Only workspace owners or PMs can archive this board.", "modify");
+      handleWorkspaceActionError(
+        err,
+        "Only workspace owners or PMs can archive this board.",
+        "modify"
+      );
     }
   };
 
@@ -189,14 +191,16 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
       await boardApi.restoreBoard(boardId);
       setBoards((prev) =>
         prev.map((b) =>
-          b.id === boardId
-            ? { ...b, status: "active", updatedAt: new Date().toISOString() }
-            : b
+          b.id === boardId ? { ...b, status: "active", updatedAt: new Date().toISOString() } : b
         )
       );
       toast.success(`Board "${target?.name || "Board"}" restored to Active.`);
     } catch (err) {
-      handleWorkspaceActionError(err, "Only workspace owners or PMs can restore this board.", "restore");
+      handleWorkspaceActionError(
+        err,
+        "Only workspace owners or PMs can restore this board.",
+        "restore"
+      );
     }
   };
 

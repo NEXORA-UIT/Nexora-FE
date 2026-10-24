@@ -3,6 +3,7 @@ import { boardApi } from "@/apis/board.api";
 import { workspaceApi } from "@/apis/workspace.api";
 import { getUserFacingApiError } from "@/utils/api-error-message";
 import type { BoardMember, WorkspaceMemberDto } from "@/types";
+import { useBoardRealtime } from "@/providers/RealtimeProvider";
 
 export function useBoardMembership(boardId: string, workspaceId: string) {
   const [members, setMembers] = React.useState<BoardMember[]>([]);
@@ -30,6 +31,8 @@ export function useBoardMembership(boardId: string, workspaceId: string) {
   React.useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useBoardRealtime(boardId, refresh);
 
   const addMember = React.useCallback(
     async (userId: string) => {

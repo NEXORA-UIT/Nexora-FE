@@ -34,6 +34,7 @@ export const BoardDetailPage: React.FC = () => {
     filteredLists,
     isLoading,
     error,
+    realtimeConnected,
     reload,
     searchQuery,
     setSearchQuery,
@@ -90,11 +91,9 @@ export const BoardDetailPage: React.FC = () => {
   } = useBoardDetail(boardId);
 
   const currentUser = useAuthStore((state) => state.user);
-  const { isWorkspaceOwner } = useWorkspaceOwnership(
-    board?.workspaceId,
-    currentUser?.id
-  );
-  const [backgroundPreset, setBackgroundPreset] = React.useState<BoardBackgroundPreset>(DEFAULT_BOARD_BACKGROUND);
+  const { isWorkspaceOwner } = useWorkspaceOwnership(board?.workspaceId, currentUser?.id);
+  const [backgroundPreset, setBackgroundPreset] =
+    React.useState<BoardBackgroundPreset>(DEFAULT_BOARD_BACKGROUND);
 
   React.useEffect(() => {
     if (board?.id) setBackgroundPreset(getBoardBackgroundPreference(board.id));
@@ -104,7 +103,6 @@ export const BoardDetailPage: React.FC = () => {
     setBackgroundPreset(preset);
     if (board?.id) saveBoardBackgroundPreference(board.id, preset);
   };
-
 
   const currentUserRole = React.useMemo(() => {
     if (!board || !currentUser) return undefined;
@@ -148,31 +146,26 @@ export const BoardDetailPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full space-y-6">
+    <div className="flex h-full flex-col space-y-6">
       {/* 1. Loading State */}
       {isLoading && !board && (
         <div className="space-y-6">
-          <div className="h-16 rounded-xl bg-neutral-100 animate-pulse" />
-          <div className="h-10 rounded-xl bg-neutral-100 animate-pulse" />
+          <div className="h-16 animate-pulse rounded-xl bg-neutral-100" />
+          <div className="h-10 animate-pulse rounded-xl bg-neutral-100" />
           <KanbanColumnSkeleton count={3} />
         </div>
       )}
 
       {/* 2. Error State */}
       {error && !board && (
-        <div className="rounded-2xl border border-red-200 bg-red-50/50 p-8 text-center max-w-lg mx-auto my-12">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 mb-4">
+        <div className="mx-auto my-12 max-w-lg rounded-2xl border border-red-200 bg-red-50/50 p-8 text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600">
             <AlertCircle className="h-6 w-6" />
           </div>
           <h2 className="text-base font-bold text-neutral-900">Failed to Load Board</h2>
-          <p className="mt-1 text-xs text-neutral-600 mb-6">{error}</p>
+          <p className="mb-6 mt-1 text-xs text-neutral-600">{error}</p>
           <div className="flex items-center justify-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => void reload()}
-              className="gap-1.5"
-            >
+            <Button variant="outline" size="sm" onClick={() => void reload()} className="gap-1.5">
               <RefreshCw className="h-3.5 w-3.5" />
               <span>Retry</span>
             </Button>
@@ -192,6 +185,7 @@ export const BoardDetailPage: React.FC = () => {
           {/* Header */}
           <BoardDetailHeader
             board={board}
+            realtimeConnected={realtimeConnected}
             onShareClick={handleShareClick}
             onOptionsClick={handleOptionsClick}
           />
@@ -215,14 +209,11 @@ export const BoardDetailPage: React.FC = () => {
 
           {/* Canvas Views */}
           {activeView === "calendar" ? (
-            <div className="flex-1 min-h-0">
-              <BoardCalendar
-                lists={filteredLists}
-                onCardClick={handleSelectCard}
-              />
+            <div className="min-h-0 flex-1">
+              <BoardCalendar lists={filteredLists} onCardClick={handleSelectCard} />
             </div>
           ) : activeView === "planning" ? (
-            <div className="flex-1 min-h-0">
+            <div className="min-h-0 flex-1">
               <BoardPlanningView
                 boardId={board.id}
                 lists={filteredLists}
@@ -230,7 +221,7 @@ export const BoardDetailPage: React.FC = () => {
               />
             </div>
           ) : (
-            <div className="flex-1 min-h-0">
+            <div className="min-h-0 flex-1">
               <KanbanBoard
                 lists={filteredLists}
                 backgroundPreset={backgroundPreset}
@@ -244,7 +235,6 @@ export const BoardDetailPage: React.FC = () => {
               />
             </div>
           )}
-
 
           {/* Card Detail Side Panel Drawer */}
           <CardDetailDrawer

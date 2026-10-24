@@ -3,13 +3,9 @@ import { toast } from "sonner";
 import { boardApi, cardApi, listApi } from "@/apis";
 import { associateCardsWithLists } from "@/mappers/card.mapper";
 import { filterCards, filterCardsByQuery, getUserFacingApiError } from "@/utils";
-import type {
-  BoardCardFilters,
-  BoardDetail,
-  KanbanCard,
-  KanbanList,
-} from "@/types";
+import type { BoardCardFilters, BoardDetail, KanbanCard, KanbanList } from "@/types";
 import { useBoardCardMutations, useCardSubEntities } from "./board";
+import { useBoardRealtime } from "@/providers/RealtimeProvider";
 
 export function useBoardDetail(boardId?: string) {
   const [board, setBoard] = React.useState<BoardDetail | null>(null);
@@ -25,7 +21,9 @@ export function useBoardDetail(boardId?: string) {
     dueDate: "ALL",
     labelIds: [],
   });
-  const [serverFilteredCardIds, setServerFilteredCardIds] = React.useState<Set<string> | null>(null);
+  const [serverFilteredCardIds, setServerFilteredCardIds] = React.useState<Set<string> | null>(
+    null
+  );
   const cardFilterRequestId = React.useRef(0);
   const [activeView, setActiveView] = React.useState<"board" | "calendar" | "planning">("board");
 
@@ -80,12 +78,17 @@ export function useBoardDetail(boardId?: string) {
     void loadBoard();
   }, [loadBoard]);
 
+  const realtime = useBoardRealtime(boardId, loadBoard);
+
   React.useEffect(() => {
     if (!board || !boardId) return;
     const query = searchQuery.trim();
     const hasServerFilters = Boolean(
-      query || cardFilters.statusGroup !== "ALL" || cardFilters.assigneeIds.length > 0 ||
-      cardFilters.labelIds.length > 0 || cardFilters.dueDate === "OVERDUE"
+      query ||
+      cardFilters.statusGroup !== "ALL" ||
+      cardFilters.assigneeIds.length > 0 ||
+      cardFilters.labelIds.length > 0 ||
+      cardFilters.dueDate === "OVERDUE"
     );
     const requestId = ++cardFilterRequestId.current;
     if (!hasServerFilters) {
@@ -93,24 +96,34 @@ export function useBoardDetail(boardId?: string) {
       return;
     }
 
-    const timeout = window.setTimeout(() => {
-      void cardApi.getBoardCards(boardId, {
-        q: query || undefined,
-        statusGroup: cardFilters.statusGroup === "ALL" ? undefined : cardFilters.statusGroup,
-        isOverdue: cardFilters.dueDate === "OVERDUE" ? true : undefined,
-        assigneeId: cardFilters.assigneeIds.length ? cardFilters.assigneeIds : undefined,
-        labelId: cardFilters.labelIds.length ? cardFilters.labelIds : undefined,
-      }, board.members).then((cards) => {
-        if (requestId === cardFilterRequestId.current) {
-          setServerFilteredCardIds(new Set(cards.map((card) => card.id)));
-        }
-      }).catch(() => {
-        if (requestId === cardFilterRequestId.current) {
-          setServerFilteredCardIds(null);
-          toast.error("Could not apply filters to this Board.");
-        }
-      });
-    }, query ? 250 : 0);
+    const timeout = window.setTimeout(
+      () => {
+        void cardApi
+          .getBoardCards(
+            boardId,
+            {
+              q: query || undefined,
+              statusGroup: cardFilters.statusGroup === "ALL" ? undefined : cardFilters.statusGroup,
+              isOverdue: cardFilters.dueDate === "OVERDUE" ? true : undefined,
+              assigneeId: cardFilters.assigneeIds.length ? cardFilters.assigneeIds : undefined,
+              labelId: cardFilters.labelIds.length ? cardFilters.labelIds : undefined,
+            },
+            board.members
+          )
+          .then((cards) => {
+            if (requestId === cardFilterRequestId.current) {
+              setServerFilteredCardIds(new Set(cards.map((card) => card.id)));
+            }
+          })
+          .catch(() => {
+            if (requestId === cardFilterRequestId.current) {
+              setServerFilteredCardIds(null);
+              toast.error("Could not apply filters to this Board.");
+            }
+          });
+      },
+      query ? 250 : 0
+    );
 
     return () => window.clearTimeout(timeout);
   }, [board, boardId, cardFilters, searchQuery]);
@@ -121,14 +134,15 @@ export function useBoardDetail(boardId?: string) {
     return board.lists.map((list) => ({
       ...list,
       cards: filterCards(
-        filterCardsByQuery(list.cards.filter((card) =>
-          !serverFilteredCardIds || serverFilteredCardIds.has(card.id)
-        ), serverFilteredCardIds ? "" : searchQuery),
+        filterCardsByQuery(
+          list.cards.filter((card) => !serverFilteredCardIds || serverFilteredCardIds.has(card.id)),
+          serverFilteredCardIds ? "" : searchQuery
+        ),
         serverFilteredCardIds && cardFilters.dueDate === "OVERDUE"
           ? { ...cardFilters, statusGroup: "ALL", assigneeIds: [], labelIds: [], dueDate: "ALL" }
           : serverFilteredCardIds
             ? { ...cardFilters, statusGroup: "ALL", assigneeIds: [], labelIds: [] }
-            : cardFilters,
+            : cardFilters
       ),
     }));
   }, [board, searchQuery, cardFilters, serverFilteredCardIds]);
@@ -165,6 +179,7 @@ export function useBoardDetail(boardId?: string) {
     reloadBoard: loadBoard,
     selectedCardId,
     setSelectedCardId,
+    moveCardRealtime: realtime.moveCardRealtime,
   });
 
   // Modular Card Sub-Entities (tasks, assignments, labels, comments, attachments, dependencies)
@@ -181,6 +196,7 @@ export function useBoardDetail(boardId?: string) {
     isLoading,
     error,
     reload: loadBoard,
+    realtimeConnected: realtime.isJoined,
 
     // Controls
     searchQuery,

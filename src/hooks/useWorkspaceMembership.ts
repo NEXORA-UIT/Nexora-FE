@@ -3,6 +3,7 @@ import { workspaceApi } from "@/apis/workspace.api";
 import { useAuthStore } from "@/stores/auth.store";
 import { getUserFacingApiError } from "@/utils/api-error-message";
 import type { WorkspaceInvitationDto, WorkspaceMemberDto } from "@/types";
+import { useWorkspaceRealtime } from "@/providers/RealtimeProvider";
 
 export function useWorkspaceMembership(workspaceId: string) {
   const currentUserId = useAuthStore((state) => state.user?.id);
@@ -37,6 +38,8 @@ export function useWorkspaceMembership(workspaceId: string) {
   React.useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useWorkspaceRealtime(workspaceId, refresh);
 
   const invite = React.useCallback(
     async (email: string) => {

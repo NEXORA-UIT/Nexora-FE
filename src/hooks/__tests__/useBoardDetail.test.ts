@@ -331,6 +331,34 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
     expect(doneCards.some((c) => c.id === blockedCard!.id)).toBe(false);
   });
 
+  it("keeps the canonical card position returned by the server after a move", async () => {
+    const { result } = renderHook(() => useBoardDetail("b-uuid-1"));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    const card = result.current.board?.lists[0].cards.find((item) => item.id === "card-uuid-101");
+    expect(card).toBeDefined();
+    vi.spyOn(cardApi, "moveCard").mockResolvedValueOnce({
+      ...card!,
+      listId: "list-uuid-done",
+      position: 1024,
+      statusGroup: "DONE",
+      updatedAt: "2026-10-09T02:30:00.000Z",
+    });
+
+    await act(async () => {
+      await result.current.handleCommitMoveCard(card!.id, {
+        targetListId: "list-uuid-done",
+        position: 0,
+        updatedAt: card!.updatedAt,
+      });
+    });
+
+    const movedCard = result.current.board?.lists
+      .find((list) => list.id === "list-uuid-done")
+      ?.cards.find((item) => item.id === card!.id);
+    expect(movedCard?.position).toBe(1024);
+  });
+
   it("handles handleAddCard by calling real cardApi.createCard and updating state", async () => {
     const { result } = renderHook(() => useBoardDetail("b-uuid-1"));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
