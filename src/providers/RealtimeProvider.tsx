@@ -66,14 +66,20 @@ export function RealtimeProvider({ children }: React.PropsWithChildren) {
   React.useEffect(() => {
     if (!socket) return;
     socket.connect();
+    let sessionExpired = false;
     const refreshSession = () => {
+      sessionExpired = true;
       void apiClient.get("/auth/me").catch(() => useAuthStore.getState().clearAuth());
     };
     const handleConnectError = (error: Error & { data?: { code?: string } }) => {
       if (error.data?.code === "AUTH_INVALID") refreshSession();
     };
+    const handleDisconnect = (reason: string) => {
+      if (reason === "io server disconnect" && !sessionExpired) socket.connect();
+    };
     socket.on("session:expired", refreshSession);
     socket.on("connect_error", handleConnectError);
+    socket.on("disconnect", handleDisconnect);
     return () => {
       socket.removeAllListeners();
       socket.disconnect();
@@ -129,8 +135,9 @@ export function useBoardRealtime(boardId: string | undefined, reloadBoard: () =>
     const joinBoard = () => {
       setIsConnected(true);
       socket.emit("board:join", { boardId }, (result) => {
+        if (disposed) return;
         setIsJoined(result.ok);
-        if (result.ok) void refreshSnapshot();
+        void refreshSnapshot();
       });
     };
     const leaveBoard = () => {
@@ -225,8 +232,8 @@ export function useWorkspaceRealtime(
       }
     };
     const joinWorkspace = () => {
-      socket.emit("workspace:join", { workspaceId }, (result) => {
-        if (result.ok) void refreshSnapshot();
+      socket.emit("workspace:join", { workspaceId }, () => {
+        if (!disposed) void refreshSnapshot();
       });
     };
     const handleWorkspaceChange = (event: { workspaceId: string }) => {
