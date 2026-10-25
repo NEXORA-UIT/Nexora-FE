@@ -1,5 +1,6 @@
 import * as React from "react";
 import { workspaceApi } from "@/apis/workspace.api";
+import { ApiError } from "@/apis/client";
 import { useAuthStore } from "@/stores/auth.store";
 import { getUserFacingApiError } from "@/utils/api-error-message";
 import type { WorkspaceInvitationDto, WorkspaceMemberDto } from "@/types";
@@ -11,8 +12,10 @@ export function useWorkspaceMembership(workspaceId: string) {
   const [invitations, setInvitations] = React.useState<WorkspaceInvitationDto[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const requestIdRef = React.useRef(0);
 
   const refresh = React.useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     setIsLoading(true);
     setError(null);
     try {
@@ -26,12 +29,18 @@ export function useWorkspaceMembership(workspaceId: string) {
         currentMembership?.role === "OWNER"
           ? await workspaceApi.listWorkspaceInvitations(workspaceId)
           : [];
+      if (requestId !== requestIdRef.current) return;
       setMembers(memberResult.items);
       setInvitations(invitationResult.filter((invitation) => invitation.status === "PENDING"));
     } catch (cause) {
+      if (requestId !== requestIdRef.current) return;
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
+        setMembers([]);
+        setInvitations([]);
+      }
       setError(getUserFacingApiError(cause, "Unable to load workspace members."));
     } finally {
-      setIsLoading(false);
+      if (requestId === requestIdRef.current) setIsLoading(false);
     }
   }, [currentUserId, workspaceId]);
 
@@ -82,8 +91,8 @@ export function useWorkspaceMembership(workspaceId: string) {
   );
 
   return {
-    members,
-    invitations,
+    members: members.filter((member) => member.workspaceId === workspaceId),
+    invitations: invitations.filter((invitation) => invitation.workspaceId === workspaceId),
     isLoading,
     error,
     refresh,

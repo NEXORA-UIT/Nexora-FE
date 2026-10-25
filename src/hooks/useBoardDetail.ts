@@ -11,6 +11,8 @@ export function useBoardDetail(boardId?: string) {
   const [board, setBoard] = React.useState<BoardDetail | null>(null);
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string | null>(null);
+  const requestIdRef = React.useRef(0);
+  const loadedBoardIdRef = React.useRef<string | undefined>(undefined);
 
   // Search & View tab state
   const [searchQuery, setSearchQuery] = React.useState<string>("");
@@ -31,12 +33,19 @@ export function useBoardDetail(boardId?: string) {
   const [selectedCardId, setSelectedCardId] = React.useState<string | null>(null);
 
   const loadBoard = React.useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     if (!boardId) {
+      setBoard(null);
       setError("Board ID is required");
       setIsLoading(false);
       return;
     }
 
+    if (loadedBoardIdRef.current !== boardId) {
+      loadedBoardIdRef.current = boardId;
+      setBoard(null);
+      setSelectedCardId(null);
+    }
     setIsLoading(true);
     setError(null);
     try {
@@ -47,6 +56,7 @@ export function useBoardDetail(boardId?: string) {
         cardApi.getBoardLabels(boardId),
       ]);
       const allCards = await cardApi.getBoardCards(boardId, undefined, members);
+      if (requestId !== requestIdRef.current) return;
 
       const activeLists = allLists.filter((l) => l.status === "ACTIVE");
       const archivedListsCount = allLists.filter((l) => l.status === "ARCHIVED").length;
@@ -67,10 +77,11 @@ export function useBoardDetail(boardId?: string) {
         updatedAt: boardData.updatedAt,
       });
     } catch (err) {
+      if (requestId !== requestIdRef.current) return;
       setBoard(null);
       setError(getUserFacingApiError(err, "Failed to load board"));
     } finally {
-      setIsLoading(false);
+      if (requestId === requestIdRef.current) setIsLoading(false);
     }
   }, [boardId]);
 

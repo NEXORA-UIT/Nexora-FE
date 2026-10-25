@@ -1,5 +1,6 @@
 import * as React from "react";
 import { boardApi } from "@/apis/board.api";
+import { ApiError } from "@/apis/client";
 import { workspaceApi } from "@/apis/workspace.api";
 import { getUserFacingApiError } from "@/utils/api-error-message";
 import type { BoardMember, WorkspaceMemberDto } from "@/types";
@@ -10,8 +11,12 @@ export function useBoardMembership(boardId: string, workspaceId: string) {
   const [workspaceMembers, setWorkspaceMembers] = React.useState<WorkspaceMemberDto[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [dataScope, setDataScope] = React.useState<string | null>(null);
+  const requestIdRef = React.useRef(0);
+  const scope = `${workspaceId}:${boardId}`;
 
   const refresh = React.useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     setIsLoading(true);
     setError(null);
     try {
@@ -19,14 +24,22 @@ export function useBoardMembership(boardId: string, workspaceId: string) {
         boardApi.getBoardMembers(boardId),
         workspaceApi.listWorkspaceMembers(workspaceId, { bypassCache: true }),
       ]);
+      if (requestId !== requestIdRef.current) return;
       setMembers(boardResult);
       setWorkspaceMembers(workspaceResult.items);
+      setDataScope(scope);
     } catch (cause) {
+      if (requestId !== requestIdRef.current) return;
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
+        setMembers([]);
+        setWorkspaceMembers([]);
+        setDataScope(null);
+      }
       setError(getUserFacingApiError(cause, "Unable to load Board members."));
     } finally {
-      setIsLoading(false);
+      if (requestId === requestIdRef.current) setIsLoading(false);
     }
-  }, [boardId, workspaceId]);
+  }, [boardId, scope, workspaceId]);
 
   React.useEffect(() => {
     void refresh();
@@ -59,8 +72,8 @@ export function useBoardMembership(boardId: string, workspaceId: string) {
   );
 
   return {
-    members,
-    workspaceMembers,
+    members: dataScope === scope ? members : [],
+    workspaceMembers: dataScope === scope ? workspaceMembers : [],
     isLoading,
     error,
     refresh,

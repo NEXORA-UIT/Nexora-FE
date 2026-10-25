@@ -163,6 +163,26 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
     expect(todoList?.cards[1].id).toBe("card-uuid-102");
   });
 
+  it("does not restore an old Board after switching to another Board", async () => {
+    let resolveOldRequest!: (board: Board) => void;
+    vi.spyOn(boardApi, "getBoard").mockImplementation((boardId) =>
+      boardId === "b-uuid-1"
+        ? new Promise<Board>((resolve) => {
+            resolveOldRequest = resolve;
+          })
+        : Promise.resolve({ ...mockBoard, id: "b-uuid-2" })
+    );
+
+    const { result, rerender } = renderHook(({ boardId }) => useBoardDetail(boardId), {
+      initialProps: { boardId: "b-uuid-1" },
+    });
+    rerender({ boardId: "b-uuid-2" });
+    await waitFor(() => expect(result.current.board?.id).toBe("b-uuid-2"));
+
+    await act(async () => resolveOldRequest(mockBoard));
+    expect(result.current.board?.id).toBe("b-uuid-2");
+  });
+
   it("sends supported search, status, assignee, label, and overdue filters to the Board cards API", async () => {
     const { result } = renderHook(() => useBoardDetail("b-uuid-1"));
     await waitFor(() => expect(result.current.isLoading).toBe(false));

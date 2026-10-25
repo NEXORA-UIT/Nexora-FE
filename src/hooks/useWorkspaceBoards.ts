@@ -25,6 +25,11 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
   }, [storeWorkspaces, resolvedWorkspaceId]);
 
   const [boards, setBoards] = React.useState<Board[]>([]);
+  const requestIdRef = React.useRef(0);
+  const visibleBoards = React.useMemo(
+    () => boards.filter((board) => board.workspaceId === resolvedWorkspaceId),
+    [boards, resolvedWorkspaceId]
+  );
   const [isLoading, setIsLoading] = React.useState<boolean>(Boolean(resolvedWorkspaceId));
   const [error, setError] = React.useState<string | null>(null);
 
@@ -41,6 +46,7 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
 
   // Load Boards Data for the Resolved Workspace
   const loadData = React.useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     if (!resolvedWorkspaceId) {
       setBoards([]);
       setIsLoading(false);
@@ -54,11 +60,19 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
       const boardsData = await boardApi.getBoards(resolvedWorkspaceId, {
         includeArchived: true,
       });
-      setBoards(boardsData);
+      if (requestId === requestIdRef.current) setBoards(boardsData);
     } catch (err) {
+      if (requestId !== requestIdRef.current) return;
+      if (err instanceof ApiError && (err.status === 403 || err.status === 404)) {
+        setBoards([]);
+        void useWorkspaceStore
+          .getState()
+          .fetchWorkspaces(true)
+          .catch(() => undefined);
+      }
       setError(err instanceof Error ? err.message : "Failed to load workspace boards");
     } finally {
-      setIsLoading(false);
+      if (requestId === requestIdRef.current) setIsLoading(false);
     }
   }, [resolvedWorkspaceId]);
 
@@ -97,8 +111,8 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
         }
       };
 
-      const allActive = boards.filter((b) => b.status === "active");
-      const allArchived = boards.filter((b) => b.status === "archived");
+      const allActive = visibleBoards.filter((b) => b.status === "active");
+      const allArchived = visibleBoards.filter((b) => b.status === "archived");
 
       const activeFiltered = allActive.filter(matchesSearch).sort(comparator);
       const archivedFiltered = allArchived.filter(matchesSearch).sort(comparator);
@@ -107,13 +121,13 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
         filteredActiveBoards: activeFiltered,
         filteredArchivedBoards: archivedFiltered,
         counts: {
-          all: boards.filter(matchesSearch).length,
+          all: visibleBoards.filter(matchesSearch).length,
           active: activeFiltered.length,
           archived: archivedFiltered.length,
         },
         totalActiveBoards: allActive.length,
       };
-    }, [boards, searchQuery, sortBy]);
+    }, [visibleBoards, searchQuery, sortBy]);
 
   // Action: Create Board
   const handleCreateBoard = async (input: CreateBoardInput) => {
@@ -163,7 +177,7 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
     }
 
     try {
-      const target = boards.find((b) => b.id === boardId);
+      const target = visibleBoards.find((b) => b.id === boardId);
       await boardApi.archiveBoard(boardId);
       setBoards((prev) =>
         prev.map((b) =>
@@ -187,7 +201,7 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
     }
 
     try {
-      const target = boards.find((b) => b.id === boardId);
+      const target = visibleBoards.find((b) => b.id === boardId);
       await boardApi.restoreBoard(boardId);
       setBoards((prev) =>
         prev.map((b) =>
@@ -206,7 +220,7 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
 
   // Action: Open Delete Confirmation Modal
   const handleDeleteBoard = (boardId: string) => {
-    const target = boards.find((b) => b.id === boardId);
+    const target = visibleBoards.find((b) => b.id === boardId);
     if (!target) return;
     if (target.status !== "archived") {
       toast.error("Only archived boards can be permanently deleted.");
@@ -221,7 +235,7 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
 
   // Action: Confirm Permanent Delete
   const handleConfirmDelete = async (boardId: string, confirmationName: string) => {
-    const target = boards.find((b) => b.id === boardId);
+    const target = visibleBoards.find((b) => b.id === boardId);
     if (target && target.status !== "archived") {
       toast.error("Only archived boards can be permanently deleted.");
       return;
@@ -249,7 +263,7 @@ export function useWorkspaceBoards(customWorkspaceId?: string) {
 
   return {
     workspace,
-    boards,
+    boards: visibleBoards,
     isLoading,
     error,
     reload: loadData,
