@@ -4,6 +4,7 @@ export * from "./BoardCardSkeleton";
 export * from "./ArchivedBoardCard";
 export * from "./BoardActionMenu";
 export * from "./CreateBoardModal";
+export * from "./EditBoardModal";
 export * from "./ConfirmDeleteBoardDialog";
 export * from "./BoardEmptyState";
 

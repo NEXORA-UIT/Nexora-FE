@@ -1,7 +1,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { cardApi, listApi } from "@/apis";
-import { canMoveCardToDone } from "@/utils";
+import { canMoveCardToDone, getUserFacingApiError } from "@/utils";
 import type {
   BoardDetail,
   KanbanCard,
@@ -34,10 +34,15 @@ export function useBoardCardMutations({
   // Action: Add Card
   const handleAddCard = React.useCallback(
     async (listId: string, title: string) => {
+      if (!boardId) return;
       try {
         const newCard = await cardApi.createCard(listId, { title });
         setBoard((prev) => {
-          if (!prev) return prev;
+          if (!prev || prev.id !== boardId) return prev;
+          const alreadyPresent = prev.lists.some((list) =>
+            list.cards.some((card) => card.id === newCard.id)
+          );
+          if (alreadyPresent) return prev;
           return {
             ...prev,
             lists: prev.lists.map((list) =>
@@ -58,7 +63,7 @@ export function useBoardCardMutations({
         });
         toast.success(`Card "${newCard.code}" created.`);
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Failed to create card");
+        toast.error(getUserFacingApiError(err, "Failed to create card."));
       }
     },
     [setBoard]
@@ -71,7 +76,7 @@ export function useBoardCardMutations({
       try {
         const newList = await listApi.createList(boardId, { name, category });
         setBoard((prev) => {
-          if (!prev) return prev;
+          if (!prev || prev.id !== boardId) return prev;
           return {
             ...prev,
             lists: [...prev.lists, newList],
@@ -110,7 +115,7 @@ export function useBoardCardMutations({
           (await moveCardRealtime?.(cardId, payload)) ?? (await cardApi.moveCard(cardId, payload));
         // Synchronize persistent board state using the server response
         setBoard((prev) => {
-          if (!prev) return prev;
+          if (!prev || (boardId && prev.id !== boardId)) return prev;
 
           const foundCard = prev.lists.flatMap((l) => l.cards).find((c) => c.id === cardId);
 
@@ -119,8 +124,19 @@ export function useBoardCardMutations({
           const movedCard: KanbanCard = {
             ...foundCard,
             ...serverMovedCard,
-            listId: serverMovedCard.listId,
-            position: serverMovedCard.position,
+            // Keep card detail data from the snapshot; the move acknowledgement only
+            // owns the card's location and concurrency timestamp.
+            assignees: foundCard.assignees,
+            assigneeIds: foundCard.assigneeIds,
+            labels: foundCard.labels,
+            checklist: foundCard.checklist,
+            dependencies: foundCard.dependencies,
+            attachments: foundCard.attachments,
+            comments: foundCard.comments,
+            commentsCount: foundCard.commentsCount,
+            attachmentsCount: foundCard.attachmentsCount,
+            listId: serverMovedCard.listId || payload.targetListId,
+            position: serverMovedCard.position ?? payload.position,
             statusGroup:
               targetList?.category ?? serverMovedCard.statusGroup ?? foundCard.statusGroup,
             updatedAt: serverMovedCard.updatedAt,
@@ -144,11 +160,11 @@ export function useBoardCardMutations({
           };
         });
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Failed to move card");
+        toast.error(getUserFacingApiError(err, "Failed to move card."));
         void reloadBoard(); // Revert on failure
       }
     },
-    [board, moveCardRealtime, reloadBoard, setBoard]
+    [board, boardId, moveCardRealtime, reloadBoard, setBoard]
   );
 
   // Action: Status Change (moves card across Kanban lists via moveCard)
@@ -190,7 +206,7 @@ export function useBoardCardMutations({
       try {
         const updatedCard = await cardApi.updateCard(cardId, payload);
         setBoard((prev) => {
-          if (!prev) return prev;
+          if (!prev || (boardId && prev.id !== boardId)) return prev;
           return {
             ...prev,
             lists: prev.lists.map((list) => ({
@@ -200,6 +216,15 @@ export function useBoardCardMutations({
                   ? {
                       ...c,
                       ...updatedCard,
+                      assignees: c.assignees,
+                      assigneeIds: c.assigneeIds,
+                      labels: c.labels,
+                      checklist: c.checklist,
+                      dependencies: c.dependencies,
+                      attachments: c.attachments,
+                      comments: c.comments,
+                      commentsCount: c.commentsCount,
+                      attachmentsCount: c.attachmentsCount,
                       statusGroup: updatedCard.statusGroup ?? c.statusGroup ?? list.category,
                     }
                   : c
@@ -220,12 +245,12 @@ export function useBoardCardMutations({
           toast.error("Card was modified by another session. Refreshing...");
           void reloadBoard();
         } else {
-          toast.error(msg);
+          toast.error(getUserFacingApiError(err, "Failed to update card."));
         }
         throw err;
       }
     },
-    [reloadBoard, setBoard]
+    [boardId, reloadBoard, setBoard]
   );
 
   // Action: Delete Card
@@ -234,7 +259,7 @@ export function useBoardCardMutations({
       try {
         await cardApi.deleteCard(cardId);
         setBoard((prev) => {
-          if (!prev) return prev;
+          if (!prev || (boardId && prev.id !== boardId)) return prev;
           return {
             ...prev,
             lists: prev.lists.map((list) => ({
@@ -251,7 +276,7 @@ export function useBoardCardMutations({
         toast.error(err instanceof Error ? err.message : "Failed to delete card");
       }
     },
-    [selectedCardId, setBoard, setSelectedCardId]
+    [boardId, selectedCardId, setBoard, setSelectedCardId]
   );
 
   // Action: Fetch Card Activities (Lazy with cursor pagination support)

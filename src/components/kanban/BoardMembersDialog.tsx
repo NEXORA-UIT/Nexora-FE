@@ -20,14 +20,18 @@ interface BoardMembersDialogProps {
   board: BoardDetail;
   isOpen: boolean;
   isWorkspaceOwner: boolean;
+  currentUserId?: string;
   onClose: () => void;
+  onMembersChange?: () => void;
 }
 
 export const BoardMembersDialog: React.FC<BoardMembersDialogProps> = ({
   board,
   isOpen,
   isWorkspaceOwner,
+  currentUserId,
   onClose,
+  onMembersChange,
 }) => {
   const { members, workspaceMembers, isLoading, error, addMember, removeMember, assignPm } =
     useBoardMembership(board.id, board.workspaceId);
@@ -39,14 +43,19 @@ export const BoardMembersDialog: React.FC<BoardMembersDialogProps> = ({
   );
   const workspaceOwner = workspaceMembers.find((member) => member.role === "OWNER");
   const currentPm = members.find((member) => member.role === "PM");
-  const canManageMembers = isWorkspaceOwner || members.some((member) => member.role === "PM");
+  const isCurrentUserPm = Boolean(currentUserId && currentPm?.id === currentUserId);
+  const canManageMembers = isWorkspaceOwner || isCurrentUserPm;
 
   const copyBoardLink = async () => {
+    if (!navigator.clipboard?.writeText) {
+      toast.error("Clipboard copy is not supported by your browser.");
+      return;
+    }
     try {
       await navigator.clipboard.writeText(window.location.href);
       toast.success("Board link copied to clipboard.");
     } catch {
-      toast.error("Could not copy the board link.");
+      toast.error("Failed to copy board link.");
     }
   };
 
@@ -54,6 +63,7 @@ export const BoardMembersDialog: React.FC<BoardMembersDialogProps> = ({
     setIsSaving(true);
     try {
       await action();
+      onMembersChange?.();
       toast.success(successMessage);
     } catch (cause) {
       toast.error(getUserFacingApiError(cause, "Could not update Board members."));
@@ -93,7 +103,7 @@ export const BoardMembersDialog: React.FC<BoardMembersDialogProps> = ({
               type="button"
               variant="outline"
               size="sm"
-              aria-label="Copy board link"
+              aria-label="Copy link"
               onClick={() => void copyBoardLink()}
               className="whitespace-nowrap px-2.5 sm:px-3"
             >
@@ -232,7 +242,7 @@ export const BoardMembersDialog: React.FC<BoardMembersDialogProps> = ({
                     void runAction(async () => {
                       await addMember(selectedUserId);
                       setSelectedUserId("");
-                    }, "Member added to Board.");
+                    }, "Member added to board.");
                   }}
                   className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-end"
                 >
@@ -241,7 +251,7 @@ export const BoardMembersDialog: React.FC<BoardMembersDialogProps> = ({
                       htmlFor="board-member-select"
                       className="mb-1.5 block text-xs font-semibold text-neutral-700"
                     >
-                      Add a Workspace member
+                      Add Workspace member to this Board
                     </label>
                     <select
                       id="board-member-select"
@@ -262,7 +272,7 @@ export const BoardMembersDialog: React.FC<BoardMembersDialogProps> = ({
                   </div>
                   <Button type="submit" disabled={!selectedUserId || isSaving} className="shrink-0">
                     <UserPlus className="h-4 w-4" />
-                    Add member
+                    Add to board
                   </Button>
                 </form>
               )}
@@ -304,7 +314,7 @@ export const BoardMembersDialog: React.FC<BoardMembersDialogProps> = ({
                             ) {
                               void runAction(
                                 () => removeMember(member.id),
-                                "Member removed from Board."
+                                "Member removed from board."
                               );
                             }
                           }}

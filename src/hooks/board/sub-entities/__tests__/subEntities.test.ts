@@ -9,7 +9,7 @@ import {
   useCardTasks,
 } from "../index";
 import { cardApi } from "@/apis";
-import type { BoardDetail, KanbanCard } from "@/types";
+import type { BoardDetail, KanbanCard, CommentDto } from "@/types";
 
 describe("Sub-Entity Domain Hooks Unit Tests", () => {
   beforeEach(() => {
@@ -121,6 +121,180 @@ describe("Sub-Entity Domain Hooks Unit Tests", () => {
       expect(currentBoard.lists[0].cards[0].comments).toHaveLength(1);
       expect(currentBoard.lists[0].cards[0].comments?.[0].content).toBe("New comment");
     });
+    it("prevents duplicate comment and double count increment when WS event arrives before REST resolve (Order 1: WS -> REST)", async () => {
+      let currentBoard = createMockBoard();
+      const setBoard = vi.fn((updater) => {
+        if (typeof updater === "function") {
+          currentBoard = updater(currentBoard);
+        } else {
+          currentBoard = updater;
+        }
+      });
+
+      const newCommentDto = {
+        id: "cmt-concurrent-1",
+        cardId: "c-1",
+        userId: "u-1",
+        content: "New concurrent comment",
+        createdAt: "2026-10-10T11:00:00.000Z",
+        updatedAt: "2026-10-10T11:00:00.000Z",
+      };
+
+      // Set initial board with 1 comment and commentsCount = 1
+      currentBoard = {
+        ...currentBoard,
+        lists: currentBoard.lists.map((l) => ({
+          ...l,
+          cards: l.cards.map((c) => ({
+            ...c,
+            commentsCount: 1,
+            comments: [
+              {
+                id: "cmt-existing-1",
+                cardId: "c-1",
+                userId: "u-2",
+                content: "First comment",
+                author: { id: "u-2", name: "Bob", initials: "B", role: "MEMBER" },
+                createdAt: "2026-10-10T10:00:00.000Z",
+                updatedAt: "2026-10-10T10:00:00.000Z",
+              },
+            ],
+          })),
+        })),
+      };
+
+      let resolveCreateComment!: (value: CommentDto) => void;
+      const deferredCreate = new Promise<CommentDto>((resolve) => {
+        resolveCreateComment = resolve;
+      });
+      vi.spyOn(cardApi, "createCardComment").mockReturnValueOnce(deferredCreate);
+
+      const { result } = renderHook(() =>
+        useCardComments({ selectedCardId: null, setBoard })
+      );
+
+      // 1. User starts add comment mutation (REST in-flight)
+      let addPromise: Promise<void> | undefined;
+      act(() => {
+        addPromise = result.current.handleAddComment("c-1", "New concurrent comment");
+      });
+
+      // 2. WebSocket COMMENT_ADDED arrives FIRST and adds comment + updates commentsCount to 2
+      act(() => {
+        setBoard((prev: BoardDetail | null) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            lists: prev.lists.map((l) => ({
+              ...l,
+              cards: l.cards.map((c) => {
+                if (c.id !== "c-1") return c;
+                return {
+                  ...c,
+                  commentsCount: 2,
+                  comments: [
+                    ...(c.comments || []),
+                    {
+                      id: "cmt-concurrent-1",
+                      cardId: "c-1",
+                      userId: "u-1",
+                      content: "New concurrent comment",
+                      author: { id: "u-1", name: "Alice", initials: "A", role: "ADMIN" },
+                      createdAt: "2026-10-10T11:00:00.000Z",
+                      updatedAt: "2026-10-10T11:00:00.000Z",
+                    },
+                  ],
+                };
+              }),
+            })),
+          };
+        });
+      });
+
+      expect(currentBoard.lists[0].cards[0].comments).toHaveLength(2);
+      expect(currentBoard.lists[0].cards[0].commentsCount).toBe(2);
+
+      // 3. REST resolves SECOND
+      await act(async () => {
+        resolveCreateComment(newCommentDto);
+        await addPromise;
+      });
+
+      // Assert:
+      // - comments MUST NOT have duplicate "cmt-concurrent-1"
+      // - commentsCount MUST be 2, NOT 3
+      const card = currentBoard.lists[0].cards[0];
+      const matchingComments = card.comments?.filter((c) => c.id === "cmt-concurrent-1");
+      expect(matchingComments).toHaveLength(1);
+      expect(card.comments).toHaveLength(2);
+      expect(card.commentsCount).toBe(2);
+    });
+
+    it("uses loaded comments array length as fallback when commentsCount is uninitialized", async () => {
+      let currentBoard = createMockBoard();
+      const setBoard = vi.fn((updater) => {
+        if (typeof updater === "function") {
+          currentBoard = updater(currentBoard);
+        } else {
+          currentBoard = updater;
+        }
+      });
+
+      // Card has 2 comments loaded, but commentsCount is undefined
+      currentBoard = {
+        ...currentBoard,
+        lists: currentBoard.lists.map((l) => ({
+          ...l,
+          cards: l.cards.map((c) => ({
+            ...c,
+            commentsCount: undefined,
+            comments: [
+              {
+                id: "cmt-1",
+                cardId: "c-1",
+                userId: "u-1",
+                content: "First",
+                author: { id: "u-1", name: "Alice", initials: "A", role: "ADMIN" },
+                createdAt: "2026-10-10T10:00:00.000Z",
+                updatedAt: "2026-10-10T10:00:00.000Z",
+              },
+              {
+                id: "cmt-2",
+                cardId: "c-1",
+                userId: "u-2",
+                content: "Second",
+                author: { id: "u-2", name: "Bob", initials: "B", role: "MEMBER" },
+                createdAt: "2026-10-10T10:30:00.000Z",
+                updatedAt: "2026-10-10T10:30:00.000Z",
+              },
+            ],
+          })),
+        })),
+      };
+
+      vi.spyOn(cardApi, "createCardComment").mockResolvedValueOnce({
+        id: "cmt-3",
+        cardId: "c-1",
+        userId: "u-1",
+        content: "Third",
+        createdAt: "2026-10-10T11:00:00.000Z",
+        updatedAt: "2026-10-10T11:00:00.000Z",
+      });
+
+      const { result } = renderHook(() =>
+        useCardComments({ selectedCardId: null, setBoard })
+      );
+
+      await act(async () => {
+        await result.current.handleAddComment("c-1", "Third");
+      });
+
+      const card = currentBoard.lists[0].cards[0];
+      expect(card.comments).toHaveLength(3);
+      // MUST NOT be 0 + 1 = 1, must correctly be 2 + 1 = 3!
+      expect(card.commentsCount).toBe(3);
+    });
+
   });
 
   describe("useCardAttachments", () => {

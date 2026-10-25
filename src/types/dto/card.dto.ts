@@ -131,6 +131,8 @@ export interface CommentDto {
   deletedAt?: string | null;
 }
 
+export type CardCommentDto = CommentDto;
+
 export interface CreateCommentRequest {
   content: string;
 }

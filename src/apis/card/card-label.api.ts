@@ -7,12 +7,28 @@ import type {
 } from "@/types";
 import { apiClient } from "../client";
 import {
+  mapBoardLabelDtoToBoardLabel,
   mapBoardLabelDtosToBoardLabels,
   mapCardLabelDtoToBoardLabel,
   mapCardLabelDtosToBoardLabels,
 } from "@/mappers/card.mapper";
 
 export const cardLabelApi = {
+  /**
+   * Creates a new label in a board
+   * POST /api/v1/boards/:boardId/labels
+   */
+  async createBoardLabel(
+    boardId: string,
+    payload: { name: string; color: string }
+  ): Promise<BoardLabel> {
+    const response = await apiClient.post<ApiSuccessResponse<BoardLabelDto>>(
+      `/boards/${boardId}/labels`,
+      payload
+    );
+    return mapBoardLabelDtoToBoardLabel(response.data.data);
+  },
+
   /**
    * Retrieves all labels defined for a board
    * GET /api/v1/boards/:boardId/labels

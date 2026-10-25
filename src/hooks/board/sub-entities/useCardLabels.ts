@@ -6,11 +6,13 @@ import { applyAuthoritativeCardUpdate, updateCardInBoard } from "../utils/cardRe
 import type { BoardDetail } from "@/types";
 
 export interface UseCardLabelsOptions {
+  boardId?: string;
   selectedCardId: string | null;
   setBoard: React.Dispatch<React.SetStateAction<BoardDetail | null>>;
 }
 
 export function useCardLabels({
+  boardId,
   selectedCardId,
   setBoard,
 }: UseCardLabelsOptions) {
@@ -127,19 +129,19 @@ export function useCardLabels({
       // Reconcile parent Card timestamp
       await reconcileCardTimestamp(cardId);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to attach label";
+      const rawMsg = err instanceof Error ? err.message : "";
       const code = (err as { code?: string })?.code;
       const status = (err as { status?: number })?.status;
 
-      if (code === "CARD_LABEL_EXISTS" || status === 409 || msg.includes("CARD_LABEL_EXISTS") || msg.includes("409")) {
+      if (code === "CARD_LABEL_EXISTS" || status === 409 || rawMsg.includes("CARD_LABEL_EXISTS") || rawMsg.includes("409")) {
         toast.info("This label is already attached to this card.");
         void loadLabelsForCard(cardId);
-      } else if (code === "FORBIDDEN" || status === 403 || msg.includes("FORBIDDEN") || msg.includes("403")) {
+      } else if (code === "FORBIDDEN" || status === 403 || rawMsg.includes("FORBIDDEN") || rawMsg.includes("403")) {
         toast.error("You do not have permission, or this card is archived.");
-      } else if (code === "NOT_FOUND" || status === 404 || msg.includes("NOT_FOUND") || msg.includes("404")) {
+      } else if (code === "NOT_FOUND" || status === 404 || rawMsg.includes("NOT_FOUND") || rawMsg.includes("404")) {
         toast.error("Card or label not found, or label belongs to another board.");
       } else {
-        toast.error(msg);
+        toast.error(getUserFacingApiError(err, "Failed to attach label."));
       }
       throw err;
     } finally {
@@ -168,22 +170,45 @@ export function useCardLabels({
       // Reconcile parent Card timestamp
       await reconcileCardTimestamp(cardId);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to detach label";
+      const rawMsg = err instanceof Error ? err.message : "";
       const code = (err as { code?: string })?.code;
       const status = (err as { status?: number })?.status;
 
-      if (code === "FORBIDDEN" || status === 403 || msg.includes("FORBIDDEN") || msg.includes("403")) {
+      if (code === "FORBIDDEN" || status === 403 || rawMsg.includes("FORBIDDEN") || rawMsg.includes("403")) {
         toast.error("You do not have permission to detach this label.");
-      } else if (code === "NOT_FOUND" || status === 404 || msg.includes("NOT_FOUND") || msg.includes("404")) {
+      } else if (code === "NOT_FOUND" || status === 404 || rawMsg.includes("NOT_FOUND") || rawMsg.includes("404")) {
         toast.error("Card or label attachment not found.");
       } else {
-        toast.error(msg);
+        toast.error(getUserFacingApiError(err, "Failed to detach label."));
       }
       throw err;
     } finally {
       setPendingLabelId(null);
     }
   }, [pendingLabelId, reconcileCardTimestamp, setBoard]);
+
+  // Action: Create Board Label
+  const handleCreateBoardLabel = React.useCallback(async (name: string, color: string) => {
+    let targetBoardId = boardId;
+    if (!targetBoardId) {
+      setBoard((prev) => {
+        if (prev?.id) targetBoardId = prev.id;
+        return prev;
+      });
+    }
+    if (!targetBoardId) throw new Error("Board ID is required to create a label");
+    const newLabel = await cardApi.createBoardLabel(targetBoardId, { name, color });
+    setBoard((prev) => {
+      if (!prev) return prev;
+      const alreadyInBoard = prev.labels.some((l) => l.id === newLabel.id);
+      return {
+        ...prev,
+        labels: alreadyInBoard ? prev.labels : [...prev.labels, newLabel],
+      };
+    });
+    toast.success(`Label "${newLabel.name}" created.`);
+    return newLabel;
+  }, [boardId, setBoard]);
 
   return {
     isLabelsLoading,
@@ -192,5 +217,6 @@ export function useCardLabels({
     handleRetryLabels,
     handleAttachCardLabel,
     handleDetachCardLabel,
+    handleCreateBoardLabel,
   };
 }

@@ -6,9 +6,8 @@ import { ROUTES } from "@/constants/routes";
 import { useBoardDetail, useGitHubCardActivity } from "@/hooks";
 import {
   BoardDetailHeader,
-  BoardMembersDialog,
-  BoardSettingsDialog,
   BoardDetailToolbar,
+  BoardMembersDialog,
   KanbanBoard,
   KanbanColumnSkeleton,
   CardDetailDrawer,
@@ -18,8 +17,15 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { boardApi } from "@/apis/board.api";
+import { EditBoardModal } from "@/components/boards";
 import { useAuthStore } from "@/stores/auth.store";
+import { useWorkspaceStore } from "@/stores/workspace.store";
 import { canUserManageDependencies } from "@/utils";
+import {
+  isWorkspaceArchived,
+  isWorkspaceFrozen,
+  assertWorkspaceIsOperable,
+} from "@/utils/workspace";
 import { useWorkspaceOwnership } from "@/hooks/useWorkspaceOwnership";
 import {
   DEFAULT_BOARD_BACKGROUND,
@@ -32,17 +38,14 @@ export const BoardDetailPage: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
   const navigate = useNavigate();
   const { fetchGitActivity } = useGitHubCardActivity();
-  const [isMembersDialogOpen, setIsMembersDialogOpen] = React.useState(false);
-  const [isSettingsDialogOpen, setIsSettingsDialogOpen] = React.useState(false);
-  const [isSavingBoard, setIsSavingBoard] = React.useState(false);
 
   const {
     board,
     filteredLists,
     isLoading,
     error,
-    realtimeConnected,
     reload,
+    realtimeConnected,
     searchQuery,
     setSearchQuery,
     cardFilters,
@@ -75,6 +78,7 @@ export const BoardDetailPage: React.FC = () => {
     handleRetryLabels,
     handleAttachCardLabel,
     handleDetachCardLabel,
+    handleCreateBoardLabel,
     isCommentsLoading,
     commentsError,
     handleRetryComments,
@@ -95,6 +99,7 @@ export const BoardDetailPage: React.FC = () => {
     handleRetryDependencies,
     handleAddDependency,
     handleDeleteDependency,
+    handleUpdateBoard,
   } = useBoardDetail(boardId);
 
   const currentUser = useAuthStore((state) => state.user);
@@ -108,8 +113,13 @@ export const BoardDetailPage: React.FC = () => {
     verifiedOwnerContext?.workspaceId === board.workspaceId &&
     verifiedOwnerContext?.userId === currentUser.id
   );
+  const workspace = useWorkspaceStore((state) =>
+    state.workspaces.find((w) => w.id === board?.workspaceId)
+  );
   const [backgroundPreset, setBackgroundPreset] =
     React.useState<BoardBackgroundPreset>(DEFAULT_BOARD_BACKGROUND);
+  const [isMembersDialogOpen, setIsMembersDialogOpen] = React.useState(false);
+  const [isEditBoardModalOpen, setIsEditBoardModalOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (board?.id) setBackgroundPreset(getBoardBackgroundPreference(board.id));
@@ -140,25 +150,63 @@ export const BoardDetailPage: React.FC = () => {
     return canUserManageDependencies(role);
   }, [board, currentUser, isWorkspaceOwner]);
 
-  const canManageBoard = isWorkspaceOwner || currentUserRole === "PM";
+  const canManageBoard = Boolean(isWorkspaceOwner || currentUserRole === "PM");
+  const isBoardArchived = board?.status === "ARCHIVED";
+  const isWorkspaceArchivedVal = isWorkspaceArchived(workspace);
+  const isWorkspaceFrozenVal = isWorkspaceFrozen(workspace);
+  const isWorkspaceContextUnavailable = Boolean(board?.workspaceId && !workspace);
 
-  const handleSaveBoardSettings = async (input: { name: string; description: string }) => {
-    if (!board) return;
-    setIsSavingBoard(true);
-    try {
-      await boardApi.updateBoard(board.id, input);
-      await reload();
-      setIsSettingsDialogOpen(false);
-      toast.success("Board settings saved.");
-    } catch (cause) {
-      throw new Error(cause instanceof Error ? cause.message : "Could not save Board settings.");
-    } finally {
-      setIsSavingBoard(false);
+  const isEditDisabled =
+    isBoardArchived ||
+    isWorkspaceArchivedVal ||
+    isWorkspaceFrozenVal ||
+    isWorkspaceContextUnavailable;
+  const editDisabledReason = React.useMemo(() => {
+    if (isBoardArchived) return "Cannot edit an archived board.";
+    if (isWorkspaceArchivedVal) return "Cannot modify boards in an archived workspace.";
+    if (isWorkspaceFrozenVal) return "This workspace is frozen and cannot be modified.";
+    if (isWorkspaceContextUnavailable)
+      return "Workspace status is unavailable. Refresh and try again.";
+    return undefined;
+  }, [
+    isBoardArchived,
+    isWorkspaceArchivedVal,
+    isWorkspaceFrozenVal,
+    isWorkspaceContextUnavailable,
+  ]);
+
+  const handleEditBoardClick = () => {
+    if (!canManageBoard) {
+      toast.error("You do not have permission to edit board details.");
+      return;
     }
+    if (isBoardArchived) {
+      toast.error("Cannot edit an archived board.");
+      return;
+    }
+    if (!workspace || !assertWorkspaceIsOperable(workspace, "modify")) {
+      return;
+    }
+    setIsEditBoardModalOpen(true);
+  };
+
+  const handleSubmitEditBoard = async (data: { name: string; description: string | null }) => {
+    if (!workspace || !assertWorkspaceIsOperable(workspace, "modify")) {
+      throw new Error(
+        isWorkspaceArchivedVal
+          ? "Cannot modify boards in an archived workspace."
+          : "This workspace is frozen and cannot be modified."
+      );
+    }
+    await handleUpdateBoard({
+      name: data.name,
+      description: data.description,
+    });
+    toast.success("Board updated successfully.");
   };
 
   const handleArchiveOrRestoreBoard = async () => {
-    if (!board || !canManageBoard) return;
+    if (!board || !canManageBoard || !workspace || !assertWorkspaceIsOperable(workspace)) return;
     const isArchived = board.status === "ARCHIVED";
     const action = isArchived ? "restore" : "archive";
     if (!window.confirm(`Are you sure you want to ${action} "${board.name}"?`)) return;
@@ -179,11 +227,18 @@ export const BoardDetailPage: React.FC = () => {
   };
 
   const handleLeaveBoard = async () => {
-    if (!board || isWorkspaceOwner || currentUserRole !== "MEMBER") return;
-    const confirmed = window.confirm(
-      `Leave "${board.name}"? Your assignments on this Board will be removed.`
-    );
-    if (!confirmed) return;
+    if (
+      !board ||
+      isWorkspaceOwner ||
+      currentUserRole !== "MEMBER" ||
+      !workspace ||
+      !assertWorkspaceIsOperable(workspace)
+    ) {
+      return;
+    }
+    if (!window.confirm(`Leave "${board.name}"? Your assignments on this Board will be removed.`)) {
+      return;
+    }
 
     try {
       await boardApi.leaveBoard(board.id);
@@ -200,9 +255,15 @@ export const BoardDetailPage: React.FC = () => {
       ? "Workspace Owners have access to every Board."
       : currentUserRole === "PM"
         ? "Assign another PM before leaving this Board."
-        : board?.status === "ARCHIVED"
-          ? "Archived Boards cannot be left."
-          : undefined;
+        : isWorkspaceArchivedVal
+          ? "Cannot leave a Board in an archived Workspace."
+          : isWorkspaceFrozenVal
+            ? "This workspace is frozen and membership changes are disabled."
+            : isWorkspaceContextUnavailable
+              ? "Workspace status is unavailable. Refresh and try again."
+              : board?.status === "ARCHIVED"
+                ? "Archived Boards cannot be left."
+                : undefined;
 
   const handleFilterClick = () => {
     toast.info("Filter panel toggled");
@@ -252,19 +313,25 @@ export const BoardDetailPage: React.FC = () => {
           {/* Header */}
           <BoardDetailHeader
             board={board}
+            workspaceName={workspace?.name || "Workspace"}
             realtimeConnected={realtimeConnected}
             canManageBoard={canManageBoard}
             canLeaveBoard={
               isOwnerContextVerified &&
               currentUserRole === "MEMBER" &&
               !isWorkspaceOwner &&
+              Boolean(workspace) &&
+              !isWorkspaceArchivedVal &&
+              !isWorkspaceFrozenVal &&
               board.status === "ACTIVE"
             }
             leaveBoardDisabledReason={leaveBoardDisabledReason}
             onManageMembers={() => setIsMembersDialogOpen(true)}
-            onEditBoard={() => setIsSettingsDialogOpen(true)}
+            onEditBoard={handleEditBoardClick}
             onArchiveBoard={() => void handleArchiveOrRestoreBoard()}
             onLeaveBoard={() => void handleLeaveBoard()}
+            isEditDisabled={isEditDisabled}
+            editDisabledReason={editDisabledReason}
           />
 
           {/* Toolbar */}
@@ -337,6 +404,7 @@ export const BoardDetailPage: React.FC = () => {
               onRetryAssignments: handleRetryAssignments,
               onAttachLabel: handleAttachCardLabel,
               onDetachLabel: handleDetachCardLabel,
+              onCreateBoardLabel: handleCreateBoardLabel,
               isLoadingLabels: isLabelsLoading,
               labelsError,
               onRetryLabels: handleRetryLabels,
@@ -382,21 +450,27 @@ export const BoardDetailPage: React.FC = () => {
               onFetchGitActivity: fetchGitActivity,
             }}
           />
+
+          {/* Board Members Management Dialog */}
           {isMembersDialogOpen && (
             <BoardMembersDialog
               board={board}
-              isOpen
+              isOpen={isMembersDialogOpen}
               isWorkspaceOwner={isWorkspaceOwner}
+              currentUserId={currentUser?.id}
               onClose={() => setIsMembersDialogOpen(false)}
+              onMembersChange={() => void reload()}
             />
           )}
-          {isSettingsDialogOpen && (
-            <BoardSettingsDialog
-              board={board}
-              isOpen
-              isSaving={isSavingBoard}
-              onClose={() => setIsSettingsDialogOpen(false)}
-              onSave={handleSaveBoardSettings}
+
+          {/* Edit Board Modal */}
+          {board && (
+            <EditBoardModal
+              isOpen={isEditBoardModalOpen}
+              onClose={() => setIsEditBoardModalOpen(false)}
+              onSubmit={handleSubmitEditBoard}
+              initialName={board.name}
+              initialDescription={board.description}
             />
           )}
         </>

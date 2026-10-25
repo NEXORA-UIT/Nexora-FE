@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { toast } from "sonner";
 import {
   CardStatusSelector,
   CardPrioritySelector,
@@ -20,6 +21,15 @@ import type {
   CardComment,
   CardActivity,
 } from "@/types";
+
+vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
+  },
+}));
 
 describe("Card Detail Subcomponents (CC-003 & CC-004)", () => {
   const dummyCard: KanbanCard = {
@@ -150,6 +160,51 @@ describe("Card Detail Subcomponents (CC-003 & CC-004)", () => {
       );
     });
 
+    it("CardDateFields triggers showPicker when clicking start date and due date buttons", () => {
+      const handleUpdate = vi.fn().mockResolvedValue(undefined);
+      render(
+        <CardDateFields
+          startDate={dummyCard.startDate}
+          dueDate={dummyCard.dueDate}
+          cardUpdatedAt={dummyCard.updatedAt}
+          onUpdate={handleUpdate}
+        />
+      );
+
+      const dateInputs = document.querySelectorAll('input[type="date"]');
+      const showPickerStart = vi.fn();
+      const showPickerDue = vi.fn();
+      (dateInputs[0] as HTMLInputElement).showPicker = showPickerStart;
+      (dateInputs[1] as HTMLInputElement).showPicker = showPickerDue;
+
+      const startTrigger = screen.getByRole("button", { name: /start date/i });
+      fireEvent.click(startTrigger);
+      expect(showPickerStart).toHaveBeenCalledTimes(1);
+
+      const dueTrigger = screen.getByRole("button", { name: /due date/i });
+      fireEvent.click(dueTrigger);
+      expect(showPickerDue).toHaveBeenCalledTimes(1);
+    });
+
+    it("CardDateFields validates date order on client-side and toasts in English when invalid", () => {
+      const handleUpdate = vi.fn().mockResolvedValue(undefined);
+      render(
+        <CardDateFields
+          startDate="2026-10-15T00:00:00.000Z"
+          dueDate="2026-10-20T00:00:00.000Z"
+          cardUpdatedAt={dummyCard.updatedAt}
+          onUpdate={handleUpdate}
+        />
+      );
+
+      const dateInputs = document.querySelectorAll('input[type="date"]');
+      // Set dueDate earlier than startDate (2026-10-05 < 2026-10-15)
+      fireEvent.change(dateInputs[1], { target: { value: "2026-10-05" } });
+
+      expect(handleUpdate).not.toHaveBeenCalled();
+      expect(toast.error).toHaveBeenCalledWith("Start date must be before or equal to due date.");
+    });
+
     it("CardLabelSelector renders labels error and retry", () => {
       const handleRetry = vi.fn();
       render(
@@ -166,6 +221,32 @@ describe("Card Detail Subcomponents (CC-003 & CC-004)", () => {
       const retryBtn = screen.getByRole("button", { name: /retry/i });
       fireEvent.click(retryBtn);
       expect(handleRetry).toHaveBeenCalledTimes(1);
+    });
+
+    it("CardLabelSelector allows creating a new board label when empty or requested", async () => {
+      const handleCreateLabel = vi.fn().mockResolvedValue({
+        id: "lbl-new",
+        boardId: "b-1",
+        name: "New Tag",
+        color: "#f59e0b",
+      });
+      const handleAttach = vi.fn().mockResolvedValue(undefined);
+
+      render(
+        <CardLabelSelector
+          cardId={dummyCard.id}
+          cardLabels={[]}
+          boardLabels={[]}
+          onCreateBoardLabel={handleCreateLabel}
+          onAttachLabel={handleAttach}
+        />
+      );
+
+      const trigger = screen.getByRole("button", { name: /manage labels/i });
+      fireEvent.keyDown(trigger, { key: "Enter" });
+
+      const createBtn = await screen.findByRole("button", { name: /create label/i });
+      expect(createBtn).toBeDefined();
     });
   });
 

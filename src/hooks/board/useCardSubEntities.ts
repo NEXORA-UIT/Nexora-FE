@@ -29,7 +29,7 @@ export function useCardSubEntities({
 }: UseCardSubEntitiesOptions) {
   const tasks = useCardTasks({ selectedCardId, setBoard, refreshVersion });
   const assignments = useCardAssignments({ selectedCardId, setBoard });
-  const labels = useCardLabels({ selectedCardId, setBoard });
+  const labels = useCardLabels({ boardId: board?.id, selectedCardId, setBoard });
   const comments = useCardComments({ selectedCardId, setBoard });
   const attachments = useCardAttachments({ selectedCardId, setBoard });
   const dependencies = useCardDependencies({ selectedCardId, board, setBoard });

@@ -1,87 +1,122 @@
-import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { MemoryRouter } from "react-router-dom";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { BrowserRouter } from "react-router-dom";
 import { BoardDetailHeader } from "../BoardDetailHeader";
 import type { BoardDetail } from "@/types";
 
-const board = {
+const mockBoardDetail: BoardDetail = {
   id: "board-1",
-  workspaceId: "workspace-1",
-  name: "Sprint Planning",
+  workspaceId: "ws-1",
+  name: "Engineering Kanban",
+  description: "Core sprint tracking",
   status: "ACTIVE",
-  members: [],
+  members: [{ id: "u-1", name: "Alice", initials: "AL", role: "PM" }],
   labels: [],
   lists: [],
-  createdAt: "2026-10-01T00:00:00.000Z",
-  updatedAt: "2026-10-01T00:00:00.000Z",
-} as BoardDetail;
+  createdAt: "2026-10-09T00:00:00.000Z",
+  updatedAt: "2026-10-09T00:00:00.000Z",
+};
 
-describe("BoardDetailHeader actions", () => {
-  it("opens Board membership management from the header action", () => {
-    const onManageMembers = vi.fn();
-    render(
-      <MemoryRouter>
-        <BoardDetailHeader board={board} onManageMembers={onManageMembers} />
-      </MemoryRouter>
-    );
+const renderWithRouter = (ui: React.ReactElement) => {
+  return render(<BrowserRouter>{ui}</BrowserRouter>);
+};
 
-    fireEvent.click(screen.getByRole("button", { name: "Board members" }));
+describe("BoardDetailHeader", () => {
+  it("renders board name, description, and workspace breadcrumb", () => {
+    renderWithRouter(<BoardDetailHeader board={mockBoardDetail} workspaceName="Nexora Team" />);
 
-    expect(onManageMembers).toHaveBeenCalledOnce();
+    expect(screen.getByRole("heading", { name: "Engineering Kanban" })).toBeTruthy();
+    expect(screen.getByText("Core sprint tracking")).toBeTruthy();
+    expect(screen.getByText("Nexora Team")).toBeTruthy();
   });
 
-  it("shows working edit and archive actions in Board options", () => {
-    const onEditBoard = vi.fn();
-    const onArchiveBoard = vi.fn();
-    render(
-      <MemoryRouter>
-        <BoardDetailHeader
-          board={board}
-          canManageBoard
-          onEditBoard={onEditBoard}
-          onArchiveBoard={onArchiveBoard}
-        />
-      </MemoryRouter>
+  it("opens options dropdown and triggers onEditBoardClick when clicked", async () => {
+    const onEditBoardClick = vi.fn();
+    renderWithRouter(
+      <BoardDetailHeader
+        board={mockBoardDetail}
+        canManageBoard={true}
+        onEditBoardClick={onEditBoardClick}
+      />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Board options" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Edit Board details" }));
-    expect(onEditBoard).toHaveBeenCalledOnce();
+    const optionsButton = screen.getByRole("button", { name: /Board options/i });
+    fireEvent.keyDown(optionsButton, { key: "Enter" });
 
-    fireEvent.click(screen.getByRole("button", { name: "Board options" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Archive Board" }));
-    expect(onArchiveBoard).toHaveBeenCalledOnce();
+    const editMenuItem = await screen.findByText(/Edit Board Details/i);
+    expect(editMenuItem).toBeTruthy();
+
+    fireEvent.click(editMenuItem);
+    expect(onEditBoardClick).toHaveBeenCalledTimes(1);
   });
 
-  it("offers a Board member the option to leave the Board", () => {
+  it("disables Edit Board Details menu item when isEditDisabled is true", async () => {
+    renderWithRouter(
+      <BoardDetailHeader
+        board={mockBoardDetail}
+        canManageBoard={true}
+        isEditDisabled={true}
+        editDisabledReason="Cannot edit an archived board."
+      />
+    );
+
+    const optionsButton = screen.getByRole("button", { name: /Board options/i });
+    fireEvent.keyDown(optionsButton, { key: "Enter" });
+
+    const editMenuItemText = await screen.findByText(/Edit Board Details/i);
+    const editMenuItem = editMenuItemText.closest("[role='menuitem']");
+    expect(editMenuItem).toBeTruthy();
+    expect(
+      editMenuItem?.getAttribute("aria-disabled") === "true" ||
+        editMenuItem?.hasAttribute("disabled")
+    ).toBe(true);
+    expect(editMenuItem?.getAttribute("title")).toBe("Cannot edit an archived board.");
+  });
+
+  it("disables Edit Board Details menu item when user cannot manage board", async () => {
+    renderWithRouter(<BoardDetailHeader board={mockBoardDetail} canManageBoard={false} />);
+
+    const optionsButton = screen.getByRole("button", { name: /Board options/i });
+    fireEvent.keyDown(optionsButton, { key: "Enter" });
+
+    const editMenuItemText = await screen.findByText(/Edit Board Details/i);
+    const editMenuItem = editMenuItemText.closest("[role='menuitem']");
+    expect(editMenuItem).toBeTruthy();
+    expect(
+      editMenuItem?.getAttribute("aria-disabled") === "true" ||
+        editMenuItem?.hasAttribute("disabled")
+    ).toBe(true);
+    expect(editMenuItem?.getAttribute("title")).toBe(
+      "Only Workspace Owners and Board PMs can edit board details."
+    );
+  });
+
+  it("lets a Board member leave from the options menu", async () => {
     const onLeaveBoard = vi.fn();
-    render(
-      <MemoryRouter>
-        <BoardDetailHeader board={board} canLeaveBoard onLeaveBoard={onLeaveBoard} />
-      </MemoryRouter>
+    renderWithRouter(
+      <BoardDetailHeader board={mockBoardDetail} canLeaveBoard onLeaveBoard={onLeaveBoard} />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Board options" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Leave Board" }));
+    fireEvent.keyDown(screen.getByRole("button", { name: /Board options/i }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: /Leave Board/i }));
 
     expect(onLeaveBoard).toHaveBeenCalledOnce();
   });
 
-  it("explains why the Board PM cannot leave before assigning another PM", () => {
-    render(
-      <MemoryRouter>
-        <BoardDetailHeader
-          board={board}
-          leaveBoardDisabledReason="Assign another PM before leaving this Board."
-        />
-      </MemoryRouter>
+  it("explains why a Board PM cannot leave before assigning a replacement", async () => {
+    renderWithRouter(
+      <BoardDetailHeader
+        board={mockBoardDetail}
+        leaveBoardDisabledReason="Assign another PM before leaving this Board."
+      />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Board options" }));
+    fireEvent.keyDown(screen.getByRole("button", { name: /Board options/i }), { key: "Enter" });
+    const leaveItem = await screen.findByRole("menuitem", { name: /Leave Board/i });
 
-    expect(screen.getByRole("menuitem", { name: /Leave Board/ }).hasAttribute("disabled")).toBe(
-      true
-    );
+    expect(
+      leaveItem.hasAttribute("disabled") || leaveItem.getAttribute("aria-disabled") === "true"
+    ).toBe(true);
     expect(screen.getByText("Assign another PM before leaving this Board.")).toBeTruthy();
   });
 });

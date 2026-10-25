@@ -1,7 +1,13 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
-import { ChevronRight, UserPlus, MoreHorizontal } from "lucide-react";
+import { ChevronRight, UserPlus, MoreHorizontal, Pencil, Archive, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { ROUTES } from "@/constants/routes";
 import type { BoardDetail } from "@/types";
 
@@ -10,10 +16,15 @@ export interface BoardDetailHeaderProps {
   realtimeConnected?: boolean;
   workspaceName?: string;
   canManageBoard?: boolean;
+  isEditDisabled?: boolean;
+  editDisabledReason?: string;
   canLeaveBoard?: boolean;
   leaveBoardDisabledReason?: string;
   onManageMembers?: () => void;
+  onShareClick?: () => void;
+  onOptionsClick?: () => void;
   onEditBoard?: () => void;
+  onEditBoardClick?: () => void;
   onArchiveBoard?: () => void;
   onLeaveBoard?: () => void;
 }
@@ -23,14 +34,18 @@ export const BoardDetailHeader: React.FC<BoardDetailHeaderProps> = ({
   realtimeConnected,
   workspaceName = "Workspace",
   canManageBoard = false,
+  isEditDisabled = false,
+  editDisabledReason,
   canLeaveBoard = false,
   leaveBoardDisabledReason,
   onManageMembers,
+  onShareClick,
+  onOptionsClick,
   onEditBoard,
+  onEditBoardClick,
   onArchiveBoard,
   onLeaveBoard,
 }) => {
-  const [isOptionsOpen, setIsOptionsOpen] = React.useState(false);
   const members = board.members || [];
   const visibleMembers = members.slice(0, 4);
   const remainingCount = Math.max(0, members.length - 4);
@@ -64,14 +79,14 @@ export const BoardDetailHeader: React.FC<BoardDetailHeaderProps> = ({
             )}
             {realtimeConnected !== undefined && (
               <span
-                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${realtimeConnected ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${realtimeConnected ? "border-emerald-200/60 bg-emerald-50 text-emerald-700" : "border-amber-200/60 bg-amber-50 text-amber-700"}`}
                 role="status"
                 aria-label={
                   realtimeConnected ? "Live updates connected" : "Reconnecting live updates"
                 }
               >
                 <span
-                  className={`h-1.5 w-1.5 rounded-full ${realtimeConnected ? "bg-emerald-600" : "bg-amber-500"}`}
+                  className={`h-1.5 w-1.5 rounded-full ${realtimeConnected ? "bg-emerald-600" : "animate-pulse bg-amber-500"}`}
                 />
                 {realtimeConnected ? "Live" : "Reconnecting"}
               </span>
@@ -116,7 +131,7 @@ export const BoardDetailHeader: React.FC<BoardDetailHeaderProps> = ({
             type="button"
             variant="outline"
             size="sm"
-            onClick={onManageMembers}
+            onClick={onManageMembers ?? onShareClick}
             className="h-8 gap-1.5 rounded-lg border-neutral-300 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
           >
             <UserPlus className="h-3.5 w-3.5 text-neutral-500" />
@@ -124,76 +139,54 @@ export const BoardDetailHeader: React.FC<BoardDetailHeaderProps> = ({
           </Button>
 
           {/* More options button */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setIsOptionsOpen((open) => !open)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-300 text-neutral-600 transition-colors hover:bg-neutral-50"
-              aria-label="Board options"
-              aria-haspopup="menu"
-              aria-expanded={isOptionsOpen}
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </button>
-            {isOptionsOpen && (
-              <div
-                role="menu"
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                onClick={onOptionsClick}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-300 text-neutral-600 transition-colors hover:bg-neutral-50"
                 aria-label="Board options"
-                className="absolute right-0 top-10 z-30 min-w-48 rounded-xl border border-neutral-200 bg-white p-1.5 shadow-lg"
               >
-                {canManageBoard && (
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setIsOptionsOpen(false);
-                      onEditBoard?.();
-                    }}
-                    className="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-neutral-700 hover:bg-neutral-50"
-                  >
-                    Edit Board details
-                  </button>
-                )}
-                {canManageBoard && (
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setIsOptionsOpen(false);
-                      onArchiveBoard?.();
-                    }}
-                    className="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-neutral-700 hover:bg-neutral-50"
-                  >
-                    {board.status === "ACTIVE" ? "Archive Board" : "Restore Board"}
-                  </button>
-                )}
-                {(canLeaveBoard || leaveBoardDisabledReason) && (
-                  <button
-                    type="button"
-                    role="menuitem"
-                    disabled={Boolean(leaveBoardDisabledReason)}
-                    onClick={() => {
-                      setIsOptionsOpen(false);
-                      onLeaveBoard?.();
-                    }}
-                    className="text-error-700 w-full rounded-lg px-3 py-2 text-left text-xs font-medium hover:bg-error-50 disabled:cursor-not-allowed disabled:text-neutral-400 disabled:hover:bg-transparent"
-                  >
-                    Leave Board
-                  </button>
-                )}
-                {leaveBoardDisabledReason && (
-                  <p className="px-3 pb-2 text-[11px] leading-relaxed text-neutral-500">
-                    {leaveBoardDisabledReason}
-                  </p>
-                )}
-                {!canManageBoard && !canLeaveBoard && !leaveBoardDisabledReason && (
-                  <p className="px-3 py-2 text-xs text-neutral-500">
-                    Board settings are available to the Workspace Owner and Board PM.
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem
+                disabled={!canManageBoard || isEditDisabled}
+                title={
+                  !canManageBoard
+                    ? "Only Workspace Owners and Board PMs can edit board details."
+                    : editDisabledReason
+                }
+                onSelect={() => (onEditBoard ?? onEditBoardClick)?.()}
+                className="gap-2 text-xs"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                Edit Board Details
+              </DropdownMenuItem>
+              {canManageBoard && (
+                <DropdownMenuItem onSelect={onArchiveBoard} className="gap-2 text-xs">
+                  <Archive className="h-3.5 w-3.5" />
+                  {board.status === "ACTIVE" ? "Archive Board" : "Restore Board"}
+                </DropdownMenuItem>
+              )}
+              {(canLeaveBoard || leaveBoardDisabledReason) && (
+                <DropdownMenuItem
+                  disabled={Boolean(leaveBoardDisabledReason)}
+                  onSelect={onLeaveBoard}
+                  className="text-error-700 gap-2 text-xs"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  Leave Board
+                </DropdownMenuItem>
+              )}
+              {leaveBoardDisabledReason && (
+                <p className="px-2 py-1.5 text-[11px] leading-relaxed text-neutral-500">
+                  {leaveBoardDisabledReason}
+                </p>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </div>

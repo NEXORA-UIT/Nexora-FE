@@ -99,9 +99,26 @@ export function useCardComments({
             ...list,
             cards: list.cards.map((c) => {
               if (c.id !== cardId) return c;
+
+              const currentComments = c.comments;
+              const exists = currentComments
+                ? currentComments.some((cmt) => cmt.id === newComment.id)
+                : false;
+
+              // If already inserted (e.g. by WebSocket COMMENT_ADDED arriving before REST resolved),
+              // return without duplicating and without clobbering.
+              if (exists) return c;
+
+              const nextComments = currentComments ? [...currentComments, newComment] : [newComment];
+              const baseCount = typeof c.commentsCount === "number"
+                ? c.commentsCount
+                : (currentComments?.length ?? 0);
+              const nextCount = baseCount + 1;
+
               return {
                 ...c,
-                comments: c.comments ? [...c.comments, newComment] : [newComment],
+                comments: nextComments,
+                commentsCount: nextCount,
               };
             }),
           })),
@@ -109,17 +126,17 @@ export function useCardComments({
       });
       toast.success("Comment added.");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to add comment";
+      const rawMsg = err instanceof Error ? err.message : "";
       const code = (err as { code?: string })?.code;
       const status = (err as { status?: number })?.status;
-      if (code === "COMMENT_INVALID" || msg.includes("COMMENT_INVALID")) {
+      if (code === "COMMENT_INVALID" || rawMsg.includes("COMMENT_INVALID")) {
         toast.error("Comment content must be between 1 and 10,000 characters.");
-      } else if (code === "MENTION_INVALID" || msg.includes("MENTION_INVALID")) {
+      } else if (code === "MENTION_INVALID" || rawMsg.includes("MENTION_INVALID")) {
         toast.error("Mentioned user must be a member of this board.");
-      } else if (code === "FORBIDDEN" || status === 403 || msg.includes("FORBIDDEN") || msg.includes("403")) {
+      } else if (code === "FORBIDDEN" || status === 403 || rawMsg.includes("FORBIDDEN") || rawMsg.includes("403")) {
         toast.error("You do not have permission to comment on this card.");
       } else {
-        toast.error(msg);
+        toast.error(getUserFacingApiError(err, "Failed to add comment."));
       }
       throw err;
     }
@@ -150,19 +167,19 @@ export function useCardComments({
       });
       toast.success("Comment updated.");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to update comment";
+      const rawMsg = err instanceof Error ? err.message : "";
       const code = (err as { code?: string })?.code;
       const status = (err as { status?: number })?.status;
-      if (code === "FORBIDDEN" || status === 403 || msg.includes("FORBIDDEN") || msg.includes("403")) {
+      if (code === "FORBIDDEN" || status === 403 || rawMsg.includes("FORBIDDEN") || rawMsg.includes("403")) {
         toast.error("You do not have permission to edit this comment.");
-      } else if (code === "COMMENT_INVALID" || msg.includes("COMMENT_INVALID")) {
+      } else if (code === "COMMENT_INVALID" || rawMsg.includes("COMMENT_INVALID")) {
         toast.error("Comment content must be between 1 and 10,000 characters.");
-      } else if (code === "MENTION_INVALID" || msg.includes("MENTION_INVALID")) {
+      } else if (code === "MENTION_INVALID" || rawMsg.includes("MENTION_INVALID")) {
         toast.error("Mentioned user must be a member of this board.");
-      } else if (code === "NOT_FOUND" || status === 404 || msg.includes("NOT_FOUND") || msg.includes("404")) {
+      } else if (code === "NOT_FOUND" || status === 404 || rawMsg.includes("NOT_FOUND") || rawMsg.includes("404")) {
         toast.error("Comment not found or already deleted.");
       } else {
-        toast.error(msg);
+        toast.error(getUserFacingApiError(err, "Failed to update comment."));
       }
       throw err;
     }
@@ -198,15 +215,15 @@ export function useCardComments({
       });
       toast.success("Comment deleted.");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to delete comment";
+      const rawMsg = err instanceof Error ? err.message : "";
       const code = (err as { code?: string })?.code;
       const status = (err as { status?: number })?.status;
-      if (code === "FORBIDDEN" || status === 403 || msg.includes("FORBIDDEN") || msg.includes("403")) {
+      if (code === "FORBIDDEN" || status === 403 || rawMsg.includes("FORBIDDEN") || rawMsg.includes("403")) {
         toast.error("You do not have permission to delete this comment.");
-      } else if (code === "NOT_FOUND" || status === 404 || msg.includes("NOT_FOUND") || msg.includes("404")) {
+      } else if (code === "NOT_FOUND" || status === 404 || rawMsg.includes("NOT_FOUND") || rawMsg.includes("404")) {
         toast.error("Comment not found or already deleted.");
       } else {
-        toast.error(msg);
+        toast.error(getUserFacingApiError(err, "Failed to delete comment."));
       }
       throw err;
     }

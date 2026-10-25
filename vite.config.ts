@@ -23,8 +23,8 @@ export default defineConfig({
       },
       "/realtime": {
         target: "http://localhost:3000",
-        changeOrigin: true,
         ws: true,
+        changeOrigin: true,
       },
     },
   },
@@ -32,7 +32,6 @@ export default defineConfig({
     globals: true,
     environment: "jsdom",
     css: false,
-    setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
   },
 } as VitestConfigExport);

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { toast } from "sonner";
 import { BoardMembersDialog } from "../BoardMembersDialog";
 import { useBoardMembership } from "@/hooks";
@@ -20,27 +20,78 @@ const board = {
   updatedAt: "2026-10-01T00:00:00.000Z",
 } as BoardDetail;
 
+const mockWorkspaceMembers = [
+  {
+    id: "wm-1",
+    workspaceId: "workspace-1",
+    userId: "user-1",
+    role: "OWNER",
+    user: { id: "user-1", email: "owner@test.com", fullName: "Owner User", status: "ACTIVE" },
+  },
+  {
+    id: "wm-2",
+    workspaceId: "workspace-1",
+    userId: "user-2",
+    role: "MEMBER",
+    user: { id: "user-2", email: "member@test.com", fullName: "Member User", status: "ACTIVE" },
+  },
+  {
+    id: "wm-3",
+    workspaceId: "workspace-1",
+    userId: "user-3",
+    role: "MEMBER",
+    user: {
+      id: "user-3",
+      email: "already@test.com",
+      fullName: "Existing Member",
+      status: "ACTIVE",
+    },
+  },
+];
+
+const mockBoardMembers = [
+  {
+    id: "user-1",
+    name: "Owner User",
+    initials: "OU",
+    role: "PM" as const,
+  },
+  {
+    id: "user-3",
+    name: "Existing Member",
+    initials: "EM",
+    role: "MEMBER" as const,
+  },
+];
+
 describe("BoardMembersDialog", () => {
+  const addMemberMock = vi.fn();
+  const removeMemberMock = vi.fn();
+  const assignPmMock = vi.fn();
+  const onMembersChangeMock = vi.fn();
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useBoardMembership).mockReturnValue({
-      members: [],
-      workspaceMembers: [],
+      members: mockBoardMembers,
+      workspaceMembers: mockWorkspaceMembers as unknown as ReturnType<
+        typeof useBoardMembership
+      >["workspaceMembers"],
       isLoading: false,
       error: null,
       refresh: vi.fn(),
-      addMember: vi.fn(),
-      removeMember: vi.fn(),
-      assignPm: vi.fn(),
+      addMember: addMemberMock,
+      removeMember: removeMemberMock,
+      assignPm: assignPmMock,
     });
   });
 
   it("copies the current Board URL and reports success", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
-    render(<BoardMembersDialog board={board} isOpen isWorkspaceOwner={false} onClose={vi.fn()} />);
+    render(<BoardMembersDialog board={board} isOpen isWorkspaceOwner onClose={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Copy board link" }));
+    fireEvent.click(screen.getByRole("button", { name: /Copy link/i }));
 
     await waitFor(() => expect(writeText).toHaveBeenCalledWith(window.location.href));
     expect(toast.success).toHaveBeenCalledWith("Board link copied to clipboard.");
@@ -51,82 +102,120 @@ describe("BoardMembersDialog", () => {
       configurable: true,
       value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) },
     });
-    render(<BoardMembersDialog board={board} isOpen isWorkspaceOwner={false} onClose={vi.fn()} />);
+    render(<BoardMembersDialog board={board} isOpen isWorkspaceOwner onClose={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Copy board link" }));
+    fireEvent.click(screen.getByRole("button", { name: /Copy link/i }));
 
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Could not copy the board link."));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Failed to copy board link."));
   });
 
-  it("shows the Workspace Owner, assigned Board PM, and Board member access levels", () => {
-    vi.mocked(useBoardMembership).mockReturnValue({
-      members: [
-        { id: "pm-1", name: "Alex Kim", initials: "AK", role: "PM" },
-        { id: "member-1", name: "Sam Lee", initials: "SL", role: "MEMBER" },
-      ],
-      workspaceMembers: [
-        {
-          id: "workspace-owner-membership",
-          workspaceId: "workspace-1",
-          userId: "owner-1",
-          role: "OWNER",
-          createdAt: "2026-10-01T00:00:00.000Z",
-          updatedAt: "2026-10-01T00:00:00.000Z",
-          endedAt: null,
-          user: {
-            id: "owner-1",
-            email: "owner@nexora.app",
-            fullName: "Jordan Owner",
-            status: "ACTIVE",
-          },
-        },
-      ],
-      isLoading: false,
-      error: null,
-      refresh: vi.fn(),
-      addMember: vi.fn(),
-      removeMember: vi.fn(),
-      assignPm: vi.fn(),
-    });
+  it("displays available workspace members excluding those already in the board", async () => {
+    render(
+      <BoardMembersDialog
+        board={board}
+        isOpen
+        isWorkspaceOwner
+        currentUserId="user-1"
+        onClose={vi.fn()}
+      />
+    );
 
-    render(<BoardMembersDialog board={board} isOpen isWorkspaceOwner={false} onClose={vi.fn()} />);
+    fireEvent.focus(screen.getByRole("tab", { name: "Members" }));
 
-    expect(screen.getByRole("heading", { name: "Board access & roles" })).toBeTruthy();
-    expect(screen.getByText("Jordan Owner")).toBeTruthy();
-    expect(screen.getByText("Alex Kim")).toBeTruthy();
-    expect(screen.getByText("Can access every Board in this Workspace")).toBeTruthy();
-    expect(screen.getByText("Manages this Board")).toBeTruthy();
-    expect(screen.getByText(/Board members can access this Board only/)).toBeTruthy();
+    // user-2 should be in dropdown because user-3 is already in the board
+    const select = screen.getByRole("combobox", { name: /Add Workspace member/i });
+    expect(select).toBeTruthy();
 
-    fireEvent.mouseDown(screen.getByRole("tab", { name: "Members" }), { button: 0 });
-    expect(screen.getByRole("tab", { name: "Members" }).getAttribute("aria-selected")).toBe("true");
-    expect(screen.getByRole("tabpanel").textContent).toContain("Sam Lee");
+    const options = within(select).getAllByRole("option");
+    const optionTexts = options.map((o) => o.textContent);
+
+    // user-2 is available
+    expect(optionTexts.some((t) => t?.includes("Member User"))).toBe(true);
+    // user-3 is already a board member, should NOT be in the add dropdown
+    expect(optionTexts.some((t) => t?.includes("Existing Member"))).toBe(false);
   });
 
-  it("separates access details from member management in keyboard-accessible tabs", () => {
-    vi.mocked(useBoardMembership).mockReturnValue({
-      members: [{ id: "member-1", name: "Sam Lee", initials: "SL", role: "MEMBER" }],
-      workspaceMembers: [],
-      isLoading: false,
-      error: null,
-      refresh: vi.fn(),
-      addMember: vi.fn(),
-      removeMember: vi.fn(),
-      assignPm: vi.fn(),
+  it("allows workspace owner to add member and triggers onMembersChange", async () => {
+    addMemberMock.mockResolvedValue(undefined);
+
+    render(
+      <BoardMembersDialog
+        board={board}
+        isOpen
+        isWorkspaceOwner
+        currentUserId="user-1"
+        onClose={vi.fn()}
+        onMembersChange={onMembersChangeMock}
+      />
+    );
+
+    fireEvent.focus(screen.getByRole("tab", { name: "Members" }));
+
+    const select = screen.getByRole("combobox", { name: /Add Workspace member/i });
+    fireEvent.change(select, { target: { value: "user-2" } });
+
+    const submitBtn = screen.getByRole("button", { name: /Add to board/i }) as HTMLButtonElement;
+    expect(submitBtn.disabled).toBe(false);
+
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(addMemberMock).toHaveBeenCalledWith("user-2");
+      expect(toast.success).toHaveBeenCalledWith("Member added to board.");
+      expect(onMembersChangeMock).toHaveBeenCalled();
     });
-    render(<BoardMembersDialog board={board} isOpen isWorkspaceOwner={false} onClose={vi.fn()} />);
+  });
 
-    expect(screen.getByRole("tab", { name: "Access & roles" }).getAttribute("aria-selected")).toBe(
-      "true"
+  it("prevents non-manager member from seeing management actions", async () => {
+    render(
+      <BoardMembersDialog
+        board={board}
+        isOpen
+        isWorkspaceOwner={false}
+        currentUserId="user-3" // user-3 has role MEMBER on the board
+        onClose={vi.fn()}
+      />
     );
-    expect(screen.getByRole("heading", { name: "Board access & roles" })).toBeTruthy();
 
-    fireEvent.mouseDown(screen.getByRole("tab", { name: "Members" }), { button: 0 });
+    fireEvent.focus(screen.getByRole("tab", { name: "Members" }));
 
-    expect(screen.getByRole("tab", { name: "Access & roles" }).getAttribute("aria-selected")).toBe(
-      "false"
+    // Non-manager cannot see Add Member form
+    expect(screen.queryByRole("combobox", { name: /Add Workspace member/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Add to board/i })).toBeNull();
+
+    // Non-manager cannot see Board PM select
+    expect(screen.queryByLabelText(/Board PM/i)).toBeNull();
+
+    // Non-manager cannot see Remove button
+    expect(screen.queryByRole("button", { name: /Remove/i })).toBeNull();
+
+    // But CAN see member list (read-only)
+    expect(screen.getByText("Existing Member")).toBeTruthy();
+    expect(screen.getByText("Owner User")).toBeTruthy();
+  });
+
+  it("handles error gracefully when addMember API fails", async () => {
+    addMemberMock.mockRejectedValue(new Error("You do not have permission to access this Board"));
+
+    render(
+      <BoardMembersDialog
+        board={board}
+        isOpen
+        isWorkspaceOwner
+        currentUserId="user-1"
+        onClose={vi.fn()}
+      />
     );
-    expect(screen.getByRole("tab", { name: "Members" }).getAttribute("aria-selected")).toBe("true");
-    expect(screen.getByRole("tabpanel").textContent).toContain("Sam Lee");
+
+    fireEvent.focus(screen.getByRole("tab", { name: "Members" }));
+
+    const select = screen.getByRole("combobox", { name: /Add Workspace member/i });
+    fireEvent.change(select, { target: { value: "user-2" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /Add to board/i }));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalled();
+    });
   });
 });

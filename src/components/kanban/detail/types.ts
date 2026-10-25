@@ -27,6 +27,7 @@ export interface CardMetadataSectionProps {
   onRetryAssignments?: () => void;
   onAttachLabel?: (cardId: string, labelId: string) => Promise<void>;
   onDetachLabel?: (cardId: string, labelId: string) => Promise<void>;
+  onCreateBoardLabel?: (name: string, color: string) => Promise<BoardLabel | void>;
   isLoadingLabels?: boolean;
   labelsError?: string | null;
   onRetryLabels?: () => void;
