@@ -1,11 +1,13 @@
 import * as React from "react";
-import { useParams, Link } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { ArrowLeft, AlertCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { ROUTES } from "@/constants/routes";
 import { useBoardDetail, useGitHubCardActivity } from "@/hooks";
 import {
   BoardDetailHeader,
+  BoardMembersDialog,
+  BoardSettingsDialog,
   BoardDetailToolbar,
   KanbanBoard,
   KanbanColumnSkeleton,
@@ -15,6 +17,7 @@ import {
 } from "@/components/kanban";
 
 import { Button } from "@/components/ui/button";
+import { boardApi } from "@/apis/board.api";
 import { useAuthStore } from "@/stores/auth.store";
 import { canUserManageDependencies } from "@/utils";
 import { useWorkspaceOwnership } from "@/hooks/useWorkspaceOwnership";
@@ -27,7 +30,11 @@ import {
 
 export const BoardDetailPage: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
+  const navigate = useNavigate();
   const { fetchGitActivity } = useGitHubCardActivity();
+  const [isMembersDialogOpen, setIsMembersDialogOpen] = React.useState(false);
+  const [isSettingsDialogOpen, setIsSettingsDialogOpen] = React.useState(false);
+  const [isSavingBoard, setIsSavingBoard] = React.useState(false);
 
   const {
     board,
@@ -124,17 +131,46 @@ export const BoardDetailPage: React.FC = () => {
     return canUserManageDependencies(role);
   }, [board, currentUser, isWorkspaceOwner]);
 
-  const handleShareClick = () => {
-    if (navigator.clipboard) {
-      void navigator.clipboard.writeText(window.location.href);
-      toast.success("Board link copied to clipboard");
-    } else {
-      toast.success("Board link ready to share");
+  const canManageBoard = isWorkspaceOwner || currentUserRole === "PM";
+
+  const handleSaveBoardSettings = async (input: { name: string; description: string }) => {
+    if (!board) return;
+    setIsSavingBoard(true);
+    try {
+      await boardApi.updateBoard(board.id, input);
+      await reload();
+      setIsSettingsDialogOpen(false);
+      toast.success("Board settings saved.");
+    } catch (cause) {
+      throw new Error(
+        cause instanceof Error ? cause.message : "Could not save Board settings."
+      );
+    } finally {
+      setIsSavingBoard(false);
     }
   };
 
-  const handleOptionsClick = () => {
-    toast.info("Board settings menu opened");
+  const handleArchiveOrRestoreBoard = async () => {
+    if (!board || !canManageBoard) return;
+    const isArchived = board.status === "ARCHIVED";
+    const action = isArchived ? "restore" : "archive";
+    if (!window.confirm(`Are you sure you want to ${action} "${board.name}"?`)) return;
+
+    try {
+      if (isArchived) {
+        await boardApi.restoreBoard(board.id);
+        await reload();
+        toast.success("Board restored.");
+      } else {
+        await boardApi.archiveBoard(board.id);
+        toast.success("Board archived.");
+        navigate(ROUTES.BOARDS);
+      }
+    } catch (cause) {
+      toast.error(
+        cause instanceof Error ? cause.message : `Could not ${action} the Board.`
+      );
+    }
   };
 
   const handleFilterClick = () => {
@@ -186,8 +222,10 @@ export const BoardDetailPage: React.FC = () => {
           <BoardDetailHeader
             board={board}
             realtimeConnected={realtimeConnected}
-            onShareClick={handleShareClick}
-            onOptionsClick={handleOptionsClick}
+            canManageBoard={canManageBoard}
+            onManageMembers={() => setIsMembersDialogOpen(true)}
+            onEditBoard={() => setIsSettingsDialogOpen(true)}
+            onArchiveBoard={() => void handleArchiveOrRestoreBoard()}
           />
 
           {/* Toolbar */}
@@ -305,6 +343,23 @@ export const BoardDetailPage: React.FC = () => {
               onFetchGitActivity: fetchGitActivity,
             }}
           />
+          {isMembersDialogOpen && (
+            <BoardMembersDialog
+              board={board}
+              isOpen
+              isWorkspaceOwner={isWorkspaceOwner}
+              onClose={() => setIsMembersDialogOpen(false)}
+            />
+          )}
+          {isSettingsDialogOpen && (
+            <BoardSettingsDialog
+              board={board}
+              isOpen
+              isSaving={isSavingBoard}
+              onClose={() => setIsSettingsDialogOpen(false)}
+              onSave={handleSaveBoardSettings}
+            />
+          )}
         </>
       )}
     </div>

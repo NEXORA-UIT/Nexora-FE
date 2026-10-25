@@ -1,5 +1,6 @@
 export * from "./BoardDetailHeader";
 export * from "./BoardMembersDialog";
+export * from "./BoardSettingsDialog";
 export * from "./GitHubConfigModal";
 export * from "./BoardDetailToolbar";
 export * from "./CardPriorityBadge";

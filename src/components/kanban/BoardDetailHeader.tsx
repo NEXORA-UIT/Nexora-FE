@@ -9,17 +9,22 @@ export interface BoardDetailHeaderProps {
   board: BoardDetail;
   realtimeConnected?: boolean;
   workspaceName?: string;
-  onShareClick?: () => void;
-  onOptionsClick?: () => void;
+  canManageBoard?: boolean;
+  onManageMembers?: () => void;
+  onEditBoard?: () => void;
+  onArchiveBoard?: () => void;
 }
 
 export const BoardDetailHeader: React.FC<BoardDetailHeaderProps> = ({
   board,
   realtimeConnected,
   workspaceName = "Workspace",
-  onShareClick,
-  onOptionsClick,
+  canManageBoard = false,
+  onManageMembers,
+  onEditBoard,
+  onArchiveBoard,
 }) => {
+  const [isOptionsOpen, setIsOptionsOpen] = React.useState(false);
   const members = board.members || [];
   const visibleMembers = members.slice(0, 4);
   const remainingCount = Math.max(0, members.length - 4);
@@ -100,27 +105,70 @@ export const BoardDetailHeader: React.FC<BoardDetailHeaderProps> = ({
             )}
           </div>
 
-          {/* Share / Members Button */}
+          {/* Board member management */}
           <Button
             type="button"
             variant="outline"
             size="sm"
-            onClick={onShareClick}
+            onClick={onManageMembers}
             className="h-8 gap-1.5 rounded-lg border-neutral-300 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
           >
             <UserPlus className="h-3.5 w-3.5 text-neutral-500" />
-            <span>Share / Members</span>
+            <span>Board members</span>
           </Button>
 
           {/* More options button */}
-          <button
-            type="button"
-            onClick={onOptionsClick}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-300 text-neutral-600 transition-colors hover:bg-neutral-50"
-            aria-label="Board options"
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsOptionsOpen((open) => !open)}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-300 text-neutral-600 transition-colors hover:bg-neutral-50"
+              aria-label="Board options"
+              aria-haspopup="menu"
+              aria-expanded={isOptionsOpen}
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
+            {isOptionsOpen && (
+              <div
+                role="menu"
+                aria-label="Board options"
+                className="absolute right-0 top-10 z-30 min-w-48 rounded-xl border border-neutral-200 bg-white p-1.5 shadow-lg"
+              >
+                {canManageBoard && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setIsOptionsOpen(false);
+                      onEditBoard?.();
+                    }}
+                    className="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-neutral-700 hover:bg-neutral-50"
+                  >
+                    Edit Board details
+                  </button>
+                )}
+                {canManageBoard && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setIsOptionsOpen(false);
+                      onArchiveBoard?.();
+                    }}
+                    className="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-neutral-700 hover:bg-neutral-50"
+                  >
+                    {board.status === "ACTIVE" ? "Archive Board" : "Restore Board"}
+                  </button>
+                )}
+                {!canManageBoard && (
+                  <p className="px-3 py-2 text-xs text-neutral-500">
+                    Board settings are available to the Workspace Owner and Board PM.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
