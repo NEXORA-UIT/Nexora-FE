@@ -1,6 +1,16 @@
 import * as React from "react";
-import { Upload, Trash2, Info, Link as LinkIcon, Check } from "lucide-react";
+import { Upload, Trash2, Info, Link as LinkIcon, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DialogBody,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogRoot,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import nexoraLogoSrc from "@/assets/logo/logo.png";
 import type { AvatarSectionProps } from "@/types";
 
@@ -43,9 +53,9 @@ export const AvatarSection: React.FC<AvatarSectionProps> = ({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
         {/* Avatar Display */}
-        <div className="relative flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl border border-neutral-200 bg-neutral-50 p-2 shadow-xs select-none">
+        <div className="shadow-xs relative flex h-24 w-24 shrink-0 select-none items-center justify-center rounded-2xl border border-neutral-200 bg-neutral-50 p-2">
           {currentAvatarUrl ? (
             <img
               src={currentAvatarUrl}
@@ -63,9 +73,7 @@ export const AvatarSection: React.FC<AvatarSectionProps> = ({
                 alt="Nexora default avatar"
                 className="h-10 w-10 object-contain"
               />
-              <span className="text-[10px] font-semibold text-neutral-400">
-                Nexora
-              </span>
+              <span className="text-[10px] font-semibold text-neutral-400">Nexora</span>
             </div>
           )}
         </div>
@@ -104,93 +112,85 @@ export const AvatarSection: React.FC<AvatarSectionProps> = ({
             )}
           </div>
 
-          <p className="text-xs text-neutral-500 leading-normal">
+          <p className="text-xs leading-normal text-neutral-500">
             JPG, PNG or WEBP. Recommended size: 256 × 256 px. Maximum 5MB.
           </p>
         </div>
       </div>
 
-      {/* Optional URL Entry Modal for Swagger-compliant avatarUrl */}
-      {showUrlDialog && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="avatar-dialog-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/40 backdrop-blur-xs animate-in fade-in duration-150"
-          onClick={() => setShowUrlDialog(false)}
-        >
-          <div
-            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-neutral-200/80 animate-in zoom-in-95 duration-150"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
-                <LinkIcon className="h-5 w-5" />
+      <DialogRoot open={showUrlDialog} onOpenChange={setShowUrlDialog}>
+        <DialogContent size="sm" aria-labelledby="avatar-dialog-title">
+          <DialogHeader>
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <div className="text-primary-600 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-50">
+                <LinkIcon className="h-5 w-5" aria-hidden="true" />
               </div>
-              <div>
-                <h3
+              <div className="min-w-0">
+                <DialogTitle
                   id="avatar-dialog-title"
                   className="text-base font-bold text-neutral-900"
                 >
                   Change Profile Photo
-                </h3>
-                <p className="text-xs text-neutral-500">
-                  Enter an image URL for your profile avatar
-                </p>
+                </DialogTitle>
+                <DialogDescription className="mt-1 text-xs text-neutral-500">
+                  Enter an image URL for your profile avatar.
+                </DialogDescription>
               </div>
             </div>
-
-            <div className="mt-4 space-y-2">
-              <label
-                htmlFor="avatar-url-input"
-                className="block text-xs font-semibold text-neutral-700"
+            <DialogClose asChild>
+              <button
+                type="button"
+                aria-label="Close profile photo dialog"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
               >
-                Image URL (HTTPS)
-              </label>
+                <X className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </DialogClose>
+          </DialogHeader>
+
+          <DialogBody className="space-y-3">
+            <label
+              htmlFor="avatar-url-input"
+              className="block space-y-1.5 text-xs font-semibold text-neutral-700"
+            >
+              <span>Image URL (HTTPS)</span>
               <input
                 id="avatar-url-input"
                 type="url"
                 value={urlInput}
-                onChange={(e) => {
-                  setUrlInput(e.target.value);
+                onChange={(event) => {
+                  setUrlInput(event.target.value);
                   setUrlError("");
                 }}
                 placeholder="https://example.com/avatar.png"
-                className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 placeholder:text-neutral-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="h-10 w-full rounded-lg border border-neutral-300 bg-white px-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
-              {urlError && <p className="text-xs text-error-500">{urlError}</p>}
-              <div className="flex items-start gap-1.5 pt-1 text-[11px] text-neutral-500">
-                <Info className="h-3.5 w-3.5 shrink-0 text-neutral-400 mt-0.5" />
-                <span>
-                  Provide a direct URL to a JPEG, PNG, or WEBP image. Direct file
-                  uploading will be enabled once Cloudinary integration is active.
-                </span>
-              </div>
+            </label>
+            {urlError && (
+              <p role="alert" className="text-sm text-error-600">
+                {urlError}
+              </p>
+            )}
+            <div className="flex items-start gap-2 rounded-xl bg-neutral-50 p-3 text-xs leading-relaxed text-neutral-600">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-neutral-400" aria-hidden="true" />
+              <span>
+                Provide a direct URL to a JPEG, PNG, or WEBP image. Direct file uploading will be
+                enabled once Cloudinary integration is active.
+              </span>
             </div>
+          </DialogBody>
 
-            <div className="mt-6 flex items-center justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-8 rounded-lg border-neutral-200 text-xs"
-                onClick={() => setShowUrlDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                className="h-8 gap-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-xs shadow-xs"
-                onClick={handleApplyUrl}
-              >
-                <Check className="h-3.5 w-3.5" />
-                <span>Apply URL</span>
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setShowUrlDialog(false)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleApplyUrl}>
+              <Check className="h-4 w-4" aria-hidden="true" />
+              Apply URL
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </DialogRoot>
     </div>
   );
 };

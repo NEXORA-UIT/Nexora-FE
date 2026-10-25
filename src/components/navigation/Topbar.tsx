@@ -9,6 +9,15 @@ import { authApi } from "@/apis/auth.api";
 import { UserMenu } from "./UserMenu";
 import nexoraLogoSrc from "@/assets/logo/logo.png";
 import { NotificationCenter } from "./NotificationCenter";
+import {
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogRoot,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export const Topbar: React.FC = () => {
   const navigate = useNavigate();
@@ -31,16 +40,6 @@ export const Topbar: React.FC = () => {
       navigate(ROUTES.LOGIN);
     }
   };
-
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && showLogoutConfirm && !isLoggingOut) {
-        setShowLogoutConfirm(false);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [showLogoutConfirm, isLoggingOut]);
 
   return (
     <header className="sticky top-0 z-30 flex h-14 w-full select-none items-center justify-between border-b border-neutral-200 bg-white px-4 sm:px-6">
@@ -106,62 +105,66 @@ export const Topbar: React.FC = () => {
         <UserMenu onLogoutClick={() => setShowLogoutConfirm(true)} />
       </div>
 
-      {/* Logout Confirmation Modal */}
-      {showLogoutConfirm && (
-        <div
-          role="dialog"
-          aria-modal="true"
+      <DialogRoot
+        open={showLogoutConfirm}
+        onOpenChange={(open) => {
+          if (!open && !isLoggingOut) setShowLogoutConfirm(false);
+        }}
+      >
+        <DialogContent
+          size="sm"
           aria-labelledby="logout-confirm-title"
-          className="backdrop-blur-xs animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40 p-4 duration-150"
-          onClick={() => {
-            if (!isLoggingOut) setShowLogoutConfirm(false);
+          onEscapeKeyDown={(event) => {
+            if (isLoggingOut) event.preventDefault();
+          }}
+          onInteractOutside={(event) => {
+            if (isLoggingOut) event.preventDefault();
           }}
         >
-          <div
-            className="animate-in zoom-in-95 w-full max-w-sm select-text rounded-2xl border border-neutral-200/80 bg-white p-6 shadow-xl duration-150"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-3 flex items-center gap-3.5">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-error-50 text-error-600">
-                <LogOut className="h-5 w-5 text-rose-600" />
+          <DialogHeader>
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-error-50 text-error-600">
+                <LogOut className="h-5 w-5" aria-hidden="true" />
               </div>
-              <div>
-                <h3 id="logout-confirm-title" className="text-base font-bold text-neutral-900">
+              <div className="min-w-0">
+                <DialogTitle
+                  id="logout-confirm-title"
+                  className="text-base font-bold text-neutral-900"
+                >
                   Confirm Sign Out
-                </h3>
-                <p className="text-xs text-neutral-500">Your current session will end</p>
+                </DialogTitle>
+                <DialogDescription className="mt-1 text-xs text-neutral-500">
+                  Your current session will end.
+                </DialogDescription>
               </div>
             </div>
-
+          </DialogHeader>
+          <DialogBody>
             <p className="text-sm leading-relaxed text-neutral-600">
               Are you sure you want to sign out of Nexora? You will need to sign in again to access
-              your workspace.
+              your Workspace.
             </p>
-
-            <div className="mt-6 flex items-center justify-end gap-2.5">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-9 rounded-xl border-neutral-200 px-4 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
-                disabled={isLoggingOut}
-                onClick={() => setShowLogoutConfirm(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                className="shadow-xs h-9 rounded-xl bg-rose-600 px-4 text-xs font-medium text-white hover:bg-rose-700"
-                disabled={isLoggingOut}
-                onClick={handleConfirmLogout}
-              >
-                {isLoggingOut ? "Signing out..." : "Sign out"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+          </DialogBody>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isLoggingOut}
+              onClick={() => setShowLogoutConfirm(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="hover:bg-error-700 bg-error-600 text-white"
+              disabled={isLoggingOut}
+              onClick={() => void handleConfirmLogout()}
+            >
+              {isLoggingOut ? "Signing out..." : "Sign out"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </DialogRoot>
     </header>
   );
 };

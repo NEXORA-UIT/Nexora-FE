@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { Sidebar } from "../Sidebar";
 import { Topbar } from "../Topbar";
@@ -73,7 +73,7 @@ describe("app navigation", () => {
   it("routes Create to Boards and opens the functional notification center", async () => {
     renderNavigation();
 
-    fireEvent.click(screen.getByRole("button", { name: /create board/i }));
+    fireEvent.click(within(screen.getByRole("banner")).getByLabelText("Create board"));
     expect(screen.getByTestId("current-path").textContent).toBe("/boards");
     expect(screen.queryByPlaceholderText(/search projects/i)).toBeNull();
     fireEvent.keyDown(screen.getByRole("button", { name: /notifications/i }), { key: "Enter" });

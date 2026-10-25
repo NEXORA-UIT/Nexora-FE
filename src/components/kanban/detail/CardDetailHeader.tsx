@@ -1,5 +1,12 @@
 import * as React from "react";
-import * as Dialog from "@radix-ui/react-dialog";
+import {
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogRoot,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { MoreHorizontal, X, Link2, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -104,10 +111,7 @@ export const CardDetailHeader: React.FC<CardDetailHeaderProps> = ({
                 <span>Close panel</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                destructive
-                onClick={() => setIsConfirmingDelete(true)}
-              >
+              <DropdownMenuItem destructive onClick={() => setIsConfirmingDelete(true)}>
                 <Trash2 className="h-3.5 w-3.5" />
                 <span>Delete card</span>
               </DropdownMenuItem>
@@ -143,63 +147,84 @@ export const CardDetailHeader: React.FC<CardDetailHeaderProps> = ({
             }}
             autoFocus
             aria-label="Card title"
-            className="w-full rounded-lg border border-primary-500 bg-white px-2 py-1 text-lg font-semibold text-neutral-900 shadow-xs outline-none ring-2 ring-primary-500/20 sm:text-xl"
+            className="shadow-xs w-full rounded-lg border border-primary-500 bg-white px-2 py-1 text-lg font-semibold text-neutral-900 outline-none ring-2 ring-primary-500/20 sm:text-xl"
           />
         ) : (
           <div className="group flex items-start gap-2">
             <h2
               onClick={() => setIsEditingTitle(true)}
-              className="flex-1 cursor-text rounded-lg px-2 py-1 -mx-2 text-lg font-semibold text-neutral-900 transition-colors hover:bg-neutral-100 sm:text-xl leading-snug"
+              className="-mx-2 flex-1 cursor-text rounded-lg px-2 py-1 text-lg font-semibold leading-snug text-neutral-900 transition-colors hover:bg-neutral-100 sm:text-xl"
               title="Click to edit title"
             >
               {card.title}
             </h2>
             {isUpdatingTitle && (
-              <Loader2 className="h-4 w-4 animate-spin text-primary-600 mt-2 shrink-0" />
+              <Loader2 className="text-primary-600 mt-2 h-4 w-4 shrink-0 animate-spin" />
             )}
           </div>
         )}
       </div>
 
       {/* Lightweight Delete Confirmation Dialog */}
-      <Dialog.Root open={isConfirmingDelete} onOpenChange={setIsConfirmingDelete}>
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-50 bg-neutral-900/40 backdrop-blur-2xs data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-xl border border-neutral-200 bg-white p-5 shadow-xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 focus:outline-none">
-            <Dialog.Title className="text-base font-semibold text-neutral-900">
+      <DialogRoot
+        open={isConfirmingDelete}
+        onOpenChange={(open) => {
+          if (!open && isDeleting) return;
+          setIsConfirmingDelete(open);
+        }}
+      >
+        <DialogContent
+          size="sm"
+          aria-labelledby="delete-card-title"
+          aria-describedby="delete-card-description"
+          onEscapeKeyDown={(event) => {
+            if (isDeleting) event.preventDefault();
+          }}
+          onInteractOutside={(event) => {
+            if (isDeleting) event.preventDefault();
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle
+              id="delete-card-title"
+              className="text-base font-semibold text-neutral-900"
+            >
               Delete card?
-            </Dialog.Title>
-            <Dialog.Description className="mt-2 text-xs leading-relaxed text-neutral-600">
-              This will permanently remove the card from the board. This action cannot be undone.
-            </Dialog.Description>
-            <div className="mt-5 flex items-center justify-end gap-2.5">
-              <button
-                type="button"
-                onClick={() => setIsConfirmingDelete(false)}
-                disabled={isDeleting}
-                className="rounded-lg border border-neutral-200 bg-white px-3.5 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDelete}
-                disabled={isDeleting}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-error-600 px-3.5 py-2 text-xs font-medium text-white hover:bg-error-700 focus:outline-none focus:ring-2 focus:ring-error-500/20 disabled:opacity-50"
-              >
-                {isDeleting ? (
-                  <>
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    <span>Deleting...</span>
-                  </>
-                ) : (
-                  <span>Delete card</span>
-                )}
-              </button>
-            </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+            </DialogTitle>
+            <DialogDescription
+              id="delete-card-description"
+              className="mt-2 text-xs leading-relaxed text-neutral-600"
+            >
+              This will permanently remove the card from the Board. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <button
+              type="button"
+              onClick={() => setIsConfirmingDelete(false)}
+              disabled={isDeleting}
+              className="rounded-lg border border-neutral-200 bg-white px-3.5 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              className="hover:bg-error-700 inline-flex items-center gap-1.5 rounded-lg bg-error-600 px-3.5 py-2 text-xs font-medium text-white focus:outline-none focus:ring-2 focus:ring-error-500/20 disabled:opacity-50"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>Deleting...</span>
+                </>
+              ) : (
+                <span>Delete card</span>
+              )}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </DialogRoot>
     </div>
   );
 };
