@@ -11,6 +11,7 @@ export function useBoardDetail(boardId?: string) {
   const [board, setBoard] = React.useState<BoardDetail | null>(null);
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [boardRefreshVersion, setBoardRefreshVersion] = React.useState(0);
   const requestIdRef = React.useRef(0);
   const loadedBoardIdRef = React.useRef<string | undefined>(undefined);
 
@@ -31,6 +32,10 @@ export function useBoardDetail(boardId?: string) {
 
   // Selected Card for Drawer
   const [selectedCardId, setSelectedCardId] = React.useState<string | null>(null);
+  const boardRef = React.useRef<BoardDetail | null>(board);
+  const selectedCardIdRef = React.useRef(selectedCardId);
+  boardRef.current = board;
+  selectedCardIdRef.current = selectedCardId;
 
   const loadBoard = React.useCallback(async () => {
     const requestId = ++requestIdRef.current;
@@ -62,6 +67,28 @@ export function useBoardDetail(boardId?: string) {
       const archivedListsCount = allLists.filter((l) => l.status === "ARCHIVED").length;
 
       const { lists: populatedLists } = associateCardsWithLists(activeLists, allCards);
+      const selectedCardId = selectedCardIdRef.current;
+      const previousSelectedCard = selectedCardId
+        ? boardRef.current?.lists
+            .flatMap((list) => list.cards)
+            .find((card) => card.id === selectedCardId)
+        : undefined;
+      const refreshedLists = previousSelectedCard
+        ? populatedLists.map((list) => ({
+            ...list,
+            cards: list.cards.map((card) =>
+              card.id === previousSelectedCard.id
+                ? {
+                    ...card,
+                    checklist: previousSelectedCard.checklist,
+                    dependencies: previousSelectedCard.dependencies,
+                    attachments: previousSelectedCard.attachments,
+                    comments: previousSelectedCard.comments,
+                  }
+                : card
+            ),
+          }))
+        : populatedLists;
 
       setBoard({
         id: boardData.id,
@@ -71,11 +98,12 @@ export function useBoardDetail(boardId?: string) {
         status: boardData.status === "active" ? "ACTIVE" : "ARCHIVED",
         members,
         labels: boardLabels,
-        lists: populatedLists,
+        lists: refreshedLists,
         archivedListsCount,
         createdAt: boardData.createdAt,
         updatedAt: boardData.updatedAt,
       });
+      setBoardRefreshVersion((version) => version + 1);
     } catch (err) {
       if (requestId !== requestIdRef.current) return;
       setBoard(null);
@@ -198,6 +226,7 @@ export function useBoardDetail(boardId?: string) {
     selectedCardId,
     board,
     setBoard,
+    refreshVersion: boardRefreshVersion,
   });
 
   return {

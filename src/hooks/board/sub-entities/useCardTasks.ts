@@ -8,19 +8,23 @@ import type { BoardDetail, ChecklistItem } from "@/types";
 export interface UseCardTasksOptions {
   selectedCardId: string | null;
   setBoard: React.Dispatch<React.SetStateAction<BoardDetail | null>>;
+  refreshVersion?: number;
 }
 
 export function useCardTasks({
   selectedCardId,
   setBoard,
+  refreshVersion = 0,
 }: UseCardTasksOptions) {
   const [isTasksLoading, setIsTasksLoading] = React.useState<boolean>(false);
   const [tasksError, setTasksError] = React.useState<string | null>(null);
 
   // Active card ID whose tasks are currently loaded/loading (prevents race conditions)
   const activeTasksCardIdRef = React.useRef<string | null>(null);
+  const tasksRequestIdRef = React.useRef(0);
 
   const loadTasksForCard = React.useCallback(async (cardId: string) => {
+    const requestId = ++tasksRequestIdRef.current;
     activeTasksCardIdRef.current = cardId;
     setIsTasksLoading(true);
     setTasksError(null);
@@ -31,7 +35,7 @@ export function useCardTasks({
       ]);
 
       // Guard against stale response if card selection changed while request was in-flight
-      if (activeTasksCardIdRef.current !== cardId) return;
+      if (activeTasksCardIdRef.current !== cardId || requestId !== tasksRequestIdRef.current) return;
 
       if (tasksRes.status === "rejected") {
         throw tasksRes.reason;
@@ -64,10 +68,13 @@ export function useCardTasks({
         setTasksError(null);
       }
     } catch (err) {
-      if (activeTasksCardIdRef.current !== cardId) return;
+      if (activeTasksCardIdRef.current !== cardId || requestId !== tasksRequestIdRef.current) return;
       setTasksError(getUserFacingApiError(err, "Failed to load checklist tasks"));
     } finally {
-      if (activeTasksCardIdRef.current === cardId) {
+      if (
+        activeTasksCardIdRef.current === cardId &&
+        requestId === tasksRequestIdRef.current
+      ) {
         setIsTasksLoading(false);
       }
     }
@@ -75,6 +82,7 @@ export function useCardTasks({
 
   React.useEffect(() => {
     if (!selectedCardId) {
+      tasksRequestIdRef.current += 1;
       activeTasksCardIdRef.current = null;
       setIsTasksLoading(false);
       setTasksError(null);
@@ -88,7 +96,7 @@ export function useCardTasks({
         activeTasksCardIdRef.current = null;
       }
     };
-  }, [selectedCardId, loadTasksForCard]);
+  }, [selectedCardId, refreshVersion, loadTasksForCard]);
 
   const handleRetryTasks = React.useCallback(() => {
     if (selectedCardId) {

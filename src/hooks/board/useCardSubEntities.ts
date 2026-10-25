@@ -13,6 +13,7 @@ export interface UseCardSubEntitiesOptions {
   selectedCardId: string | null;
   board: BoardDetail | null;
   setBoard: React.Dispatch<React.SetStateAction<BoardDetail | null>>;
+  refreshVersion?: number;
 }
 
 /**
@@ -24,8 +25,9 @@ export function useCardSubEntities({
   selectedCardId,
   board,
   setBoard,
+  refreshVersion,
 }: UseCardSubEntitiesOptions) {
-  const tasks = useCardTasks({ selectedCardId, setBoard });
+  const tasks = useCardTasks({ selectedCardId, setBoard, refreshVersion });
   const assignments = useCardAssignments({ selectedCardId, setBoard });
   const labels = useCardLabels({ selectedCardId, setBoard });
   const comments = useCardComments({ selectedCardId, setBoard });

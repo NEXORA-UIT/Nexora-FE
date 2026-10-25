@@ -1880,6 +1880,38 @@ describe("useBoardDetail Live Read Integration & State Orchestration", () => {
       expect(updatedCard?.updatedAt).toBe(initialUpdatedAt);
     });
 
+    it("preserves the loaded checklist when an upload triggers a Board refresh", async () => {
+      const checklistItem: ChecklistItem = {
+        id: "task-uuid-upload-refresh",
+        cardId: mockCards[0].id,
+        title: "Keep this checklist item visible",
+        isCompleted: false,
+        position: 1024,
+        createdAt: "2026-10-10T08:00:00.000Z",
+        updatedAt: "2026-10-10T08:00:00.000Z",
+      };
+      const testFile = new File(["sample"], "architecture_spec.pdf", {
+        type: "application/pdf",
+      });
+      vi.spyOn(cardApi, "getCardTasks").mockResolvedValue([checklistItem]);
+      vi.spyOn(cardApi, "uploadCardAttachment").mockResolvedValueOnce(mockAttachmentDto1);
+
+      const { result } = renderHook(() => useBoardDetail("b-uuid-1"));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+      act(() => result.current.handleSelectCard(mockCards[0]));
+      await waitFor(() => expect(result.current.selectedCard?.checklist).toEqual([checklistItem]));
+
+      await act(async () => {
+        await result.current.handleUploadAttachment(mockCards[0].id, testFile);
+      });
+
+      expect(result.current.selectedCard?.attachments).toHaveLength(1);
+      await act(async () => result.current.reload());
+
+      expect(result.current.selectedCard?.checklist).toEqual([checklistItem]);
+      expect(result.current.selectedCard?.attachments).toHaveLength(1);
+    });
+
     it("handleUploadAttachment throws on error and triggers toast", async () => {
       const { result } = renderHook(() => useBoardDetail("b-uuid-1"));
       await waitFor(() => expect(result.current.isLoading).toBe(false));

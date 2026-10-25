@@ -88,9 +88,10 @@ describe("Card Detail Content Sections", () => {
   });
 
   it("renders loading indicator when isLoading is true", () => {
+    const emptyCard = { ...card101, checklist: [] };
     render(
       <CardDetailChecklist
-        card={card101}
+        card={emptyCard}
         onAddItem={vi.fn()}
         onToggleItem={vi.fn()}
         onDeleteItem={vi.fn()}
@@ -99,6 +100,21 @@ describe("Card Detail Content Sections", () => {
     );
 
     expect(screen.getByText("Loading tasks...")).toBeDefined();
+  });
+
+  it("keeps loaded checklist items visible while refreshing", () => {
+    render(
+      <CardDetailChecklist
+        card={card101}
+        onAddItem={vi.fn()}
+        onToggleItem={vi.fn()}
+        onDeleteItem={vi.fn()}
+        isLoading
+      />
+    );
+
+    expect(screen.getByRole("status").textContent).toContain("Refreshing checklist...");
+    expect(screen.getByText("Draft quotes")).toBeDefined();
   });
 
   it("renders error message and retry button when error is provided", () => {

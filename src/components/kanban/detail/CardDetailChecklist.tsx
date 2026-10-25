@@ -66,13 +66,19 @@ export const CardDetailChecklist: React.FC<CardDetailChecklistProps> = ({
       </div>
 
       {/* Checklist items, loading, error, or empty state */}
-      {isLoading ? (
+      {isLoading && checklist.length === 0 ? (
         <div className="flex items-center gap-2 py-3 text-xs text-neutral-500">
           <Loader2 className="h-4 w-4 animate-spin text-primary-600" />
           <span>Loading tasks...</span>
         </div>
       ) : (
         <>
+          {isLoading && (
+            <div role="status" className="flex items-center gap-2 text-xs text-neutral-500">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-primary-600" />
+              <span>Refreshing checklist...</span>
+            </div>
+          )}
           {error && (
             <div className="flex items-center justify-between rounded-md bg-error-50 p-2.5 text-xs text-error-700">
               <span>{error}</span>
