@@ -22,14 +22,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { useWorkspaceBoards } from "@/hooks";
 import { useWorkspaceStore } from "@/stores/workspace.store";
+import { useAuthStore } from "@/stores/auth.store";
 import { ApiError } from "@/apis/client";
 import { getBoardDetailRoute } from "@/constants/routes";
 import { getUserFacingApiError } from "@/utils/api-error-message";
+import { useWorkspaceOwnership } from "@/hooks/useWorkspaceOwnership";
 import type { WorkspaceTabId } from "@/types";
 
 export const BoardsPage: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = React.useState<WorkspaceTabId>("boards");
+  const [activeTab, setActiveTab] = React.useState<WorkspaceTabId>("overview");
   const [isCreateWorkspaceOpen, setIsCreateWorkspaceOpen] = React.useState(false);
 
   const {
@@ -38,6 +40,7 @@ export const BoardsPage: React.FC = () => {
     fetchWorkspaces,
     archiveWorkspace,
     unarchiveWorkspace,
+    leaveWorkspace,
   } = useWorkspaceStore();
 
   React.useEffect(() => {
@@ -51,6 +54,7 @@ export const BoardsPage: React.FC = () => {
     boards,
     isLoading: isBoardsLoading,
     error,
+    reload,
     searchQuery,
     setSearchQuery,
     filterTab,
@@ -74,6 +78,16 @@ export const BoardsPage: React.FC = () => {
     handleConfirmDelete,
   } = useWorkspaceBoards();
 
+  const currentUserId = useAuthStore((state) => state.user?.id);
+  const { isWorkspaceOwner, verifiedOwnerContext } = useWorkspaceOwnership(
+    workspace?.id,
+    currentUserId
+  );
+
+  React.useEffect(() => {
+    setActiveTab("overview");
+  }, [workspace?.id]);
+
   const isLoading = isBoardsLoading || isStoreLoading;
 
   // Actions for workspace lifecycle
@@ -90,9 +104,7 @@ export const BoardsPage: React.FC = () => {
           toast.error("Only the workspace owner can archive this workspace.");
         }
       } else {
-        toast.error(
-          getUserFacingApiError(err, "Failed to archive workspace.")
-        );
+        toast.error(getUserFacingApiError(err, "Failed to archive workspace."));
       }
     }
   };
@@ -110,9 +122,26 @@ export const BoardsPage: React.FC = () => {
           toast.error("Only the workspace owner can restore this workspace.");
         }
       } else {
-        toast.error(
-          getUserFacingApiError(err, "Failed to restore workspace.")
-        );
+        toast.error(getUserFacingApiError(err, "Failed to restore workspace."));
+      }
+    }
+  };
+
+  const handleLeaveWorkspace = async () => {
+    if (!workspace) return;
+    const confirmed = window.confirm(
+      `Leave "${workspace.name}"? You will lose access to its Boards and assigned work.`
+    );
+    if (!confirmed) return;
+
+    try {
+      await leaveWorkspace(workspace.id);
+      toast.success(`You left "${workspace.name}".`);
+    } catch (err) {
+      if (err instanceof ApiError && err.code === "WORKSPACE_PM_TRANSFER_REQUIRED") {
+        toast.error("Transfer your Board PM responsibility before leaving this Workspace.");
+      } else {
+        toast.error(getUserFacingApiError(err, "Failed to leave this Workspace."));
       }
     }
   };
@@ -128,11 +157,17 @@ export const BoardsPage: React.FC = () => {
   }
 
   // Error State
-  if (error && !workspace) {
+  if (error && !isLoading) {
     return (
-      <div className="rounded-2xl border border-error-200 bg-error-50 p-6 text-center text-xs text-error-700">
-        <p className="font-semibold">Unable to load workspace</p>
+      <div
+        role="alert"
+        className="border-error-200 text-error-700 rounded-2xl border bg-error-50 p-6 text-center text-xs"
+      >
+        <p className="font-semibold">Unable to load workspace boards</p>
         <p className="mt-1 text-neutral-600">{error}</p>
+        <Button type="button" variant="outline" className="mt-4" onClick={() => void reload()}>
+          Retry
+        </Button>
       </div>
     );
   }
@@ -140,22 +175,21 @@ export const BoardsPage: React.FC = () => {
   // Empty State: User has no workspaces
   if (!workspace) {
     return (
-      <div className="rounded-2xl border border-neutral-200/90 bg-white p-12 text-center select-none space-y-4 max-w-lg mx-auto mt-8">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 text-primary-600">
+      <div className="mx-auto mt-8 max-w-lg select-none space-y-4 rounded-2xl border border-neutral-200/90 bg-white p-12 text-center">
+        <div className="text-primary-600 mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50">
           <FolderPlus className="h-7 w-7" />
         </div>
         <div className="space-y-1">
-          <h2 className="text-lg font-bold text-neutral-900">
-            No Workspace Selected
-          </h2>
-          <p className="text-xs text-neutral-500 max-w-sm mx-auto">
-            You do not have any workspaces yet or none is currently active. Create your first workspace to start organizing boards.
+          <h2 className="text-lg font-bold text-neutral-900">No Workspace Selected</h2>
+          <p className="mx-auto max-w-sm text-xs text-neutral-500">
+            You do not have any workspaces yet or none is currently active. Create your first
+            workspace to start organizing boards.
           </p>
         </div>
         <Button
           type="button"
           onClick={() => setIsCreateWorkspaceOpen(true)}
-          className="h-9 gap-1.5 rounded-xl bg-primary-600 px-4 text-xs font-semibold text-white shadow-xs hover:bg-primary-700"
+          className="shadow-xs h-9 gap-1.5 rounded-xl bg-primary-600 px-4 text-xs font-semibold text-white hover:bg-primary-700"
         >
           <Plus className="h-4 w-4" />
           <span>Create Workspace</span>
@@ -171,10 +205,8 @@ export const BoardsPage: React.FC = () => {
 
   const isArchived = workspace.status === "archived";
 
-  const showActiveSection =
-    filterTab === "all" || filterTab === "active";
-  const showArchivedSection =
-    filterTab === "all" || filterTab === "archived";
+  const showActiveSection = filterTab === "all" || filterTab === "active";
+  const showArchivedSection = filterTab === "all" || filterTab === "archived";
 
   const hasNoResults =
     (filterTab === "all" &&
@@ -191,6 +223,20 @@ export const BoardsPage: React.FC = () => {
         onCreateBoardClick={() => setIsCreateOpen(true)}
         onArchiveClick={handleArchiveWorkspace}
         onRestoreClick={handleRestoreWorkspace}
+        canLeaveWorkspace={Boolean(
+          verifiedOwnerContext?.workspaceId === workspace.id &&
+          !isWorkspaceOwner &&
+          workspace.status === "active" &&
+          !workspace.isFrozen
+        )}
+        leaveWorkspaceDisabledReason={
+          verifiedOwnerContext?.workspaceId === workspace.id && isWorkspaceOwner
+            ? "Transfer Workspace ownership before leaving."
+            : workspace.status !== "active" || workspace.isFrozen
+              ? "Archived or frozen Workspaces cannot be left."
+              : undefined
+        }
+        onLeaveClick={() => void handleLeaveWorkspace()}
       />
 
       {/* 2. Archived Notice Banner */}
@@ -227,9 +273,7 @@ export const BoardsPage: React.FC = () => {
           {/* Section Heading & Subtitle */}
           <div>
             <h2 className="text-base font-bold text-neutral-900">Boards</h2>
-            <p className="text-xs text-neutral-500 mt-0.5">
-              Projects in this workspace
-            </p>
+            <p className="mt-0.5 text-xs text-neutral-500">Projects in this workspace</p>
           </div>
 
           {/* Search, Filter & Sort Toolbar */}
@@ -257,11 +301,9 @@ export const BoardsPage: React.FC = () => {
               {/* Active Boards Section */}
               {showActiveSection && filteredActiveBoards.length > 0 && (
                 <div className="space-y-3.5">
-                  <div className="flex items-center gap-2 select-none">
-                    <h3 className="text-xs font-semibold text-neutral-900">
-                      Active Boards
-                    </h3>
-                    <span className="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-primary-100/70 px-1.5 text-[10px] font-semibold text-primary-700">
+                  <div className="flex select-none items-center gap-2">
+                    <h3 className="text-xs font-semibold text-neutral-900">Active Boards</h3>
+                    <span className="h-4.5 min-w-4.5 text-primary-700 flex items-center justify-center rounded-full bg-primary-100/70 px-1.5 text-[10px] font-semibold">
                       {filteredActiveBoards.length}
                     </span>
                   </div>
@@ -303,12 +345,10 @@ export const BoardsPage: React.FC = () => {
               {/* Archived Boards Section */}
               {showArchivedSection && filteredArchivedBoards.length > 0 && (
                 <div className="space-y-3.5 pt-2">
-                  <div className="flex items-center gap-2 select-none">
+                  <div className="flex select-none items-center gap-2">
                     <FolderArchive className="h-4 w-4 text-neutral-500" />
-                    <h3 className="text-xs font-semibold text-neutral-700">
-                      Archived Boards
-                    </h3>
-                    <span className="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-neutral-100 px-1.5 text-[10px] font-semibold text-neutral-600">
+                    <h3 className="text-xs font-semibold text-neutral-700">Archived Boards</h3>
+                    <span className="h-4.5 min-w-4.5 flex items-center justify-center rounded-full bg-neutral-100 px-1.5 text-[10px] font-semibold text-neutral-600">
                       {filteredArchivedBoards.length}
                     </span>
                   </div>
@@ -320,10 +360,7 @@ export const BoardsPage: React.FC = () => {
                         board={board}
                         onRestore={
                           isArchived
-                            ? () =>
-                                toast.error(
-                                  "Cannot restore boards in an archived workspace."
-                                )
+                            ? () => toast.error("Cannot restore boards in an archived workspace.")
                             : handleRestoreBoard
                         }
                         onDelete={isArchived ? undefined : handleDeleteBoard}

@@ -1,8 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import {
-  useWorkspaceStore,
-  ACTIVE_WORKSPACE_STORAGE_KEY,
-} from "../workspace.store";
+import { useWorkspaceStore, ACTIVE_WORKSPACE_STORAGE_KEY } from "../workspace.store";
 import { workspaceApi } from "@/apis/workspace.api";
 import { ApiError } from "@/apis/client";
 import { useAuthStore } from "@/stores/auth.store";
@@ -121,9 +118,9 @@ describe("useWorkspaceStore Suite", () => {
         new ApiError("Không thể tải workspace", "WORKSPACE_LIST_FAILED", 400)
       );
 
-      await expect(
-        useWorkspaceStore.getState().fetchWorkspaces()
-      ).rejects.toThrow("Không thể tải workspace");
+      await expect(useWorkspaceStore.getState().fetchWorkspaces()).rejects.toThrow(
+        "Không thể tải workspace"
+      );
 
       const state = useWorkspaceStore.getState();
       expect(state.isLoading).toBe(false);
@@ -197,6 +194,25 @@ describe("useWorkspaceStore Suite", () => {
     });
   });
 
+  describe("leaveWorkspace", () => {
+    it("removes the membership from local state and selects another Workspace", async () => {
+      vi.spyOn(workspaceApi, "leaveWorkspace").mockResolvedValueOnce();
+      useWorkspaceStore.setState({
+        workspaces: [mockActiveWs, mockArchivedWs],
+        activeWorkspaceId: mockActiveWs.id,
+        isInitialized: true,
+      });
+      localStorage.setItem(ACTIVE_WORKSPACE_STORAGE_KEY, mockActiveWs.id);
+
+      await useWorkspaceStore.getState().leaveWorkspace(mockActiveWs.id);
+
+      expect(workspaceApi.leaveWorkspace).toHaveBeenCalledWith(mockActiveWs.id);
+      expect(useWorkspaceStore.getState().workspaces).toEqual([mockArchivedWs]);
+      expect(useWorkspaceStore.getState().activeWorkspaceId).toBe(mockArchivedWs.id);
+      expect(localStorage.getItem(ACTIVE_WORKSPACE_STORAGE_KEY)).toBe(mockArchivedWs.id);
+    });
+  });
+
   describe("archiveWorkspace & unarchiveWorkspace", () => {
     it("updates workspace status in store on archive", async () => {
       vi.spyOn(workspaceApi, "listWorkspaces").mockResolvedValueOnce({
@@ -209,9 +225,7 @@ describe("useWorkspaceStore Suite", () => {
 
       await useWorkspaceStore.getState().archiveWorkspace("ws-1");
 
-      const target = useWorkspaceStore
-        .getState()
-        .workspaces.find((w) => w.id === "ws-1");
+      const target = useWorkspaceStore.getState().workspaces.find((w) => w.id === "ws-1");
       expect(target?.status).toBe("archived");
     });
 
@@ -226,9 +240,7 @@ describe("useWorkspaceStore Suite", () => {
 
       await useWorkspaceStore.getState().unarchiveWorkspace("ws-2");
 
-      const target = useWorkspaceStore
-        .getState()
-        .workspaces.find((w) => w.id === "ws-2");
+      const target = useWorkspaceStore.getState().workspaces.find((w) => w.id === "ws-2");
       expect(target?.status).toBe("active");
     });
   });

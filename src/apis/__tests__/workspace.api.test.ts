@@ -475,10 +475,9 @@ describe("workspaceApi Suite", () => {
       await expect(
         workspaceApi.inviteWorkspaceMember("ws-uuid-1", { email: invitation.email })
       ).resolves.toEqual(invitation);
-      expect(apiClient.post).toHaveBeenCalledWith(
-        "/workspaces/ws-uuid-1/invitations",
-        { email: invitation.email }
-      );
+      expect(apiClient.post).toHaveBeenCalledWith("/workspaces/ws-uuid-1/invitations", {
+        email: invitation.email,
+      });
     });
 
     it("lists and cancels workspace invitations using their documented routes", async () => {
@@ -489,7 +488,9 @@ describe("workspaceApi Suite", () => {
         data: { success: true, data: { ...invitation, status: "CANCELED" } },
       });
 
-      await expect(workspaceApi.listWorkspaceInvitations("ws-uuid-1")).resolves.toEqual([invitation]);
+      await expect(workspaceApi.listWorkspaceInvitations("ws-uuid-1")).resolves.toEqual([
+        invitation,
+      ]);
       await workspaceApi.cancelWorkspaceInvitation("ws-uuid-1", "invitation-1");
       expect(apiClient.get).toHaveBeenCalledWith("/workspaces/ws-uuid-1/invitations");
       expect(apiClient.delete).toHaveBeenCalledWith(
@@ -521,10 +522,19 @@ describe("workspaceApi Suite", () => {
       await workspaceApi.removeWorkspaceMember("ws-uuid-1", "user-2");
       await workspaceApi.transferWorkspaceOwner("ws-uuid-1", "user-2");
       expect(apiClient.delete).toHaveBeenCalledWith("/workspaces/ws-uuid-1/members/user-2");
-      expect(apiClient.patch).toHaveBeenCalledWith(
-        "/workspaces/ws-uuid-1/members/user-2",
-        { role: "OWNER" }
-      );
+      expect(apiClient.patch).toHaveBeenCalledWith("/workspaces/ws-uuid-1/members/user-2", {
+        role: "OWNER",
+      });
+    });
+
+    it("lets the current user leave a Workspace through the self-service endpoint", async () => {
+      vi.spyOn(apiClient, "post").mockResolvedValueOnce({
+        data: { success: true, data: {} },
+      });
+
+      await workspaceApi.leaveWorkspace("ws-uuid-1");
+
+      expect(apiClient.post).toHaveBeenCalledWith("/workspaces/ws-uuid-1/leave");
     });
   });
 
@@ -537,4 +547,3 @@ describe("workspaceApi Suite", () => {
     });
   });
 });
-

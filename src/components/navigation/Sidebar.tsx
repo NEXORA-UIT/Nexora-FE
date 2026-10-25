@@ -6,12 +6,12 @@ import {
   Calendar,
   ChevronDown,
   ChevronRight,
-  Kanban,
   BookOpen,
   Sparkles,
   Settings,
   HelpCircle,
   FolderKanban,
+  LayoutDashboard,
   Plus,
   StickyNote,
 } from "lucide-react";
@@ -66,18 +66,17 @@ export const Sidebar: React.FC = () => {
   };
 
   const isHomeActive = location.pathname === ROUTES.HOME;
-  const isBoardsActive = location.pathname === ROUTES.BOARDS;
+  const isWorkspaceOverviewActive = location.pathname === ROUTES.BOARDS;
   const isMyTasksActive = location.pathname === ROUTES.MY_TASKS;
   const isCalendarActive = location.pathname === ROUTES.CALENDAR;
   const isQuickNotesActive = location.pathname === ROUTES.QUICK_NOTES;
   const isKnowledgeActive = location.pathname === ROUTES.KNOWLEDGE_BASE;
   const isHelpActive = location.pathname === ROUTES.HELP;
   const isSettingsActive =
-    location.pathname === ROUTES.SETTINGS ||
-    location.pathname === ROUTES.PROFILE;
+    location.pathname === ROUTES.SETTINGS || location.pathname === ROUTES.PROFILE;
 
   return (
-    <aside className="hidden md:flex h-[calc(100vh-3.5rem)] w-56 flex-col justify-between border-r border-neutral-200 bg-white px-3 py-4 select-none shrink-0 overflow-y-auto">
+    <aside className="hidden h-[calc(100vh-3.5rem)] w-56 shrink-0 select-none flex-col justify-between overflow-y-auto border-r border-neutral-200 bg-white px-3 py-4 md:flex">
       {/* Top Navigation Sections */}
       <div className="space-y-6">
         {/* Section 1: MENU */}
@@ -91,29 +90,51 @@ export const Sidebar: React.FC = () => {
               className={cn(
                 "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs transition-colors",
                 isHomeActive
-                  ? "bg-primary-50 font-semibold text-primary-700"
+                  ? "text-primary-700 bg-primary-50 font-semibold"
                   : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
               )}
             >
-              <Home className={cn("h-4 w-4", isHomeActive ? "text-primary-600" : "text-neutral-500")} />
+              <Home
+                className={cn("h-4 w-4", isHomeActive ? "text-primary-600" : "text-neutral-500")}
+              />
               <span>Home</span>
             </Link>
 
             <Link
               to={ROUTES.MY_TASKS}
-              className={cn("flex items-center justify-between rounded-lg px-2.5 py-2 text-xs transition-colors", isMyTasksActive ? "bg-primary-50 font-semibold text-primary-700" : "font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900")}
+              className={cn(
+                "flex items-center justify-between rounded-lg px-2.5 py-2 text-xs transition-colors",
+                isMyTasksActive
+                  ? "text-primary-700 bg-primary-50 font-semibold"
+                  : "font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+              )}
             >
               <div className="flex items-center gap-2.5">
-                <CheckCircle2 className={cn("h-4 w-4", isMyTasksActive ? "text-primary-600" : "text-neutral-500")} />
+                <CheckCircle2
+                  className={cn(
+                    "h-4 w-4",
+                    isMyTasksActive ? "text-primary-600" : "text-neutral-500"
+                  )}
+                />
                 <span>My Tasks</span>
               </div>
             </Link>
 
             <Link
               to={ROUTES.CALENDAR}
-              className={cn("flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs transition-colors", isCalendarActive ? "bg-primary-50 font-semibold text-primary-700" : "font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900")}
+              className={cn(
+                "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs transition-colors",
+                isCalendarActive
+                  ? "text-primary-700 bg-primary-50 font-semibold"
+                  : "font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+              )}
             >
-              <Calendar className={cn("h-4 w-4", isCalendarActive ? "text-primary-600" : "text-neutral-500")} />
+              <Calendar
+                className={cn(
+                  "h-4 w-4",
+                  isCalendarActive ? "text-primary-600" : "text-neutral-500"
+                )}
+              />
               <span>Calendar</span>
             </Link>
           </nav>
@@ -131,9 +152,7 @@ export const Sidebar: React.FC = () => {
                 <div className="h-6 w-3/4 animate-pulse rounded-md bg-neutral-100" />
               </div>
             ) : workspaces.length === 0 ? (
-              <div className="px-2.5 py-1 text-[11px] text-neutral-400">
-                No workspaces found
-              </div>
+              <div className="px-2.5 py-1 text-[11px] text-neutral-400">No workspaces found</div>
             ) : (
               workspaces.map((ws) => {
                 const isActive = ws.id === activeWorkspaceId;
@@ -154,7 +173,7 @@ export const Sidebar: React.FC = () => {
                       className={cn(
                         "flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors",
                         isActive
-                          ? "bg-neutral-100 text-neutral-900 font-bold"
+                          ? "bg-neutral-100 font-bold text-neutral-900"
                           : "text-neutral-700 hover:bg-neutral-50"
                       )}
                       title={ws.name}
@@ -181,7 +200,7 @@ export const Sidebar: React.FC = () => {
                     </button>
 
                     {isExpanded && (
-                      <div className="mt-1 pl-4 space-y-0.5">
+                      <div className="mt-1 space-y-0.5 pl-4">
                         <Link
                           to={ROUTES.BOARDS}
                           onClick={() => {
@@ -191,20 +210,20 @@ export const Sidebar: React.FC = () => {
                           }}
                           className={cn(
                             "flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors",
-                            isActive && isBoardsActive
-                              ? "bg-primary-50 font-semibold text-primary-700"
+                            isActive && isWorkspaceOverviewActive
+                              ? "text-primary-700 bg-primary-50 font-semibold"
                               : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
                           )}
                         >
-                          <Kanban
+                          <LayoutDashboard
                             className={cn(
                               "h-3.5 w-3.5",
-                              isActive && isBoardsActive
+                              isActive && isWorkspaceOverviewActive
                                 ? "text-primary-600"
                                 : "text-neutral-400"
                             )}
                           />
-                          <span>Boards</span>
+                          <span>Overview</span>
                         </Link>
                       </div>
                     )}
@@ -217,7 +236,7 @@ export const Sidebar: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsCreateOpen(true)}
-              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
             >
               <Plus className="h-3.5 w-3.5 text-neutral-400" />
               <span>Add Workspace</span>
@@ -243,26 +262,51 @@ export const Sidebar: React.FC = () => {
           <nav className="mt-2 space-y-1">
             <Link
               to={ROUTES.QUICK_NOTES}
-              className={cn("flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs transition-colors", isQuickNotesActive ? "bg-primary-50 font-semibold text-primary-700" : "font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900")}
+              className={cn(
+                "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs transition-colors",
+                isQuickNotesActive
+                  ? "text-primary-700 bg-primary-50 font-semibold"
+                  : "font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+              )}
             >
-              <StickyNote className={cn("h-4 w-4", isQuickNotesActive ? "text-primary-600" : "text-neutral-500")} />
+              <StickyNote
+                className={cn(
+                  "h-4 w-4",
+                  isQuickNotesActive ? "text-primary-600" : "text-neutral-500"
+                )}
+              />
               <span>Quick Notes</span>
             </Link>
             <Link
               to={ROUTES.KNOWLEDGE_BASE}
-              className={cn("flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs transition-colors", isKnowledgeActive ? "bg-primary-50 font-semibold text-primary-700" : "font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900")}
+              className={cn(
+                "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs transition-colors",
+                isKnowledgeActive
+                  ? "text-primary-700 bg-primary-50 font-semibold"
+                  : "font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+              )}
             >
-              <BookOpen className={cn("h-4 w-4", isKnowledgeActive ? "text-primary-600" : "text-neutral-500")} />
+              <BookOpen
+                className={cn(
+                  "h-4 w-4",
+                  isKnowledgeActive ? "text-primary-600" : "text-neutral-500"
+                )}
+              />
               <span>Knowledge Base</span>
             </Link>
 
             <Link
               to={ROUTES.AI_ASSISTANT}
               aria-label="AI Assistant, not implemented"
-              className="flex items-center justify-between gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 transition-colors"
+              className="flex items-center justify-between gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
             >
-              <span className="flex items-center gap-2.5"><Sparkles className="h-4 w-4 text-neutral-400" /><span>AI Assistant</span></span>
-              <span className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[9px] font-semibold text-neutral-500">Not ready</span>
+              <span className="flex items-center gap-2.5">
+                <Sparkles className="h-4 w-4 text-neutral-400" />
+                <span>AI Assistant</span>
+              </span>
+              <span className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[9px] font-semibold text-neutral-500">
+                Not ready
+              </span>
             </Link>
           </nav>
         </div>
@@ -279,23 +323,27 @@ export const Sidebar: React.FC = () => {
             className={cn(
               "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs transition-colors",
               isSettingsActive
-                ? "bg-primary-600 font-medium text-white shadow-xs"
+                ? "shadow-xs bg-primary-600 font-medium text-white"
                 : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
             )}
           >
             <Settings
-              className={cn(
-                "h-4 w-4",
-                isSettingsActive ? "text-white" : "text-neutral-500"
-              )}
+              className={cn("h-4 w-4", isSettingsActive ? "text-white" : "text-neutral-500")}
             />
             <span>Settings</span>
           </Link>
           <Link
             to={ROUTES.HELP}
-            className={cn("flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs transition-colors", isHelpActive ? "bg-primary-50 font-semibold text-primary-700" : "font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900")}
+            className={cn(
+              "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs transition-colors",
+              isHelpActive
+                ? "text-primary-700 bg-primary-50 font-semibold"
+                : "font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+            )}
           >
-            <HelpCircle className={cn("h-4 w-4", isHelpActive ? "text-primary-600" : "text-neutral-500")} />
+            <HelpCircle
+              className={cn("h-4 w-4", isHelpActive ? "text-primary-600" : "text-neutral-500")}
+            />
             <span>Help & Docs</span>
           </Link>
         </nav>

@@ -19,7 +19,10 @@ import type {
 export type { ListWorkspacesResponse };
 
 export const MAX_WORKSPACE_MEMBERS_CACHE_ENTRIES = 50;
-const workspaceMembersCache = new Map<string, { timestamp: number; data: ListWorkspaceMembersResponse }>();
+const workspaceMembersCache = new Map<
+  string,
+  { timestamp: number; data: ListWorkspaceMembersResponse }
+>();
 const CACHE_TTL_MS = 60 * 1000; // 1 minute TTL
 
 export function clearWorkspaceMembersCache(): void {
@@ -51,9 +54,7 @@ export const workspaceApi = {
       },
     });
 
-    const items = (response.data.data || []).map((dto) =>
-      mapWorkspaceDtoToDomain(dto)
-    );
+    const items = (response.data.data || []).map((dto) => mapWorkspaceDtoToDomain(dto));
 
     return {
       items,
@@ -66,9 +67,7 @@ export const workspaceApi = {
    * GET /api/v1/workspaces/:id
    */
   async getWorkspace(id: string): Promise<Workspace> {
-    const response = await apiClient.get<ApiSuccessResponse<WorkspaceDto>>(
-      `/workspaces/${id}`
-    );
+    const response = await apiClient.get<ApiSuccessResponse<WorkspaceDto>>(`/workspaces/${id}`);
     return mapWorkspaceDtoToDomain(response.data.data);
   },
 
@@ -77,10 +76,7 @@ export const workspaceApi = {
    * POST /api/v1/workspaces
    */
   async createWorkspace(data: CreateWorkspaceRequest): Promise<Workspace> {
-    const response = await apiClient.post<ApiSuccessResponse<WorkspaceDto>>(
-      "/workspaces",
-      data
-    );
+    const response = await apiClient.post<ApiSuccessResponse<WorkspaceDto>>("/workspaces", data);
     return mapWorkspaceDtoToDomain(response.data.data);
   },
 
@@ -88,10 +84,7 @@ export const workspaceApi = {
    * Updates existing workspace metadata (Owner only)
    * PATCH /api/v1/workspaces/:id
    */
-  async updateWorkspace(
-    id: string,
-    data: UpdateWorkspaceRequest
-  ): Promise<Workspace> {
+  async updateWorkspace(id: string, data: UpdateWorkspaceRequest): Promise<Workspace> {
     const response = await apiClient.patch<ApiSuccessResponse<WorkspaceDto>>(
       `/workspaces/${id}`,
       data
@@ -230,6 +223,13 @@ export const workspaceApi = {
     clearWorkspaceMembersCache();
   },
 
+  async leaveWorkspace(workspaceId: string): Promise<void> {
+    await apiClient.post<ApiSuccessResponse<Record<string, never>>>(
+      `/workspaces/${workspaceId}/leave`
+    );
+    clearWorkspaceMembersCache();
+  },
+
   async transferWorkspaceOwner(
     workspaceId: string,
     userId: string,
@@ -242,4 +242,3 @@ export const workspaceApi = {
     clearWorkspaceMembersCache();
   },
 };
-

@@ -31,6 +31,9 @@ export interface WorkspaceHeaderProps {
   onMoreActionsClick?: () => void;
   onArchiveClick?: () => void;
   onRestoreClick?: () => void;
+  canLeaveWorkspace?: boolean;
+  leaveWorkspaceDisabledReason?: string;
+  onLeaveClick?: () => void;
 }
 
 export type WorkspaceTabId = "overview" | "boards" | "members" | "settings";

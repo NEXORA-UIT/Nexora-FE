@@ -11,6 +11,7 @@ const ERROR_MESSAGES_BY_CODE: Record<string, string> = {
   EMAIL_ALREADY_EXISTS: "An account with this email already exists.",
   VERIFIED_EMAIL_REQUIRED: "Verify your email before continuing.",
   ACCOUNT_LINK_REQUIRED: "Sign in to the existing account to link this provider.",
+  WORKSPACE_PM_TRANSFER_REQUIRED: "Transfer Board PM responsibility before leaving this Workspace.",
 };
 
 const ERROR_MESSAGES_BY_STATUS: Record<number, string> = {
@@ -28,10 +29,7 @@ const isApiErrorLike = (error: unknown): error is ApiErrorLike => {
   return typeof candidate.code === "string" && typeof candidate.status === "number";
 };
 
-export const getUserFacingApiError = (
-  error: unknown,
-  fallback: string
-): string => {
+export const getUserFacingApiError = (error: unknown, fallback: string): string => {
   if (!isApiErrorLike(error)) return fallback;
 
   const knownMessage = ERROR_MESSAGES_BY_CODE[error.code];

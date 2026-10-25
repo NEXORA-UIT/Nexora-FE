@@ -111,9 +111,7 @@ describe("boardApi Suite", () => {
       const apiError = new ApiError("Workspace not found", "NOT_FOUND", 404);
       vi.spyOn(apiClient, "get").mockRejectedValueOnce(apiError);
 
-      await expect(boardApi.getBoards("ws-uuid-not-found")).rejects.toThrow(
-        apiError
-      );
+      await expect(boardApi.getBoards("ws-uuid-not-found")).rejects.toThrow(apiError);
     });
   });
 
@@ -142,9 +140,7 @@ describe("boardApi Suite", () => {
       const apiError = new ApiError("Board not found", "NOT_FOUND", 404);
       vi.spyOn(apiClient, "get").mockRejectedValueOnce(apiError);
 
-      await expect(boardApi.getBoard("non-existent-board")).rejects.toThrow(
-        apiError
-      );
+      await expect(boardApi.getBoard("non-existent-board")).rejects.toThrow(apiError);
     });
   });
 
@@ -200,9 +196,7 @@ describe("boardApi Suite", () => {
       const apiError = new ApiError("Forbidden", "FORBIDDEN", 403);
       vi.spyOn(apiClient, "get").mockRejectedValueOnce(apiError);
 
-      await expect(boardApi.getBoardMembers("board-uuid-1")).rejects.toThrow(
-        apiError
-      );
+      await expect(boardApi.getBoardMembers("board-uuid-1")).rejects.toThrow(apiError);
     });
   });
 
@@ -239,6 +233,16 @@ describe("boardApi Suite", () => {
       await boardApi.removeBoardMember("board-uuid-1", "user-uuid-1");
       expect(apiClient.delete).toHaveBeenCalledWith("/boards/board-uuid-1/members/user-uuid-1");
     });
+
+    it("lets the current member leave their Board", async () => {
+      vi.spyOn(apiClient, "post").mockResolvedValueOnce({
+        data: { success: true, data: {} },
+      });
+
+      await boardApi.leaveBoard("board-uuid-1");
+
+      expect(apiClient.post).toHaveBeenCalledWith("/boards/board-uuid-1/leave");
+    });
   });
 
   describe("boardApi.createBoard", () => {
@@ -258,13 +262,10 @@ describe("boardApi Suite", () => {
 
       const result = await boardApi.createBoard(input);
 
-      expect(apiClient.post).toHaveBeenCalledWith(
-        "/workspaces/ws-uuid-1/boards",
-        {
-          name: "Engineering Kanban",
-          description: "Core sprint tracking board",
-        }
-      );
+      expect(apiClient.post).toHaveBeenCalledWith("/workspaces/ws-uuid-1/boards", {
+        name: "Engineering Kanban",
+        description: "Core sprint tracking board",
+      });
       expect(result.id).toBe("board-uuid-1");
       expect(result.status).toBe("active");
     });
@@ -283,14 +284,11 @@ describe("boardApi Suite", () => {
         coverColor: "#3B82F6",
       });
 
-      expect(apiClient.post).toHaveBeenCalledWith(
-        "/workspaces/ws-uuid-1/boards",
-        {
-          name: "Engineering Kanban",
-          description: "Core sprint tracking board",
-          coverColor: "#3B82F6",
-        }
-      );
+      expect(apiClient.post).toHaveBeenCalledWith("/workspaces/ws-uuid-1/boards", {
+        name: "Engineering Kanban",
+        description: "Core sprint tracking board",
+        coverColor: "#3B82F6",
+      });
       expect(result.id).toBe("board-uuid-1");
     });
 
@@ -321,10 +319,9 @@ describe("boardApi Suite", () => {
         name: "Updated Kanban Board",
       });
 
-      expect(apiClient.patch).toHaveBeenCalledWith(
-        "/boards/board-uuid-1",
-        { name: "Updated Kanban Board" }
-      );
+      expect(apiClient.patch).toHaveBeenCalledWith("/boards/board-uuid-1", {
+        name: "Updated Kanban Board",
+      });
       expect(result.title).toBe("Updated Kanban Board");
     });
 
@@ -356,9 +353,7 @@ describe("boardApi Suite", () => {
       const apiError = new ApiError("Forbidden", "FORBIDDEN", 403);
       vi.spyOn(apiClient, "patch").mockRejectedValueOnce(apiError);
 
-      await expect(boardApi.archiveBoard("board-uuid-1")).rejects.toThrow(
-        apiError
-      );
+      await expect(boardApi.archiveBoard("board-uuid-1")).rejects.toThrow(apiError);
     });
   });
 
@@ -373,18 +368,14 @@ describe("boardApi Suite", () => {
 
       await boardApi.restoreBoard("board-uuid-2");
 
-      expect(apiClient.patch).toHaveBeenCalledWith(
-        "/boards/board-uuid-2/unarchive"
-      );
+      expect(apiClient.patch).toHaveBeenCalledWith("/boards/board-uuid-2/unarchive");
     });
 
     it("re-throws ApiError when restore fails", async () => {
       const apiError = new ApiError("Workspace is frozen", "WORKSPACE_FROZEN", 403);
       vi.spyOn(apiClient, "patch").mockRejectedValueOnce(apiError);
 
-      await expect(boardApi.restoreBoard("board-uuid-2")).rejects.toThrow(
-        apiError
-      );
+      await expect(boardApi.restoreBoard("board-uuid-2")).rejects.toThrow(apiError);
     });
   });
 
@@ -429,9 +420,9 @@ describe("boardApi Suite", () => {
       );
       vi.spyOn(apiClient, "delete").mockRejectedValueOnce(apiError);
 
-      await expect(
-        boardApi.deleteBoard("board-uuid-1", "Engineering Kanban")
-      ).rejects.toThrow(apiError);
+      await expect(boardApi.deleteBoard("board-uuid-1", "Engineering Kanban")).rejects.toThrow(
+        apiError
+      );
     });
   });
 
@@ -455,9 +446,7 @@ describe("boardApi Suite", () => {
       const apiError = new ApiError("Forbidden", "FORBIDDEN", 403);
       vi.spyOn(apiClient, "patch").mockRejectedValueOnce(apiError);
 
-      await expect(
-        boardApi.assignBoardPm("board-uuid-1", "user-pm-123")
-      ).rejects.toThrow(apiError);
+      await expect(boardApi.assignBoardPm("board-uuid-1", "user-pm-123")).rejects.toThrow(apiError);
     });
   });
 

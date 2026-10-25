@@ -52,4 +52,36 @@ describe("BoardDetailHeader actions", () => {
     fireEvent.click(screen.getByRole("menuitem", { name: "Archive Board" }));
     expect(onArchiveBoard).toHaveBeenCalledOnce();
   });
+
+  it("offers a Board member the option to leave the Board", () => {
+    const onLeaveBoard = vi.fn();
+    render(
+      <MemoryRouter>
+        <BoardDetailHeader board={board} canLeaveBoard onLeaveBoard={onLeaveBoard} />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Board options" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Leave Board" }));
+
+    expect(onLeaveBoard).toHaveBeenCalledOnce();
+  });
+
+  it("explains why the Board PM cannot leave before assigning another PM", () => {
+    render(
+      <MemoryRouter>
+        <BoardDetailHeader
+          board={board}
+          leaveBoardDisabledReason="Assign another PM before leaving this Board."
+        />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Board options" }));
+
+    expect(screen.getByRole("menuitem", { name: /Leave Board/ }).hasAttribute("disabled")).toBe(
+      true
+    );
+    expect(screen.getByText("Assign another PM before leaving this Board.")).toBeTruthy();
+  });
 });

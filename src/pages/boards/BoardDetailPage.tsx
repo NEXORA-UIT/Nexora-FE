@@ -98,7 +98,16 @@ export const BoardDetailPage: React.FC = () => {
   } = useBoardDetail(boardId);
 
   const currentUser = useAuthStore((state) => state.user);
-  const { isWorkspaceOwner } = useWorkspaceOwnership(board?.workspaceId, currentUser?.id);
+  const { isWorkspaceOwner, verifiedOwnerContext } = useWorkspaceOwnership(
+    board?.workspaceId,
+    currentUser?.id
+  );
+  const isOwnerContextVerified = Boolean(
+    board?.workspaceId &&
+    currentUser?.id &&
+    verifiedOwnerContext?.workspaceId === board.workspaceId &&
+    verifiedOwnerContext?.userId === currentUser.id
+  );
   const [backgroundPreset, setBackgroundPreset] =
     React.useState<BoardBackgroundPreset>(DEFAULT_BOARD_BACKGROUND);
 
@@ -142,9 +151,7 @@ export const BoardDetailPage: React.FC = () => {
       setIsSettingsDialogOpen(false);
       toast.success("Board settings saved.");
     } catch (cause) {
-      throw new Error(
-        cause instanceof Error ? cause.message : "Could not save Board settings."
-      );
+      throw new Error(cause instanceof Error ? cause.message : "Could not save Board settings.");
     } finally {
       setIsSavingBoard(false);
     }
@@ -167,11 +174,35 @@ export const BoardDetailPage: React.FC = () => {
         navigate(ROUTES.BOARDS);
       }
     } catch (cause) {
-      toast.error(
-        cause instanceof Error ? cause.message : `Could not ${action} the Board.`
-      );
+      toast.error(cause instanceof Error ? cause.message : `Could not ${action} the Board.`);
     }
   };
+
+  const handleLeaveBoard = async () => {
+    if (!board || isWorkspaceOwner || currentUserRole !== "MEMBER") return;
+    const confirmed = window.confirm(
+      `Leave "${board.name}"? Your assignments on this Board will be removed.`
+    );
+    if (!confirmed) return;
+
+    try {
+      await boardApi.leaveBoard(board.id);
+      toast.success(`You left "${board.name}".`);
+      navigate(ROUTES.BOARDS);
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "Could not leave this Board.");
+    }
+  };
+
+  const leaveBoardDisabledReason = !isOwnerContextVerified
+    ? undefined
+    : isWorkspaceOwner
+      ? "Workspace Owners have access to every Board."
+      : currentUserRole === "PM"
+        ? "Assign another PM before leaving this Board."
+        : board?.status === "ARCHIVED"
+          ? "Archived Boards cannot be left."
+          : undefined;
 
   const handleFilterClick = () => {
     toast.info("Filter panel toggled");
@@ -223,9 +254,17 @@ export const BoardDetailPage: React.FC = () => {
             board={board}
             realtimeConnected={realtimeConnected}
             canManageBoard={canManageBoard}
+            canLeaveBoard={
+              isOwnerContextVerified &&
+              currentUserRole === "MEMBER" &&
+              !isWorkspaceOwner &&
+              board.status === "ACTIVE"
+            }
+            leaveBoardDisabledReason={leaveBoardDisabledReason}
             onManageMembers={() => setIsMembersDialogOpen(true)}
             onEditBoard={() => setIsSettingsDialogOpen(true)}
             onArchiveBoard={() => void handleArchiveOrRestoreBoard()}
+            onLeaveBoard={() => void handleLeaveBoard()}
           />
 
           {/* Toolbar */}

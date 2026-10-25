@@ -55,7 +55,7 @@ describe("app navigation", () => {
   it("links each product area to its real route and marks AI unavailable", () => {
     renderNavigation();
 
-    expect(screen.getByRole("link", { name: "Boards" }).getAttribute("href")).toBe("/boards");
+    expect(screen.getByRole("link", { name: "Overview" }).getAttribute("href")).toBe("/boards");
     expect(screen.getByRole("link", { name: "My Tasks" }).getAttribute("href")).toBe("/tasks");
     expect(screen.getByRole("link", { name: "Calendar" }).getAttribute("href")).toBe("/calendar");
     expect(screen.getByRole("link", { name: "Quick Notes" }).getAttribute("href")).toBe(

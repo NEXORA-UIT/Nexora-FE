@@ -2,11 +2,7 @@ import { create } from "zustand";
 import { workspaceApi } from "@/apis/workspace.api";
 import { getUserFacingApiError } from "@/utils/api-error-message";
 import { useAuthStore } from "@/stores/auth.store";
-import type {
-  Workspace,
-  CreateWorkspaceRequest,
-  UpdateWorkspaceRequest,
-} from "@/types";
+import type { Workspace, CreateWorkspaceRequest, UpdateWorkspaceRequest } from "@/types";
 
 export const ACTIVE_WORKSPACE_STORAGE_KEY = "nexora_active_workspace_id";
 
@@ -25,6 +21,7 @@ export interface WorkspaceStoreState {
   setActiveWorkspaceId: (id: string) => void;
   createWorkspace: (input: CreateWorkspaceRequest) => Promise<Workspace>;
   updateWorkspace: (id: string, input: UpdateWorkspaceRequest) => Promise<Workspace>;
+  leaveWorkspace: (id: string) => Promise<void>;
   archiveWorkspace: (id: string) => Promise<Workspace>;
   unarchiveWorkspace: (id: string) => Promise<Workspace>;
   resetWorkspaceState: () => void;
@@ -64,9 +61,7 @@ export const useWorkspaceStore = create<WorkspaceStoreState>((set, get) => ({
         const list = response.items;
 
         const storedId =
-          typeof window !== "undefined"
-            ? localStorage.getItem(ACTIVE_WORKSPACE_STORAGE_KEY)
-            : null;
+          typeof window !== "undefined" ? localStorage.getItem(ACTIVE_WORKSPACE_STORAGE_KEY) : null;
 
         let resolvedId: string | null = null;
 
@@ -156,6 +151,29 @@ export const useWorkspaceStore = create<WorkspaceStoreState>((set, get) => ({
       workspaces: state.workspaces.map((w) => (w.id === id ? updated : w)),
     }));
     return updated;
+  },
+
+  leaveWorkspace: async (id: string) => {
+    await workspaceApi.leaveWorkspace(id);
+    set((state) => {
+      const workspaces = state.workspaces.filter((workspace) => workspace.id !== id);
+      const activeWorkspaceId =
+        state.activeWorkspaceId === id
+          ? (workspaces.find((workspace) => workspace.status === "active")?.id ??
+            workspaces[0]?.id ??
+            null)
+          : state.activeWorkspaceId;
+
+      if (typeof window !== "undefined") {
+        if (activeWorkspaceId) {
+          localStorage.setItem(ACTIVE_WORKSPACE_STORAGE_KEY, activeWorkspaceId);
+        } else {
+          localStorage.removeItem(ACTIVE_WORKSPACE_STORAGE_KEY);
+        }
+      }
+
+      return { workspaces, activeWorkspaceId };
+    });
   },
 
   archiveWorkspace: async (id: string) => {

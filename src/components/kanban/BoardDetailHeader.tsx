@@ -10,9 +10,12 @@ export interface BoardDetailHeaderProps {
   realtimeConnected?: boolean;
   workspaceName?: string;
   canManageBoard?: boolean;
+  canLeaveBoard?: boolean;
+  leaveBoardDisabledReason?: string;
   onManageMembers?: () => void;
   onEditBoard?: () => void;
   onArchiveBoard?: () => void;
+  onLeaveBoard?: () => void;
 }
 
 export const BoardDetailHeader: React.FC<BoardDetailHeaderProps> = ({
@@ -20,9 +23,12 @@ export const BoardDetailHeader: React.FC<BoardDetailHeaderProps> = ({
   realtimeConnected,
   workspaceName = "Workspace",
   canManageBoard = false,
+  canLeaveBoard = false,
+  leaveBoardDisabledReason,
   onManageMembers,
   onEditBoard,
   onArchiveBoard,
+  onLeaveBoard,
 }) => {
   const [isOptionsOpen, setIsOptionsOpen] = React.useState(false);
   const members = board.members || [];
@@ -161,7 +167,26 @@ export const BoardDetailHeader: React.FC<BoardDetailHeaderProps> = ({
                     {board.status === "ACTIVE" ? "Archive Board" : "Restore Board"}
                   </button>
                 )}
-                {!canManageBoard && (
+                {(canLeaveBoard || leaveBoardDisabledReason) && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={Boolean(leaveBoardDisabledReason)}
+                    onClick={() => {
+                      setIsOptionsOpen(false);
+                      onLeaveBoard?.();
+                    }}
+                    className="text-error-700 w-full rounded-lg px-3 py-2 text-left text-xs font-medium hover:bg-error-50 disabled:cursor-not-allowed disabled:text-neutral-400 disabled:hover:bg-transparent"
+                  >
+                    Leave Board
+                  </button>
+                )}
+                {leaveBoardDisabledReason && (
+                  <p className="px-3 pb-2 text-[11px] leading-relaxed text-neutral-500">
+                    {leaveBoardDisabledReason}
+                  </p>
+                )}
+                {!canManageBoard && !canLeaveBoard && !leaveBoardDisabledReason && (
                   <p className="px-3 py-2 text-xs text-neutral-500">
                     Board settings are available to the Workspace Owner and Board PM.
                   </p>

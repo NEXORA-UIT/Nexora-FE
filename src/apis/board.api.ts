@@ -27,10 +27,7 @@ export const boardApi = {
    * Retrieves all boards in a given workspace
    * GET /api/v1/workspaces/:workspaceId/boards
    */
-  async getBoards(
-    workspaceId: string,
-    options?: ListBoardsQuery
-  ): Promise<Board[]> {
+  async getBoards(workspaceId: string, options?: ListBoardsQuery): Promise<Board[]> {
     const params: Record<string, string> = {};
     if (options?.includeArchived !== undefined) {
       params.includeArchived = options.includeArchived ? "true" : "false";
@@ -51,9 +48,7 @@ export const boardApi = {
    * GET /api/v1/boards/:id
    */
   async getBoard(boardId: string): Promise<Board> {
-    const response = await apiClient.get<ApiSuccessResponse<BoardDto>>(
-      `/boards/${boardId}`
-    );
+    const response = await apiClient.get<ApiSuccessResponse<BoardDto>>(`/boards/${boardId}`);
 
     return mapBoardDtoToBoard(response.data.data);
   },
@@ -73,15 +68,19 @@ export const boardApi = {
   async addBoardMember(boardId: string, payload: AddBoardMemberRequest): Promise<BoardMember> {
     const response = await apiClient.post<ApiSuccessResponse<BoardMemberDto>>(
       `/boards/${boardId}/members`,
-      payload,
+      payload
     );
     return mapBoardMemberDtoToBoardMember(response.data.data);
   },
 
   async removeBoardMember(boardId: string, userId: string): Promise<void> {
     await apiClient.delete<ApiSuccessResponse<Record<string, never>>>(
-      `/boards/${boardId}/members/${userId}`,
+      `/boards/${boardId}/members/${userId}`
     );
+  },
+
+  async leaveBoard(boardId: string): Promise<void> {
+    await apiClient.post<ApiSuccessResponse<Record<string, never>>>(`/boards/${boardId}/leave`);
   },
 
   /**
@@ -147,10 +146,7 @@ export const boardApi = {
    * Updates board metadata (Workspace Owner or Board PM only)
    * PATCH /api/v1/boards/:id
    */
-  async updateBoard(
-    boardId: string,
-    data: UpdateBoardRequest
-  ): Promise<Board> {
+  async updateBoard(boardId: string, data: UpdateBoardRequest): Promise<Board> {
     const cleanBody: UpdateBoardRequest = {};
     if (data.name !== undefined) {
       cleanBody.name = data.name.trim();
@@ -178,9 +174,7 @@ export const boardApi = {
    * PATCH /api/v1/boards/:id/archive
    */
   async archiveBoard(boardId: string): Promise<void> {
-    await apiClient.patch<ApiSuccessResponse<Record<string, never>>>(
-      `/boards/${boardId}/archive`
-    );
+    await apiClient.patch<ApiSuccessResponse<Record<string, never>>>(`/boards/${boardId}/archive`);
   },
 
   /**
@@ -202,33 +196,21 @@ export const boardApi = {
     confirmation: string | ConfirmDeleteBoardRequest
   ): Promise<void> {
     const body: ConfirmDeleteBoardRequest =
-      typeof confirmation === "string"
-        ? { confirmationName: confirmation }
-        : confirmation;
+      typeof confirmation === "string" ? { confirmationName: confirmation } : confirmation;
 
-    await apiClient.delete<ApiSuccessResponse<Record<string, never>>>(
-      `/boards/${boardId}`,
-      {
-        data: body,
-      }
-    );
+    await apiClient.delete<ApiSuccessResponse<Record<string, never>>>(`/boards/${boardId}`, {
+      data: body,
+    });
   },
 
   /**
    * Assigns or changes Project Manager (PM) for a board (Workspace Owner only)
    * PATCH /api/v1/boards/:id/pm
    */
-  async assignBoardPm(
-    boardId: string,
-    payload: string | AssignBoardPmRequest
-  ): Promise<void> {
-    const body: AssignBoardPmRequest =
-      typeof payload === "string" ? { pmId: payload } : payload;
+  async assignBoardPm(boardId: string, payload: string | AssignBoardPmRequest): Promise<void> {
+    const body: AssignBoardPmRequest = typeof payload === "string" ? { pmId: payload } : payload;
 
-    await apiClient.patch<ApiSuccessResponse<Record<string, never>>>(
-      `/boards/${boardId}/pm`,
-      body
-    );
+    await apiClient.patch<ApiSuccessResponse<Record<string, never>>>(`/boards/${boardId}/pm`, body);
   },
 
   /**
