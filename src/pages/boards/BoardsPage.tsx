@@ -266,7 +266,11 @@ export const BoardsPage: React.FC = () => {
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
+                  <div
+                    role="group"
+                    aria-label="Active boards"
+                    className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:gap-5 xl:grid-cols-3"
+                  >
                     {filteredActiveBoards.map((board) => (
                       <BoardCard
                         key={board.id}
@@ -275,6 +279,23 @@ export const BoardsPage: React.FC = () => {
                         onClick={(b) => navigate(getBoardDetailRoute(b.id))}
                       />
                     ))}
+                    {!isArchived && (
+                      <button
+                        type="button"
+                        onClick={() => setIsCreateOpen(true)}
+                        className="focus-visible:outline-hidden group flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-50/70 p-6 text-center transition-colors hover:border-primary-300 hover:bg-primary-50/50 focus-visible:ring-2 focus-visible:ring-primary-500"
+                      >
+                        <span className="shadow-xs group-hover:text-primary-600 flex h-11 w-11 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-500 transition-colors group-hover:border-primary-200">
+                          <Plus className="h-5 w-5" aria-hidden="true" />
+                        </span>
+                        <span className="mt-3 text-sm font-semibold text-neutral-800">
+                          Create a Board
+                        </span>
+                        <span className="mt-1 max-w-48 text-xs text-neutral-500">
+                          Start planning work with your team.
+                        </span>
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -292,7 +313,7 @@ export const BoardsPage: React.FC = () => {
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:gap-5 xl:grid-cols-3">
                     {filteredArchivedBoards.map((board) => (
                       <ArchivedBoardCard
                         key={board.id}
