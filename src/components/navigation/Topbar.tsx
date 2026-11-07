@@ -1,12 +1,13 @@
 import * as React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Sparkles, ChevronDown, Layers, LogOut } from "lucide-react";
+import { Plus, Sparkles, ChevronDown, Layers, LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/constants/routes";
 import { useAuthStore } from "@/stores/auth.store";
 import { useWorkspaceStore } from "@/stores/workspace.store";
 import { authApi } from "@/apis/auth.api";
 import { UserMenu } from "./UserMenu";
+import { MobileNavDrawer } from "./MobileNavDrawer";
 import nexoraLogoSrc from "@/assets/logo/logo.png";
 import { NotificationCenter } from "./NotificationCenter";
 import {
@@ -23,6 +24,7 @@ export const Topbar: React.FC = () => {
   const navigate = useNavigate();
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
 
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const activeWorkspace = useWorkspaceStore((state) => state.getActiveWorkspace());
@@ -45,6 +47,14 @@ export const Topbar: React.FC = () => {
     <header className="sticky top-0 z-30 flex h-14 w-full select-none items-center justify-between border-b border-neutral-200 bg-white px-4 sm:px-6">
       {/* Left: Brand Logo & Workspace Selector */}
       <div className="flex min-w-0 items-center gap-2 sm:gap-3.5">
+        <button
+          type="button"
+          onClick={() => setIsDrawerOpen(true)}
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition-colors md:hidden"
+          aria-label="Open navigation menu"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
         <Link to={ROUTES.HOME} className="flex shrink-0 items-center gap-2">
           <img
             src={nexoraLogoSrc}
@@ -165,6 +175,9 @@ export const Topbar: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </DialogRoot>
+
+      {/* Mobile Navigation Drawer */}
+      <MobileNavDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
     </header>
   );
 };

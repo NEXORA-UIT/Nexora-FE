@@ -2,6 +2,7 @@ import * as React from "react";
 import { ArrowRight } from "lucide-react";
 import { GitHubIcon } from "@/components/common/Icons";
 import type { IntegrationItem } from "@/types";
+import { useGSAP, gsap, MOTION_TIMING, isReducedMotion } from "@/lib/motion";
 
 const INTEGRATIONS: IntegrationItem[] = [
   {
@@ -91,11 +92,88 @@ const INTEGRATIONS: IntegrationItem[] = [
 ];
 
 export const LandingEcosystem: React.FC = () => {
+  const sectionRef = React.useRef<HTMLElement | null>(null);
+
+  // ScrollTrigger cascade entrance
+  useGSAP(
+    () => {
+      if (isReducedMotion()) return;
+
+      // Section header entrance
+      gsap.fromTo(
+        ".ecosystem-header",
+        { opacity: 0, y: 22 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.5,
+          ease: MOTION_TIMING.easeEnter,
+          scrollTrigger: {
+            trigger: ".ecosystem-header",
+            start: "top 85%",
+            once: true,
+          },
+        }
+      );
+
+      // Staggered cards cascade
+      gsap.fromTo(
+        ".ecosystem-card",
+        { opacity: 0, y: 26 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.5,
+          stagger: 0.07,
+          ease: MOTION_TIMING.easeEnter,
+          clearProps: "transform,opacity",
+          scrollTrigger: {
+            trigger: ".ecosystem-grid",
+            start: "top 82%",
+            once: true,
+          },
+        }
+      );
+    },
+    { scope: sectionRef }
+  );
+
+  // Subtle 3D perspective mouse tilt handlers
+  const handleMouseMove = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (isReducedMotion()) return;
+    const card = e.currentTarget;
+    const rect = card.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+
+    gsap.to(card, {
+      rotateY: x * 6,
+      rotateX: -y * 6,
+      transformPerspective: 800,
+      duration: 0.25,
+      ease: "power2.out",
+    });
+  };
+
+  const handleMouseLeave = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const card = e.currentTarget;
+    gsap.to(card, {
+      rotateY: 0,
+      rotateX: 0,
+      duration: 0.45,
+      ease: "power2.out",
+    });
+  };
+
   return (
-    <section className="py-20 sm:py-28 bg-neutral-50/50 border-t border-neutral-200">
+    <section
+      ref={sectionRef}
+      id="knowledge"
+      className="py-20 sm:py-28 bg-neutral-50/50 border-t border-neutral-200 select-none"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="max-w-3xl text-left mb-12">
+        <div className="ecosystem-header max-w-3xl text-left mb-12">
           <h2 className="text-3xl font-extrabold tracking-tight text-neutral-900 sm:text-4xl lg:text-5xl">
             Integrates natively with your toolchain
           </h2>
@@ -107,23 +185,25 @@ export const LandingEcosystem: React.FC = () => {
         </div>
 
         {/* 6 Grid Cards */}
-        <div className="mt-14 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="ecosystem-grid mt-14 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {INTEGRATIONS.map((item) => (
             <a
               key={item.name}
               href={item.docsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex flex-col justify-between rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs hover:border-primary-300 hover:shadow-md hover:-translate-y-1 transition-all duration-200 cursor-pointer block no-underline"
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave}
+              className="ecosystem-card group flex flex-col justify-between rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs hover:border-primary-400 hover:shadow-md transition-shadow duration-200 cursor-pointer block no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 will-change-transform"
             >
               <div>
                 <div className="flex items-center justify-between">
                   <div
-                    className={`flex h-11 w-11 items-center justify-center rounded-xl ${item.iconBg} shadow-xs transition-transform duration-200 group-hover:scale-105`}
+                    className={`flex h-11 w-11 items-center justify-center rounded-xl ${item.iconBg} shadow-xs transition-transform duration-200 group-hover:scale-110 ease-out`}
                   >
                     {item.icon}
                   </div>
-                  <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-[11px] font-semibold text-neutral-600 border border-neutral-200">
+                  <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-[11px] font-semibold text-neutral-600 border border-neutral-200 group-hover:border-primary-200 group-hover:text-primary-700 group-hover:bg-primary-50/50 transition-colors">
                     {item.badgeText}
                   </span>
                 </div>

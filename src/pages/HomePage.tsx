@@ -10,11 +10,32 @@ import {
 import { Button } from "@/components/ui/button";
 import { useMyTasks, useWorkspaceBoards } from "@/hooks";
 import { ROUTES } from "@/constants/routes";
+import { useGSAP, gsap, MOTION_TIMING, isReducedMotion } from "@/lib/motion";
 
 export const HomePage: React.FC = () => {
   const taskState = useMyTasks();
   const boardState = useWorkspaceBoards();
   const openTaskCount = taskState.tasks.filter((task) => task.statusGroup !== "DONE").length;
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      if (isReducedMotion() || !boardState.workspace) return;
+      gsap.fromTo(
+        ".dashboard-entrance",
+        { opacity: 0, y: 10 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.3,
+          stagger: 0.05,
+          ease: MOTION_TIMING.easeEnter,
+          clearProps: "transform,opacity",
+        }
+      );
+    },
+    { scope: containerRef, dependencies: [boardState.workspace?.id] }
+  );
 
   if (boardState.isLoading && !boardState.workspace) {
     return <div role="status" className="rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-500">Loading your workspace…</div>;
@@ -46,15 +67,18 @@ export const HomePage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-7">
-      <HomeGreeting
-        workspace={boardState.workspace}
-        boardCount={boardState.boards.length}
-        openTaskCount={openTaskCount}
-        isTaskLoading={taskState.isLoading}
-        taskError={taskState.error}
-      />
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+    <div ref={containerRef} className="space-y-7">
+      <div className="dashboard-entrance">
+        <HomeGreeting
+          workspace={boardState.workspace}
+          boardCount={boardState.boards.length}
+          openTaskCount={openTaskCount}
+          isTaskLoading={taskState.isLoading}
+          taskError={taskState.error}
+        />
+      </div>
+
+      <div className="dashboard-entrance grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
         <div className="lg:col-span-8">
           <MyWorkSection {...taskState} />
         </div>
@@ -67,7 +91,10 @@ export const HomePage: React.FC = () => {
           )}
         </div>
       </div>
-      <ContinueWorkingSection boards={boardState.boards} workspaceName={boardState.workspace.name} />
+
+      <div className="dashboard-entrance">
+        <ContinueWorkingSection boards={boardState.boards} workspaceName={boardState.workspace.name} />
+      </div>
     </div>
   );
 };

@@ -51,7 +51,7 @@ export const BoardDetailHeader: React.FC<BoardDetailHeaderProps> = ({
   const remainingCount = Math.max(0, members.length - 4);
 
   return (
-    <div className="select-none space-y-3 rounded-2xl border border-blue-100 bg-gradient-to-r from-white via-white to-blue-50/80 p-4 shadow-sm sm:p-5">
+    <div className="select-none space-y-3 rounded-2xl border border-neutral-200/80 bg-white p-3.5 shadow-sm sm:p-5">
       {/* 1. Breadcrumb Hierarchy */}
       <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-neutral-500">
         <Link
@@ -94,7 +94,7 @@ export const BoardDetailHeader: React.FC<BoardDetailHeaderProps> = ({
           </div>
 
           {board.description && (
-            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-neutral-500">
+            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-neutral-500 line-clamp-2 sm:line-clamp-none">
               {board.description}
             </p>
           )}

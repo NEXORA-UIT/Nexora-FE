@@ -4,10 +4,50 @@ import { Button } from "@/components/ui/button";
 import { GoogleIcon, GitHubIcon } from "@/components/common/Icons";
 import { MockKanbanBoard } from "./MockKanbanBoard";
 import { ROUTES } from "@/constants/routes";
+import { useGSAP, gsap, MOTION_TIMING, isReducedMotion } from "@/lib/motion";
 
 export const LandingHero: React.FC = () => {
   const navigate = useNavigate();
   const [email, setEmail] = React.useState("");
+  const heroRef = React.useRef<HTMLElement>(null);
+
+  useGSAP(
+    () => {
+      if (isReducedMotion()) return;
+
+      const tl = gsap.timeline({
+        defaults: {
+          ease: MOTION_TIMING.easeEnter,
+          duration: MOTION_TIMING.durationBase,
+        },
+      });
+
+      tl.fromTo(
+        ".hero-headline",
+        { opacity: 0, y: 18 },
+        { opacity: 1, y: 0, duration: 0.45 }
+      )
+        .fromTo(
+          ".hero-subcopy",
+          { opacity: 0, y: 12 },
+          { opacity: 1, y: 0, duration: 0.35 },
+          "-=0.2"
+        )
+        .fromTo(
+          ".hero-form-panel",
+          { opacity: 0, y: 14 },
+          { opacity: 1, y: 0, duration: 0.4 },
+          "-=0.25"
+        )
+        .fromTo(
+          ".hero-mockup-wrapper",
+          { opacity: 0, y: 22 },
+          { opacity: 1, y: 0, duration: 0.5 },
+          "-=0.2"
+        );
+    },
+    { scope: heroRef }
+  );
 
   const handleQuickSignUp = (e: React.FormEvent) => {
     e.preventDefault();
@@ -15,27 +55,29 @@ export const LandingHero: React.FC = () => {
   };
 
   return (
-    <section className="relative overflow-hidden pt-10 pb-16 sm:pt-16 sm:pb-24 lg:pt-20">
+    <section
+      ref={heroRef}
+      className="relative overflow-hidden pt-10 pb-16 sm:pt-16 sm:pb-24 lg:pt-20"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Top Split Header: Headline & Quick Sign-up Card */}
         <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 mb-12 lg:mb-16">
           {/* Left Column (7 cols): Bold Headline */}
           <div className="lg:col-span-7">
-
-            <h1 className="mt-4 text-4xl font-extrabold tracking-tight text-neutral-900 sm:text-5xl lg:text-6xl leading-[1.12]">
+            <h1 className="hero-headline mt-4 text-4xl font-extrabold tracking-tight text-neutral-900 sm:text-5xl lg:text-6xl leading-[1.12]">
               Turn plans into{" "}
               <span className="text-primary-600">
                 clear, actionable work.
               </span>
             </h1>
 
-            <p className="mt-5 text-base text-neutral-600 sm:text-lg leading-relaxed max-w-2xl">
+            <p className="hero-subcopy mt-5 text-base text-neutral-600 sm:text-lg leading-relaxed max-w-2xl">
               Plan visual boards, track tasks and documents, and coordinate project work clearly across your team.
             </p>
           </div>
 
           {/* Right Column (5 cols): Quick Interactive Sign-up directly on background */}
-          <div className="lg:col-span-5 lg:pl-6">
+          <div className="hero-form-panel lg:col-span-5 lg:pl-6">
             <form onSubmit={handleQuickSignUp} className="space-y-3.5">
               <div>
                 <label
@@ -62,7 +104,7 @@ export const LandingHero: React.FC = () => {
                 type="submit"
                 fullWidth
                 size="md"
-                className="h-11 rounded-full bg-primary-600 text-sm font-semibold text-white shadow-xs hover:bg-primary-700 transition-all cursor-pointer"
+                className="h-11 rounded-full bg-primary-600 text-sm font-semibold text-white shadow-xs hover:bg-primary-700 transition-all cursor-pointer active:scale-[0.98]"
               >
                 <span>Sign up</span>
               </Button>
@@ -83,7 +125,7 @@ export const LandingHero: React.FC = () => {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="h-10 rounded-full border-neutral-300 bg-white text-xs font-medium text-neutral-700 hover:bg-neutral-50 shadow-2xs cursor-pointer"
+                className="h-10 rounded-full border-neutral-300 bg-white text-xs font-medium text-neutral-700 hover:bg-neutral-50 shadow-2xs cursor-pointer active:scale-[0.98]"
                 onClick={() => navigate(ROUTES.REGISTER)}
               >
                 <GoogleIcon className="mr-1.5 h-3.5 w-3.5" />
@@ -93,7 +135,7 @@ export const LandingHero: React.FC = () => {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="h-10 rounded-full border-neutral-300 bg-white text-xs font-medium text-neutral-700 hover:bg-neutral-50 shadow-2xs cursor-pointer"
+                className="h-10 rounded-full border-neutral-300 bg-white text-xs font-medium text-neutral-700 hover:bg-neutral-50 shadow-2xs cursor-pointer active:scale-[0.98]"
                 onClick={() => navigate(ROUTES.REGISTER)}
               >
                 <GitHubIcon className="mr-1.5 h-3.5 w-3.5" />
@@ -104,9 +146,11 @@ export const LandingHero: React.FC = () => {
         </div>
 
         {/* -------------------------------------------------------------
-            Multi-color Framed Mockup Showcase (NO logo bar below hero)
+            Multi-color Framed Mockup Showcase
             ------------------------------------------------------------- */}
-        <MockKanbanBoard />
+        <div className="hero-mockup-wrapper">
+          <MockKanbanBoard />
+        </div>
       </div>
     </section>
   );

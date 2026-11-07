@@ -8,13 +8,62 @@ import {
   Shield,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useGSAP, gsap, MOTION_TIMING, isReducedMotion } from "@/lib/motion";
 
 export const LandingBentoGrid: React.FC = () => {
+  const sectionRef = React.useRef<HTMLElement>(null);
+
+  useGSAP(
+    () => {
+      if (isReducedMotion()) return;
+
+      // 1. Bento Header Reveal
+      gsap.fromTo(
+        ".bento-header",
+        { opacity: 0, y: 20 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.45,
+          ease: MOTION_TIMING.easeEnter,
+          scrollTrigger: {
+            trigger: ".bento-header",
+            start: "top 85%",
+            once: true,
+          },
+        }
+      );
+
+      // 2. Bento Grid Cards Cascade
+      gsap.fromTo(
+        ".bento-card",
+        { opacity: 0, y: 24 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.4,
+          stagger: 0.08,
+          ease: MOTION_TIMING.easeEnter,
+          scrollTrigger: {
+            trigger: ".bento-grid-container",
+            start: "top 80%",
+            once: true,
+          },
+        }
+      );
+    },
+    { scope: sectionRef }
+  );
+
   return (
-    <section className="py-20 sm:py-28 bg-neutral-50/60 border-t border-neutral-200">
+    <section
+      ref={sectionRef}
+      id="features"
+      className="py-20 sm:py-28 bg-neutral-50/60 border-t border-neutral-200 select-none"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="max-w-3xl text-left mb-12">
+        <div className="bento-header max-w-3xl text-left mb-12">
           <h2 className="text-3xl font-extrabold tracking-tight text-neutral-900 sm:text-4xl lg:text-5xl">
             Built for project clarity, structure, and execution
           </h2>
@@ -25,9 +74,9 @@ export const LandingBentoGrid: React.FC = () => {
         </div>
 
         {/* Bento Grid */}
-        <div className="mt-14 grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="bento-grid-container mt-14 grid grid-cols-1 gap-6 lg:grid-cols-12">
           {/* Bento Card 1 (7 cols): Visual Workflow & Dependency Tracking */}
-          <div className="lg:col-span-7 rounded-2xl border border-neutral-200 bg-white p-6 sm:p-8 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md cursor-default">
+          <div className="bento-card lg:col-span-7 rounded-2xl border border-neutral-200 bg-white p-6 sm:p-8 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md cursor-default">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
@@ -120,7 +169,7 @@ export const LandingBentoGrid: React.FC = () => {
           </div>
 
           {/* Bento Card 2 (5 cols): Integrated Project Docs & Specs */}
-          <div className="lg:col-span-5 rounded-2xl border border-neutral-200 bg-white p-6 sm:p-8 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md cursor-default">
+          <div className="bento-card lg:col-span-5 rounded-2xl border border-neutral-200 bg-white p-6 sm:p-8 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md cursor-default">
             <div className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-100 text-purple-700">
                 <FileCode2 className="h-5 w-5" />
@@ -160,7 +209,7 @@ export const LandingBentoGrid: React.FC = () => {
           </div>
 
           {/* Bento Card 3 (5 cols): Connected Team Activity */}
-          <div className="lg:col-span-5 rounded-2xl border border-neutral-200 bg-white p-6 sm:p-8 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md cursor-default">
+          <div className="bento-card lg:col-span-5 rounded-2xl border border-neutral-200 bg-white p-6 sm:p-8 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md cursor-default">
             <div className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
                 <GitPullRequest className="h-5 w-5" />
@@ -205,7 +254,7 @@ export const LandingBentoGrid: React.FC = () => {
           </div>
 
           {/* Bento Card 4 (7 cols): Context-Aware Task Assistant */}
-          <div className="lg:col-span-7 rounded-2xl border border-neutral-200 bg-white p-6 sm:p-8 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md cursor-default">
+          <div className="bento-card lg:col-span-7 rounded-2xl border border-neutral-200 bg-white p-6 sm:p-8 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md cursor-default">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-100 text-primary-700">

@@ -33,7 +33,7 @@ export const BoardCard: React.FC<BoardCardProps> = ({ board, onArchive, onDelete
           onClick?.(board);
         }
       }}
-      className="shadow-xs focus-visible:outline-hidden group relative flex min-h-72 cursor-pointer select-none flex-col overflow-hidden rounded-2xl border border-neutral-200/90 bg-white transition-all hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md focus-visible:ring-2 focus-visible:ring-primary-500"
+      className="shadow-xs focus-visible:outline-hidden group relative flex min-h-72 cursor-pointer select-none flex-col overflow-hidden rounded-2xl border border-neutral-200/90 bg-white transition-all duration-200 hover:-translate-y-1 hover:border-primary-300 hover:shadow-md focus-visible:ring-2 focus-visible:ring-primary-500 active:scale-[0.99]"
     >
       <div
         data-testid="board-card-cover"

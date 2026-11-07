@@ -27,6 +27,7 @@ import {
   assertWorkspaceIsOperable,
 } from "@/utils/workspace";
 import { useWorkspaceOwnership } from "@/hooks/useWorkspaceOwnership";
+import { useGSAP, gsap, MOTION_TIMING, isReducedMotion } from "@/lib/motion";
 import {
   DEFAULT_BOARD_BACKGROUND,
   getBoardBackgroundPreference,
@@ -38,6 +39,9 @@ export const BoardDetailPage: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
   const navigate = useNavigate();
   const { fetchGitActivity } = useGitHubCardActivity();
+  const boardContainerRef = React.useRef<HTMLDivElement>(null);
+
+
 
   const {
     board,
@@ -118,6 +122,24 @@ export const BoardDetailPage: React.FC = () => {
   );
   const [backgroundPreset, setBackgroundPreset] =
     React.useState<BoardBackgroundPreset>(DEFAULT_BOARD_BACKGROUND);
+  useGSAP(
+    () => {
+      if (isReducedMotion() || !board) return;
+      gsap.fromTo(
+        boardContainerRef.current,
+        { opacity: 0, y: 8 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.25,
+          ease: MOTION_TIMING.easeEnter,
+          clearProps: "transform,opacity",
+        }
+      );
+    },
+    { scope: boardContainerRef, dependencies: [board?.id] }
+  );
+
   const [isMembersDialogOpen, setIsMembersDialogOpen] = React.useState(false);
   const [isEditBoardModalOpen, setIsEditBoardModalOpen] = React.useState(false);
 
@@ -310,6 +332,7 @@ export const BoardDetailPage: React.FC = () => {
       {/* 3. Board Loaded Successfully */}
       {board && (
         <>
+          <div ref={boardContainerRef} className="flex min-h-0 flex-1 flex-col">
           {/* Header */}
           <BoardDetailHeader
             board={board}
@@ -379,6 +402,8 @@ export const BoardDetailPage: React.FC = () => {
               />
             </div>
           )}
+
+          </div>
 
           {/* Card Detail Side Panel Drawer */}
           <CardDetailDrawer

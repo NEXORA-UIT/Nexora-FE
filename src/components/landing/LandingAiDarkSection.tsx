@@ -1,22 +1,84 @@
 import * as React from "react";
 import { ShieldCheck, GitBranch, Zap } from "lucide-react";
+import { useGSAP, gsap, MOTION_TIMING, isReducedMotion } from "@/lib/motion";
 
 export const LandingAiDarkSection: React.FC = () => {
+  const sectionRef = React.useRef<HTMLElement>(null);
+
+  useGSAP(
+    () => {
+      if (isReducedMotion()) return;
+
+      // 1. Subtle Parallax for the dot grid background
+      gsap.to(".ai-grid-bg", {
+        y: -30,
+        ease: "none",
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top bottom",
+          end: "bottom top",
+          scrub: 0.5,
+        },
+      });
+
+      // 2. Section Header entrance
+      gsap.fromTo(
+        ".ai-header",
+        { opacity: 0, y: 20 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.45,
+          ease: MOTION_TIMING.easeEnter,
+          scrollTrigger: {
+            trigger: ".ai-header",
+            start: "top 85%",
+            once: true,
+          },
+        }
+      );
+
+      // 3. Staggered reveal of AI feature cards
+      gsap.fromTo(
+        ".ai-card",
+        { opacity: 0, y: 24 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.4,
+          stagger: 0.08,
+          ease: MOTION_TIMING.easeEnter,
+          scrollTrigger: {
+            trigger: ".ai-cards-container",
+            start: "top 80%",
+            once: true,
+          },
+        }
+      );
+    },
+    { scope: sectionRef }
+  );
+
   return (
-    <section className="relative overflow-hidden bg-[#0A0F1D] py-20 sm:py-28 text-white select-none">
-      {/* Subtle Dot Grid Pattern */}
+    <section
+      ref={sectionRef}
+      id="capabilities"
+      className="relative overflow-hidden bg-[#0A0F1D] py-20 sm:py-28 text-white select-none"
+    >
+      {/* Subtle Dot Grid Pattern with Parallax */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-15"
+        className="ai-grid-bg pointer-events-none absolute inset-0 opacity-15 will-change-transform"
         style={{
           backgroundImage:
             "radial-gradient(#94A3B8 1px, transparent 1px)",
           backgroundSize: "24px 24px",
+          height: "120%",
         }}
       />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="max-w-3xl text-left mb-12">
+        <div className="ai-header max-w-3xl text-left mb-12">
           <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-5xl leading-tight">
             Intelligent assistance built for{" "}
             <span className="text-[#38BDF8]">real project workflows</span>
@@ -28,9 +90,9 @@ export const LandingAiDarkSection: React.FC = () => {
         </div>
 
         {/* 3 High-Tech Cards with Vivid Accents */}
-        <div className="mt-14 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="ai-cards-container mt-14 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {/* Card 1: Cyan / Grounded */}
-          <div className="group rounded-2xl border border-neutral-800 bg-[#111827]/90 p-7 shadow-lg backdrop-blur-xs transition-all duration-200 hover:-translate-y-1 hover:border-[#38BDF8]/60 hover:shadow-[0_12px_28px_-8px_rgba(56,189,248,0.2)] cursor-default">
+          <div className="ai-card group rounded-2xl border border-neutral-800 bg-[#111827]/90 p-7 shadow-lg backdrop-blur-xs transition-all duration-200 hover:-translate-y-1 hover:border-[#38BDF8]/60 hover:shadow-[0_12px_28px_-8px_rgba(56,189,248,0.2)] cursor-default">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0284C7]/20 text-[#38BDF8] border border-[#0284C7]/40 shadow-xs transition-transform duration-200 group-hover:scale-110">
               <ShieldCheck className="h-5 w-5" />
             </div>
@@ -48,7 +110,7 @@ export const LandingAiDarkSection: React.FC = () => {
           </div>
 
           {/* Card 2: Violet / Blockers */}
-          <div className="group rounded-2xl border border-neutral-800 bg-[#111827]/90 p-7 shadow-lg backdrop-blur-xs transition-all duration-200 hover:-translate-y-1 hover:border-[#A78BFA]/60 hover:shadow-[0_12px_28px_-8px_rgba(167,139,250,0.2)] cursor-default">
+          <div className="ai-card group rounded-2xl border border-neutral-800 bg-[#111827]/90 p-7 shadow-lg backdrop-blur-xs transition-all duration-200 hover:-translate-y-1 hover:border-[#A78BFA]/60 hover:shadow-[0_12px_28px_-8px_rgba(167,139,250,0.2)] cursor-default">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#7C3AED]/20 text-[#A78BFA] border border-[#7C3AED]/40 shadow-xs transition-transform duration-200 group-hover:scale-110">
               <GitBranch className="h-5 w-5" />
             </div>
@@ -66,7 +128,7 @@ export const LandingAiDarkSection: React.FC = () => {
           </div>
 
           {/* Card 3: Emerald / Velocity */}
-          <div className="group rounded-2xl border border-neutral-800 bg-[#111827]/90 p-7 shadow-lg backdrop-blur-xs transition-all duration-200 hover:-translate-y-1 hover:border-[#34D399]/60 hover:shadow-[0_12px_28px_-8px_rgba(52,211,153,0.2)] cursor-default">
+          <div className="ai-card group rounded-2xl border border-neutral-800 bg-[#111827]/90 p-7 shadow-lg backdrop-blur-xs transition-all duration-200 hover:-translate-y-1 hover:border-[#34D399]/60 hover:shadow-[0_12px_28px_-8px_rgba(52,211,153,0.2)] cursor-default">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#059669]/20 text-[#34D399] border border-[#059669]/40 shadow-xs transition-transform duration-200 group-hover:scale-110">
               <Zap className="h-5 w-5" />
             </div>

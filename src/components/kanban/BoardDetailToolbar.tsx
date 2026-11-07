@@ -104,7 +104,7 @@ export const BoardDetailToolbar: React.FC<BoardDetailToolbarProps> = ({
           <span
             aria-hidden="true"
             className="h-4 w-5 rounded border border-black/10"
-            style={{ background: BOARD_BACKGROUNDS[backgroundPreset].swatch }}
+            style={{ background: (BOARD_BACKGROUNDS[backgroundPreset] ?? BOARD_BACKGROUNDS.aurora).swatch }}
           />
           <select
             aria-label="Board background"

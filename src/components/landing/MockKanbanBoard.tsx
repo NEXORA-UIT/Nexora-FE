@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MockBoardColumn, MockKanbanBoardProps } from "@/types";
+import { useGSAP, gsap, MOTION_TIMING, isReducedMotion } from "@/lib/motion";
 
 const DEFAULT_COLUMNS: MockBoardColumn[] = [
   {
@@ -123,9 +124,115 @@ export const MockKanbanBoard: React.FC<MockKanbanBoardProps> = ({
   boardTitle = "Website Redesign / Q4 Project",
 }) => {
   const columns = customColumns ?? DEFAULT_COLUMNS;
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const boardRef = React.useRef<HTMLDivElement>(null);
+  const cursorClaraRef = React.useRef<HTMLDivElement>(null);
+  const cursorAlexRef = React.useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      if (isReducedMotion()) return;
+
+      // 1. Staggered column entrance
+      gsap.fromTo(
+        ".mock-kanban-column",
+        { opacity: 0, y: 16 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.35,
+          stagger: 0.05,
+          ease: MOTION_TIMING.easeEnter,
+          clearProps: "transform,opacity",
+        }
+      );
+
+      // 2. Simulated live collaboration cursor movements
+      if (cursorClaraRef.current) {
+        const tlClara = gsap.timeline({ repeat: -1, yoyo: true });
+        tlClara
+          .to(cursorClaraRef.current, {
+            x: 35,
+            y: -10,
+            duration: 2.8,
+            ease: "sine.inOut",
+          })
+          .to(cursorClaraRef.current, {
+            scale: 0.94,
+            duration: 0.2,
+            yoyo: true,
+            repeat: 1,
+            ease: "power2.inOut",
+          })
+          .to(cursorClaraRef.current, {
+            x: -15,
+            y: 12,
+            duration: 3.2,
+            ease: "sine.inOut",
+          });
+      }
+
+      if (cursorAlexRef.current) {
+        const tlAlex = gsap.timeline({ repeat: -1, yoyo: true });
+        tlAlex
+          .to(cursorAlexRef.current, {
+            x: -45,
+            y: -12,
+            duration: 3.2,
+            ease: "sine.inOut",
+          })
+          .to(cursorAlexRef.current, {
+            scale: 0.94,
+            duration: 0.2,
+            yoyo: true,
+            repeat: 1,
+            ease: "power2.inOut",
+          })
+          .to(cursorAlexRef.current, {
+            x: 15,
+            y: 8,
+            duration: 2.8,
+            ease: "sine.inOut",
+          });
+      }
+    },
+    { scope: containerRef }
+  );
+
+  // Subtle 3D perspective mousemove tilt on the board container
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isReducedMotion() || !boardRef.current) return;
+    const rect = boardRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+
+    gsap.to(boardRef.current, {
+      rotationY: x * 3, // max 1.5 deg tilt
+      rotationX: -y * 3,
+      duration: 0.35,
+      ease: "power2.out",
+      transformPerspective: 1000,
+      transformOrigin: "center center",
+    });
+  };
+
+  const handleMouseLeave = () => {
+    if (isReducedMotion() || !boardRef.current) return;
+    gsap.to(boardRef.current, {
+      rotationY: 0,
+      rotationX: 0,
+      duration: 0.5,
+      ease: "power2.out",
+    });
+  };
 
   return (
-    <div className="relative mx-auto w-full max-w-6xl select-none">
+    <div
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="relative mx-auto w-full max-w-6xl select-none"
+    >
       {/* -------------------------------------------------------------
           Vibrant Accent Framing (Inspired by Jira's Multi-Color Outline)
           ------------------------------------------------------------- */}
@@ -134,8 +241,11 @@ export const MockKanbanBoard: React.FC<MockKanbanBoardProps> = ({
       <div className="absolute -bottom-2.5 -left-2.5 h-16 w-16 rounded-bl-3xl bg-[#10B981] -z-10" />
       <div className="absolute -bottom-2.5 -right-2.5 h-16 w-16 rounded-br-3xl bg-[#2563EB] -z-10" />
 
-      {/* Main Board Container */}
-      <div className="relative rounded-2xl border-2 border-neutral-200 bg-white shadow-2xl overflow-hidden">
+      {/* Main Board Container with 3D Perspective Support */}
+      <div
+        ref={boardRef}
+        className="relative rounded-2xl border-2 border-neutral-200 bg-white shadow-2xl overflow-hidden will-change-transform"
+      >
         {/* 1. Browser-style Window Header */}
         <div className="flex flex-wrap items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 sm:px-6">
           {/* Traffic lights & Title */}
@@ -184,15 +294,21 @@ export const MockKanbanBoard: React.FC<MockKanbanBoardProps> = ({
 
         {/* 2. Board Columns Grid */}
         <div className="relative p-4 sm:p-6 bg-neutral-50/50 overflow-x-auto">
-          {/* Simulated Live Collab Cursors (like Jira & Figma) */}
-          <div className="pointer-events-none absolute top-12 left-1/3 z-20 hidden lg:flex items-center gap-1 animate-cursor-clara">
+          {/* Simulated Live Collab Cursors (GSAP Animated) */}
+          <div
+            ref={cursorClaraRef}
+            className="pointer-events-none absolute top-12 left-1/3 z-20 hidden md:flex items-center gap-1 will-change-transform"
+          >
             <MousePointer className="h-4 w-4 text-[#7C3AED] fill-[#7C3AED]" />
             <span className="rounded-full bg-[#7C3AED] px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
               Clara Chen (Reviewing)
             </span>
           </div>
 
-          <div className="pointer-events-none absolute bottom-16 right-1/4 z-20 hidden lg:flex items-center gap-1 animate-cursor-alex">
+          <div
+            ref={cursorAlexRef}
+            className="pointer-events-none absolute bottom-16 right-1/4 z-20 hidden md:flex items-center gap-1 will-change-transform"
+          >
             <MousePointer className="h-4 w-4 text-[#0284C7] fill-[#0284C7]" />
             <span className="rounded-full bg-[#0284C7] px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
               Alex Morgan
@@ -203,7 +319,7 @@ export const MockKanbanBoard: React.FC<MockKanbanBoardProps> = ({
             {columns.map((col) => (
               <div
                 key={col.id}
-                className="flex flex-col rounded-xl border border-neutral-200 bg-neutral-100/60 p-3"
+                className="mock-kanban-column flex flex-col rounded-xl border border-neutral-200 bg-neutral-100/60 p-3"
               >
                 {/* Column Header */}
                 <div className="flex items-center justify-between pb-3">
@@ -224,9 +340,9 @@ export const MockKanbanBoard: React.FC<MockKanbanBoardProps> = ({
                     <div
                       key={card.id}
                       className={cn(
-                        "group rounded-xl border border-neutral-200 bg-white p-3.5 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-md cursor-pointer",
+                        "group rounded-xl border border-neutral-200 bg-white p-3.5 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-primary-300 cursor-pointer active:scale-[0.99]",
                         card.id === "c-3" || card.id === "sw-3"
-                          ? "animate-card-float ring-1 ring-primary-400/50"
+                          ? "ring-1 ring-primary-400/50"
                           : ""
                       )}
                     >
