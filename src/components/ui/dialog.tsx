@@ -32,12 +32,16 @@ export const DialogContent = React.forwardRef<
       className={cn(
         "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed left-1/2 top-1/2 z-50 flex max-h-[min(90dvh,calc(100dvh-2rem))] w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-neutral-200/90 bg-white shadow-2xl outline-none motion-reduce:animate-none",
         contentSizes[size],
-        size === "drawer" &&
-          "left-auto top-0 h-[100dvh] max-h-[100dvh] w-full translate-x-0 translate-y-0 rounded-none border-y-0 border-r-0 sm:rounded-l-2xl",
+        size === "drawer"
+          ? "left-auto top-0 h-[100dvh] max-h-[100dvh] w-full translate-x-0 translate-y-0 rounded-none border-y-0 border-r-0 sm:rounded-l-2xl"
+          : "max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:top-auto max-sm:translate-x-0 max-sm:translate-y-0 max-sm:w-full max-sm:rounded-b-none max-sm:rounded-t-2xl max-sm:max-h-[90dvh] max-sm:pb-[env(safe-area-inset-bottom)]",
         className
       )}
       {...props}
     >
+      {size !== "drawer" && (
+        <div className="mx-auto mt-2.5 h-1.5 w-10 shrink-0 rounded-full bg-neutral-300 sm:hidden" />
+      )}
       {children}
     </DialogPrimitive.Content>
   </DialogPrimitive.Portal>
