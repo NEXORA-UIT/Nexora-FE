@@ -229,7 +229,25 @@ export function useBoardDetail(boardId?: string) {
     refreshVersion: boardRefreshVersion,
   });
 
+  const handleUpdateBoard = React.useCallback(
+    async (payload: { name: string; description?: string | null }) => {
+      if (!boardId) return;
+      const updated = await boardApi.updateBoard(boardId, payload);
+      setBoard((prev) =>
+        prev
+          ? {
+              ...prev,
+              name: updated.name,
+              description: updated.description ?? null,
+            }
+          : null
+      );
+    },
+    [boardId]
+  );
+
   return {
+    handleUpdateBoard,
     board,
     filteredLists,
     allBoardCards,
@@ -237,6 +255,7 @@ export function useBoardDetail(boardId?: string) {
     error,
     reload: loadBoard,
     realtimeConnected: realtime.isJoined,
+    realtime,
 
     // Controls
     searchQuery,

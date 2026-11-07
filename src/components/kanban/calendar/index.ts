@@ -5,3 +5,4 @@ export * from "./CalendarAgendaView";
 export * from "./CalendarDayCell";
 export * from "./CalendarCardChip";
 export * from "./calendar.utils";
+export * from "./MobileAgendaList";

@@ -11,6 +11,7 @@ export * from "./AddColumnInline";
 export * from "./KanbanColumn";
 export * from "./KanbanColumnSkeleton";
 export * from "./KanbanBoard";
+export * from "./MobileColumnSelector";
 export * from "./detail";
 export * from "./calendar";
 export * from "./planning";

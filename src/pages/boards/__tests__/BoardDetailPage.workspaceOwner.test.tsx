@@ -178,8 +178,6 @@ describe("BoardDetailPage Workspace Owner Permission & Dependency Access Suite",
       handleDeleteDependency: vi.fn(),
       handleCreateBoardLabel: vi.fn(),
       handleUpdateBoard: vi.fn(),
-      wsStatus: "CONNECTED",
-      isLive: true,
       realtime: {
         wsStatus: "CONNECTED",
         isLive: true,
@@ -190,7 +188,8 @@ describe("BoardDetailPage Workspace Owner Permission & Dependency Access Suite",
         isCardDeleted: vi.fn().mockReturnValue(false),
         getBufferedEventsCount: vi.fn().mockReturnValue(0),
         getTombstoneCount: vi.fn().mockReturnValue(0),
-      },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any,
     });
   };
 

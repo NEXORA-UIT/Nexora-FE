@@ -11,6 +11,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { KanbanColumn } from "./KanbanColumn";
 import { KanbanCard } from "./KanbanCard";
 import { AddColumnInline } from "./AddColumnInline";
+import { MobileColumnSelector } from "./MobileColumnSelector";
 import { useKanbanDnd } from "@/hooks/useKanbanDnd";
 import { LIST_DROP_TARGET_PREFIX } from "@/hooks/useKanbanDnd";
 import type {
@@ -72,6 +73,26 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   backgroundPreset = DEFAULT_BOARD_BACKGROUND,
 }) => {
   const [addingCardListId, setAddingCardListId] = React.useState<string | null>(null);
+  const [activeColumnId, setActiveColumnId] = React.useState<string | null>(
+    lists[0]?.id || null
+  );
+
+  React.useEffect(() => {
+    if (!activeColumnId && lists[0]?.id) {
+      setActiveColumnId(lists[0].id);
+    }
+  }, [lists, activeColumnId]);
+
+  const handleSelectColumn = (listId: string) => {
+    setActiveColumnId(listId);
+    const container = scrollContainerRef.current;
+    if (container) {
+      const colEl = container.querySelector(`[data-column-id="${listId}"]`);
+      if (colEl) {
+        colEl.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+      }
+    }
+  };
 
   // Canvas horizontal panning state & refs
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
@@ -155,7 +176,15 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   };
 
   return (
-    <DndContext
+    <div className="flex flex-col gap-1">
+      {/* 1. Mobile Segmented Column Selector Pills */}
+      <MobileColumnSelector
+        lists={previewLists}
+        activeListId={activeColumnId}
+        onSelect={handleSelectColumn}
+      />
+
+      <DndContext
       sensors={sensors}
       collisionDetection={kanbanCollisionDetection}
       onDragStart={handleDragStart}
@@ -169,7 +198,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         onPointerMove={handleCanvasPointerMove}
         onPointerUp={handleCanvasPointerUp}
         onPointerCancel={handleCanvasPointerUp}
-        className={`scrollbar-thin flex min-h-[calc(100vh-230px)] items-start gap-5 overflow-x-auto rounded-3xl border border-white/70 p-4 pb-6 pr-10 shadow-inner ${
+        className={`scrollbar-thin flex min-h-[calc(100vh-230px)] items-start gap-4 sm:gap-5 overflow-x-auto rounded-3xl border border-white/70 p-3 pb-6 pr-6 sm:p-4 sm:pb-6 sm:pr-10 shadow-inner snap-x snap-mandatory sm:snap-none ${
           isPanning ? "cursor-grabbing select-none" : "cursor-grab"
         }`}
         style={{
@@ -212,5 +241,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         {activeCard ? <KanbanCard card={activeCard} isDragging /> : null}
       </DragOverlay>
     </DndContext>
+    </div>
   );
 };
