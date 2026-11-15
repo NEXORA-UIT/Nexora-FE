@@ -34,7 +34,7 @@ export const PromptSuggestionsBar: React.FC<PromptSuggestionsBarProps> = ({
     >
       <span className="text-[11px] font-semibold text-neutral-400 flex items-center gap-1 shrink-0">
         <Sparkles className="w-3 h-3 text-primary-500" />
-        Gợi ý:
+        Suggestions:
       </span>
       {DEFAULT_PROMPT_SUGGESTION_ITEMS.map((item) => (
         <button

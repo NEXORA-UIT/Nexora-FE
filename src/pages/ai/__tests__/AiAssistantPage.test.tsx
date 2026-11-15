@@ -69,6 +69,6 @@ describe("AiAssistantPage", () => {
 
     expect(screen.getByText(/AI Assistant/i)).toBeDefined();
     expect(screen.getByText("Chào bạn! Tôi là trợ lý AI.")).toBeDefined();
-    expect(screen.getByPlaceholderText(/Hỏi AI Copilot/i)).toBeDefined();
+    expect(screen.getByPlaceholderText(/Ask AI Copilot|Hỏi AI Copilot/i)).toBeDefined();
   });
 });

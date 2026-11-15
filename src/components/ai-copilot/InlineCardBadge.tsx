@@ -27,7 +27,7 @@ export const InlineCardBadge: React.FC<InlineCardBadgeProps> = ({
         "focus:outline-none focus:ring-2 focus:ring-primary-500/20",
         className
       )}
-      title={title || `Mở chi tiết thẻ ${label}`}
+      title={title || `View card details for ${label}`}
       aria-label={`${label} ${title || ""}`.trim()}
     >
       <CheckSquare className="w-3 h-3 text-primary-500 shrink-0" />

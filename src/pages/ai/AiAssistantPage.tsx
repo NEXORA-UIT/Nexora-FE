@@ -60,7 +60,7 @@ export const AiAssistantPage: React.FC = () => {
       })
       .catch((_err) => {
         if (!isMounted) return;
-        toast.error("Không thể tải danh sách bảng.");
+        toast.error("Failed to load boards.");
       })
       .finally(() => {
         if (isMounted) setIsLoadingBoards(false);
@@ -98,7 +98,7 @@ export const AiAssistantPage: React.FC = () => {
 
   const handleSend = (text: string) => {
     if (!currentBoardId) {
-      toast.warning("Vui lòng chọn một bảng làm việc trước.");
+      toast.warning("Please select a board first.");
       return;
     }
     sendMessage(text, currentBoardId);
@@ -107,25 +107,25 @@ export const AiAssistantPage: React.FC = () => {
   const handleClear = () => {
     if (currentBoardId) {
       clearThread(currentBoardId);
-      toast.success("Đã xóa hội thoại.");
+      toast.success("Conversation cleared.");
     }
   };
 
   const handleExport = async () => {
     if (messages.length === 0) {
-      toast.info("Chưa có tin nhắn nào để xuất.");
+      toast.info("No messages to export.");
       return;
     }
 
     const markdownText = messages
-      .map((m) => `**${m.sender === "user" ? "Người dùng" : "AI Copilot"}** (${m.timestamp}):\n${m.text}\n`)
+      .map((m) => `**${m.sender === "user" ? "User" : "AI Copilot"}** (${m.timestamp}):\n${m.text}\n`)
       .join("\n---\n\n");
 
     try {
       await navigator.clipboard.writeText(markdownText);
-      toast.success("Đã sao chép nội dung hội thoại vào Clipboard!");
+      toast.success("Conversation copied to clipboard!");
     } catch {
-      toast.info("Không thể sao chép tự động.");
+      toast.info("Failed to copy automatically.");
     }
   };
 
@@ -151,7 +151,7 @@ export const AiAssistantPage: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-neutral-500">
-              {activeWorkspace ? `Không gian làm việc: ${activeWorkspace.name}` : "Trợ lý dự án thông minh"}
+              {activeWorkspace ? `Workspace: ${activeWorkspace.name}` : "Intelligent Project Assistant"}
             </p>
           </div>
         </div>
@@ -160,16 +160,16 @@ export const AiAssistantPage: React.FC = () => {
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-2 bg-neutral-50 border border-neutral-200/90 px-3 py-1.5 rounded-xl">
             <Kanban className="w-4 h-4 text-neutral-500 shrink-0" />
-            <span className="text-xs text-neutral-500 font-medium shrink-0">Ngữ cảnh bảng:</span>
+            <span className="text-xs text-neutral-500 font-medium shrink-0">Board context:</span>
             <select
               value={currentBoardId}
               onChange={(e) => handleBoardChange(e.target.value)}
               disabled={isLoadingBoards || boards.length === 0}
               className="bg-transparent text-xs font-semibold text-neutral-800 outline-none cursor-pointer pr-2"
-              aria-label="Chọn bảng"
+              aria-label="Select board"
             >
               {boards.length === 0 ? (
-                <option value="">{isLoadingBoards ? "Đang tải bảng..." : "Không có bảng nào"}</option>
+                <option value="">{isLoadingBoards ? "Loading boards..." : "No boards available"}</option>
               ) : (
                 boards.map((b) => (
                   <option key={b.id} value={b.id}>
@@ -184,9 +184,9 @@ export const AiAssistantPage: React.FC = () => {
             <Link
               to={`/boards/${currentBoardId}`}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded-xl transition-colors"
-              title="Đi tới Bảng Kanban"
+              title="Go to Kanban Board"
             >
-              <span>Xem Bảng</span>
+              <span>View Board</span>
               <ExternalLink className="w-3.5 h-3.5" />
             </Link>
           )}
@@ -197,8 +197,8 @@ export const AiAssistantPage: React.FC = () => {
                 type="button"
                 onClick={handleExport}
                 className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-xl transition-colors cursor-pointer"
-                title="Sao chép hội thoại"
-                aria-label="Sao chép hội thoại"
+                title="Copy conversation"
+                aria-label="Copy conversation"
               >
                 <Share2 className="w-4 h-4" />
               </button>
@@ -207,8 +207,8 @@ export const AiAssistantPage: React.FC = () => {
                 type="button"
                 onClick={handleClear}
                 className="p-2 text-neutral-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
-                title="Xóa hội thoại"
-                aria-label="Xóa hội thoại"
+                title="Clear conversation"
+                aria-label="Clear conversation"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -223,15 +223,15 @@ export const AiAssistantPage: React.FC = () => {
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-6 max-w-xl mx-auto">
-              <div className="w-14 h-14 rounded-3xl bg-primary-50 text-primary-600 flex items-center justify-center mb-4 shadow-2xs">
+              <div className="w-14 h-14 rounded-3xl bg-primary-50 text-primary-600 flex items-center justify-center mb-4 shadow-xs">
                 <Bot className="w-7 h-7" />
               </div>
               <h2 className="text-lg font-bold text-neutral-800">
-                AI Copilot cho Bảng: {currentBoard?.name || "Kanban"}
+                AI Copilot for Board: {currentBoard?.name || "Kanban"}
               </h2>
               <p className="text-xs text-neutral-500 mt-1.5 leading-relaxed">
-                Đặt câu hỏi về tiến độ, thẻ công việc, người phụ trách, hoặc các rủi ro chậm hạn trên
-                bảng này. AI sẽ tra cứu thông tin trực tiếp và trả lời kèm bằng chứng cụ thể.
+                Ask questions about progress, tasks, assignees, or overdue risks on this board. AI
+                retrieves live board data with verified evidence.
               </p>
 
               <PromptSuggestionsGrid onSelectPrompt={handleSend} className="mt-6" />
@@ -254,7 +254,7 @@ export const AiAssistantPage: React.FC = () => {
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75" />
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-600" />
                       </span>
-                      <span>{thinkingStep || "AI đang phân tích dữ liệu bảng..."}</span>
+                      <span>{thinkingStep || "AI is analyzing board data..."}</span>
                     </div>
                   </div>
                 </div>
@@ -274,10 +274,10 @@ export const AiAssistantPage: React.FC = () => {
             disabled={!currentBoardId}
             placeholder={
               !currentBoardId
-                ? "Vui lòng chọn một bảng để bắt đầu trò chuyện..."
+                ? "Please select a board to start chatting..."
                 : currentBoard
-                ? `Hỏi AI Copilot về bảng "${currentBoard.name}"...`
-                : "Hỏi AI Copilot..."
+                ? `Ask AI Copilot about "${currentBoard.name}"...`
+                : "Ask AI Copilot..."
             }
           />
         </div>

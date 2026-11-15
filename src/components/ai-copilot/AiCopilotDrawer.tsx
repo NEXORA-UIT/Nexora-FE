@@ -96,7 +96,7 @@ export const AiCopilotDrawer: React.FC<AiCopilotDrawerProps> = ({
                 </span>
               </div>
               <p className="text-xs text-neutral-500 truncate">
-                {boardTitle ? `Bảng: ${boardTitle}` : "Trợ lý phân tích bảng thông minh"}
+                {boardTitle ? `Board: ${boardTitle}` : "Smart Board Analysis Assistant"}
               </p>
             </div>
           </div>
@@ -106,8 +106,8 @@ export const AiCopilotDrawer: React.FC<AiCopilotDrawerProps> = ({
               <button
                 type="button"
                 onClick={handleClear}
-                title="Xóa hội thoại"
-                aria-label="Xóa hội thoại"
+                title="Clear conversation"
+                aria-label="Clear conversation"
                 className="p-1.5 text-neutral-500 hover:text-red-600 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
               >
                 <Trash2 className="w-4 h-4" />
@@ -117,8 +117,8 @@ export const AiCopilotDrawer: React.FC<AiCopilotDrawerProps> = ({
             <button
               type="button"
               onClick={handleExpandToFullPage}
-              title="Mở toàn màn hình"
-              aria-label="Mở toàn màn hình"
+              title="Open full page"
+              aria-label="Open full page"
               className="p-1.5 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
             >
               <Maximize2 className="w-4 h-4" />
@@ -127,8 +127,8 @@ export const AiCopilotDrawer: React.FC<AiCopilotDrawerProps> = ({
             <button
               type="button"
               onClick={closeDrawer}
-              title="Đóng"
-              aria-label="Đóng"
+              title="Close"
+              aria-label="Close"
               className="p-1.5 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
@@ -144,11 +144,10 @@ export const AiCopilotDrawer: React.FC<AiCopilotDrawerProps> = ({
                 <Bot className="w-6 h-6" />
               </div>
               <h3 className="text-base font-semibold text-neutral-800">
-                Xin chào! Tôi có thể giúp gì cho bạn?
+                Hello! How can I help you today?
               </h3>
               <p className="text-xs text-neutral-500 max-w-[320px] mt-1">
-                Tôi có thể phân tích các thẻ công việc, tiến độ, cảnh báo quá hạn và hỗ trợ quản lý
-                bảng này.
+                I can analyze cards, track progress, identify overdue risks, and assist with board management.
               </p>
 
               <PromptSuggestionsGrid onSelectPrompt={handleSend} />
@@ -171,7 +170,7 @@ export const AiCopilotDrawer: React.FC<AiCopilotDrawerProps> = ({
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75" />
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-600" />
                       </span>
-                      <span>{thinkingStep || "AI đang phân tích dữ liệu bảng..."}</span>
+                      <span>{thinkingStep || "AI is analyzing board data..."}</span>
                     </div>
                   </div>
                 </div>

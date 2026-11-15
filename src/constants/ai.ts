@@ -9,25 +9,25 @@ export const DEFAULT_PROMPT_SUGGESTION_ITEMS: PromptSuggestionItem[] = [
   {
     id: "summary",
     iconName: "summary",
-    label: "Tóm tắt tiến độ",
-    prompt: "Tóm tắt tổng quan tiến độ của bảng này hiện tại?",
+    label: "Summarize progress",
+    prompt: "Summarize the overall progress of this board currently?",
   },
   {
     id: "overdue",
     iconName: "overdue",
-    label: "Việc quá hạn / Sắp hết hạn",
-    prompt: "Những công việc nào đang bị quá hạn hoặc sắp đến hạn?",
+    label: "Overdue & Due soon",
+    prompt: "Which tasks are overdue or due soon?",
   },
   {
     id: "workload",
     iconName: "workload",
-    label: "Phân bổ thành viên",
-    prompt: "Khối lượng công việc đang phân bổ cho các thành viên thế nào?",
+    label: "Workload distribution",
+    prompt: "How is the workload distributed across team members?",
   },
   {
     id: "unassigned",
     iconName: "unassigned",
-    label: "Việc chưa ai nhận",
-    prompt: "Có những công việc nào chưa được gán cho ai?",
+    label: "Unassigned tasks",
+    prompt: "Which tasks are not assigned to anyone?",
   },
 ];

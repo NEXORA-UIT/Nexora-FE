@@ -57,7 +57,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
       <div className={cn("flex justify-end gap-2 mb-4", className)}>
         <div className="max-w-[85%] sm:max-w-[78%]">
           <div className="bg-primary-600 text-white px-4 py-2.5 rounded-2xl rounded-tr-xs shadow-xs text-sm">
-            <p className="whitespace-pre-wrap">{message.text}</p>
+            <p className="whitespace-pre-wrap !text-white text-white">{message.text}</p>
           </div>
           <span className="block text-[10px] text-neutral-400 text-right mt-1 px-1">
             {message.timestamp}
@@ -83,8 +83,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             <div className="flex items-start gap-2 p-2.5 mb-2.5 bg-amber-50 border border-amber-200/80 rounded-lg text-amber-800 text-xs">
               <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <div>
-                <span className="font-semibold">Chưa đủ dữ kiện để khẳng định:</span> Dữ liệu trong
-                bảng hiện tại có thể chưa đủ chi tiết cho câu hỏi này.
+                <span className="font-semibold">Insufficient evidence:</span> Data in this board
+                may not contain enough details to fully answer this question.
               </div>
             </div>
           )}
@@ -94,8 +94,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             <div className="flex items-start gap-2 p-2.5 mb-2.5 bg-red-50 border border-red-200/80 rounded-lg text-red-700 text-xs">
               <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
               <div>
-                <span className="font-semibold">Lỗi xử lý:</span> Không thể hoàn thành phân tích.
-                Vui lòng thử lại.
+                <span className="font-semibold">Processing error:</span> Unable to complete
+                analysis. Please try again.
               </div>
             </div>
           )}

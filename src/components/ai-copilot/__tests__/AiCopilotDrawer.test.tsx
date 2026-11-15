@@ -48,8 +48,8 @@ describe("AiCopilotDrawer", () => {
     );
 
     expect(screen.getByText(/AI Copilot/i)).toBeDefined();
-    expect(screen.getByText(/Xin chào! Tôi có thể giúp gì cho bảng này\?/i)).toBeDefined();
-    expect(screen.getByPlaceholderText(/Hỏi AI Copilot/i)).toBeDefined();
+    expect(screen.getByText(/Xin chào|Hello/i)).toBeDefined();
+    expect(screen.getByPlaceholderText(/Ask AI Copilot|Hỏi AI Copilot/i)).toBeDefined();
     expect(screen.getByText("Thẻ đầu tiên")).toBeDefined();
   });
 
@@ -73,7 +73,7 @@ describe("AiCopilotDrawer", () => {
       </MemoryRouter>
     );
 
-    const closeBtn = screen.getByRole("button", { name: /Đóng/i });
+    const closeBtn = screen.getByRole("button", { name: /Close|Đóng/i });
     fireEvent.click(closeBtn);
     expect(useAiCopilotStore.getState().isOpen).toBe(false);
   });
@@ -87,13 +87,13 @@ describe("AiCopilotDrawer", () => {
       </MemoryRouter>
     );
 
-    const input = screen.getByPlaceholderText(/Hỏi AI Copilot/i);
-    fireEvent.change(input, { target: { value: "Tóm tắt tiến độ" } });
+    const input = screen.getByPlaceholderText(/Ask AI Copilot|Hỏi AI Copilot/i);
+    fireEvent.change(input, { target: { value: "Summarize progress" } });
 
-    const sendBtn = screen.getByRole("button", { name: /Gửi/i });
+    const sendBtn = screen.getByRole("button", { name: /Send|Gửi/i });
     fireEvent.click(sendBtn);
 
-    expect(sendMessageSpy).toHaveBeenCalledWith("Tóm tắt tiến độ", "b-1");
+    expect(sendMessageSpy).toHaveBeenCalledWith("Summarize progress", "b-1");
   });
 
   it("navigates to ROUTES.AI_ASSISTANT when maximize button is clicked", () => {
@@ -103,7 +103,7 @@ describe("AiCopilotDrawer", () => {
       </MemoryRouter>
     );
 
-    const expandBtn = screen.getByRole("button", { name: /Mở toàn màn hình/i });
+    const expandBtn = screen.getByRole("button", { name: /Open full page|Mở toàn màn hình/i });
     fireEvent.click(expandBtn);
     expect(mockNavigate).toHaveBeenCalledWith(`${ROUTES.AI_ASSISTANT}?boardId=b-1`);
   });

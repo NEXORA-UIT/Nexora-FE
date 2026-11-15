@@ -93,7 +93,7 @@ export const useAiCopilotStore = create<AiCopilotStoreState>((set, get) => ({
           [targetBoardId]: [...currentThread, userMessage],
         },
         isThinking: true,
-        thinkingStep: "Đang phân tích câu hỏi...",
+        thinkingStep: "Analyzing your question...",
         error: null,
       };
     });
@@ -104,7 +104,7 @@ export const useAiCopilotStore = create<AiCopilotStoreState>((set, get) => ({
       // Dynamic thinking steps simulation if taking more than 500ms
       stepTimer = setTimeout(() => {
         if (get().isThinking) {
-          set({ thinkingStep: "Đang tra cứu dữ liệu bảng..." });
+          set({ thinkingStep: "Searching board data..." });
         }
       }, 500);
 
@@ -140,12 +140,12 @@ export const useAiCopilotStore = create<AiCopilotStoreState>((set, get) => ({
       });
     } catch (err: unknown) {
       const errorMessage =
-        err instanceof Error ? err.message : "Đã xảy ra lỗi khi kết nối tới AI Service.";
+        err instanceof Error ? err.message : "An error occurred while connecting to AI Service.";
 
       const errorAssistantMsg: ChatMessage = {
         id: `err-${Date.now()}`,
         sender: "assistant",
-        text: "Xin lỗi, đã xảy ra lỗi trong quá trình xử lý yêu cầu. Vui lòng thử lại sau.",
+        text: "Sorry, an error occurred while processing your request. Please try again later.",
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         status: "error",
       };

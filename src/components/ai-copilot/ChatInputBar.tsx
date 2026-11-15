@@ -13,7 +13,7 @@ export interface ChatInputBarProps {
 export const ChatInputBar: React.FC<ChatInputBarProps> = ({
   onSendMessage,
   isThinking = false,
-  placeholder = "Hỏi AI Copilot về bảng này...",
+  placeholder = "Ask AI Copilot about this board...",
   className,
   disabled = false,
 }) => {
@@ -64,7 +64,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
         <button
           type="submit"
           disabled={!value.trim() || isThinking || disabled}
-          aria-label="Gửi"
+          aria-label="Send"
           className={cn(
             "p-2 rounded-lg transition-all shrink-0 cursor-pointer",
             value.trim() && !isThinking && !disabled
@@ -80,7 +80,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
         </button>
       </div>
       <div className="flex items-center justify-between text-[11px] text-neutral-400 px-1 mt-1.5">
-        <span>Nhấn Enter để gửi, Shift + Enter để xuống dòng</span>
+        <span>Press Enter to send, Shift + Enter for new line</span>
       </div>
     </form>
   );

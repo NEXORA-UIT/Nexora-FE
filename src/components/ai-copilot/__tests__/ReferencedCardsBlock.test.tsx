@@ -41,7 +41,7 @@ describe("CitationsBlock", () => {
 
     render(<CitationsBlock citations={citations} />);
 
-    expect(screen.getByText(/Trích dẫn tài liệu/i)).toBeDefined();
+    expect(screen.getByText(/Document Citations/i)).toBeDefined();
     expect(screen.getByText("Sprint Planning Doc")).toBeDefined();
     expect(screen.getByText(/Mục tiêu sprint này là hoàn thành AI integration/i)).toBeDefined();
   });
