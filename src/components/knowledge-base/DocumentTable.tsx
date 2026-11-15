@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Search, Filter, FileText, ArrowUpDown } from "lucide-react";
+import { Search, Filter, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { DocumentTableRow } from "./DocumentTableRow";
 import { DocumentDeleteDialog } from "./DocumentDeleteDialog";

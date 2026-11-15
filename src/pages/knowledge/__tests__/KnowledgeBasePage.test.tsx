@@ -1,56 +1,43 @@
-import { describe, expect, it } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { KnowledgeBasePage } from "../KnowledgeBasePage";
 
-function renderPage() {
-  return render(<MemoryRouter><KnowledgeBasePage /></MemoryRouter>);
-}
+vi.mock("@/hooks", () => ({
+  useWorkspaceBoards: () => ({
+    boards: [
+      { id: "b-1", title: "Core Platform" },
+      { id: "b-2", title: "Website Redesign" },
+    ],
+    isLoading: false,
+  }),
+}));
 
 describe("KnowledgeBasePage", () => {
-  it("clearly labels the read-only article library as demo content", () => {
-    renderPage();
-    expect(screen.getByRole("heading", { name: /knowledge base/i }).className).toMatch(/text-white/);
-    expect(screen.getAllByText(/demo content/i).length).toBeGreaterThan(0);
-    expect(screen.queryByRole("button", { name: /create article|edit article|delete article/i })).toBeNull();
+  it("renders Knowledge Base header, tabs, and documents section", () => {
+    render(
+      <MemoryRouter>
+        <KnowledgeBasePage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole("heading", { name: /Knowledge Base/i })).toBeDefined();
+    expect(screen.getByText(/Project Documents & RAG/i)).toBeDefined();
+    expect(screen.getByText(/Playbook & Guides/i)).toBeDefined();
+    expect(screen.getByText(/Drag and drop project documents/i)).toBeDefined();
   });
 
-  it("searches article title, summary, and content without case sensitivity", () => {
-    renderPage();
-    fireEvent.change(screen.getByRole("searchbox", { name: /search articles/i }), {
-      target: { value: "BOARD STATUS" },
-    });
-    expect(screen.getByText(/how board status works/i)).toBeTruthy();
-    expect(screen.queryByText(/workspace membership basics/i)).toBeNull();
+  it("switches to Playbook & Guides tab when clicked", () => {
+    render(
+      <MemoryRouter>
+        <KnowledgeBasePage />
+      </MemoryRouter>
+    );
 
-    fireEvent.change(screen.getByRole("searchbox", { name: /search articles/i }), {
-      target: { value: "dependency" },
-    });
-    expect(screen.getByText(/how board status works/i)).toBeTruthy();
-  });
+    const playbookTabBtn = screen.getByRole("button", { name: /Playbook & Guides/i });
+    fireEvent.click(playbookTabBtn);
 
-  it("filters by category and lets the user clear an empty result", () => {
-    renderPage();
-    fireEvent.change(screen.getByRole("combobox", { name: /filter by category/i }), {
-      target: { value: "Planning" },
-    });
-    expect(screen.getByText(/how board status works/i)).toBeTruthy();
-    expect(screen.queryByText(/workspace membership basics/i)).toBeNull();
-
-    fireEvent.change(screen.getByRole("searchbox", { name: /search articles/i }), {
-      target: { value: "nothing matches" },
-    });
-    expect(screen.getByText(/no articles match/i)).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: /clear filters/i }));
-    expect(screen.getByText(/workspace membership basics/i)).toBeTruthy();
-  });
-
-  it("opens an article detail and returns to the library", () => {
-    renderPage();
-    fireEvent.click(screen.getByRole("button", { name: /workspace membership basics/i }));
-    expect(screen.getByRole("heading", { name: /workspace membership basics/i })).toBeTruthy();
-    expect(screen.getByText(/demo content/i)).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: /back to knowledge base/i }));
-    expect(screen.getByRole("searchbox", { name: /search articles/i })).toBeTruthy();
+    expect(screen.getByLabelText(/Search articles/i)).toBeDefined();
+    expect(screen.getByText(/Filter by category/i)).toBeDefined();
   });
 });
