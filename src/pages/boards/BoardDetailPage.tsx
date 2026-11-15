@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams, Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, AlertCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { ROUTES } from "@/constants/routes";
@@ -18,8 +18,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { boardApi } from "@/apis/board.api";
 import { EditBoardModal } from "@/components/boards";
+import { AiCopilotDrawer } from "@/components/ai-copilot";
 import { useAuthStore } from "@/stores/auth.store";
 import { useWorkspaceStore } from "@/stores/workspace.store";
+import { useAiCopilotStore } from "@/stores/ai-copilot.store";
 import { canUserManageDependencies } from "@/utils";
 import {
   isWorkspaceArchived,
@@ -40,6 +42,9 @@ export const BoardDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { fetchGitActivity } = useGitHubCardActivity();
   const boardContainerRef = React.useRef<HTMLDivElement>(null);
+  const { toggleDrawer: toggleAiCopilot } = useAiCopilotStore();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const cardIdFromUrl = searchParams.get("cardId");
 
 
 
@@ -105,6 +110,22 @@ export const BoardDetailPage: React.FC = () => {
     handleDeleteDependency,
     handleUpdateBoard,
   } = useBoardDetail(boardId);
+
+  // Auto-open card detail if cardId is provided in URL
+  React.useEffect(() => {
+    if (cardIdFromUrl) {
+      handleSelectCard(cardIdFromUrl);
+    }
+  }, [cardIdFromUrl, handleSelectCard]);
+
+  const handleCloseDetailAndUrl = React.useCallback(() => {
+    handleCloseCardDetail();
+    if (searchParams.has("cardId")) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("cardId");
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [handleCloseCardDetail, searchParams, setSearchParams]);
 
   const currentUser = useAuthStore((state) => state.user);
   const { isWorkspaceOwner, verifiedOwnerContext } = useWorkspaceOwnership(
@@ -372,6 +393,7 @@ export const BoardDetailPage: React.FC = () => {
             archivedListsCount={board.archivedListsCount}
             onArchivedListsClick={handleArchivedListsClick}
             onFilterClick={handleFilterClick}
+            onToggleAiCopilot={() => toggleAiCopilot(board.id)}
           />
 
           {/* Canvas Views */}
@@ -409,7 +431,7 @@ export const BoardDetailPage: React.FC = () => {
           <CardDetailDrawer
             card={selectedCard}
             isOpen={Boolean(selectedCardId && selectedCard)}
-            onClose={handleCloseCardDetail}
+            onClose={handleCloseDetailAndUrl}
             operations={{
               onUpdate: async (payload) => {
                 if (!selectedCard) return;
@@ -496,6 +518,15 @@ export const BoardDetailPage: React.FC = () => {
               onSubmit={handleSubmitEditBoard}
               initialName={board.name}
               initialDescription={board.description}
+            />
+          )}
+
+          {/* AI Copilot Drawer */}
+          {board && (
+            <AiCopilotDrawer
+              boardId={board.id}
+              boardTitle={board.name}
+              onSelectCard={handleSelectCard}
             />
           )}
         </>

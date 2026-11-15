@@ -55,10 +55,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             }
           });
           setServerError(
-            getUserFacingApiError(
-              err,
-              "Please check your email and password and try again."
-            )
+            "Please check your email and password and try again."
           );
         } else {
           setServerError(

@@ -5,7 +5,7 @@ import { NotFoundPage } from "../NotFoundPage";
 import { router } from "@/routes";
 import { KnowledgeBasePage } from "@/pages/knowledge/KnowledgeBasePage";
 import { HelpPage } from "@/pages/help/HelpPage";
-import { UnderDevelopmentPage } from "@/pages/UnderDevelopmentPage";
+import { AiAssistantPage } from "@/pages/ai";
 
 interface RouteShape {
   path?: string;
@@ -31,10 +31,10 @@ describe("NotFoundPage", () => {
     expect(screen.getByRole("link", { name: /browse boards/i }).getAttribute("href")).toBe("/boards");
   });
 
-  it("routes Knowledge and Help to their pages, keeps AI under development, and catches unknown paths", () => {
+  it("routes Knowledge, Help, and AI Assistant to their pages, and catches unknown paths", () => {
     expect(findRoute("/knowledge")?.element?.type).toBe(KnowledgeBasePage);
     expect(findRoute("/help")?.element?.type).toBe(HelpPage);
-    expect(findRoute("/assistant")?.element?.type).toBe(UnderDevelopmentPage);
+    expect(findRoute("/assistant")?.element?.type).toBe(AiAssistantPage);
     expect(findRoute("*")?.element?.type).toBe(NotFoundPage);
   });
 });

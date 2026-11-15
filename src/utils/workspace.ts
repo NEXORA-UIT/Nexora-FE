@@ -85,5 +85,10 @@ export function handleWorkspaceActionError(
     return;
   }
 
+  if (err instanceof Error && err.message) {
+    toast.error(getUserFacingApiError(err, err.message));
+    return;
+  }
+
   toast.error(getUserFacingApiError(err, defaultRoleMessage));
 }

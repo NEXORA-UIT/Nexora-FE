@@ -118,7 +118,7 @@ describe("planning.utils - wouldCreateCycle", () => {
 
 describe("planning.utils - isCardOverdue", () => {
   const pastDate = "2026-10-01T12:00:00.000Z";
-  const futureDate = "2026-10-30T12:00:00.000Z";
+  const futureDate = "2099-10-30T12:00:00.000Z";
 
   it("flags active card with past dueDate in non-DONE list as overdue", () => {
     const card = createMockCard({ dueDate: pastDate, status: "ACTIVE" });

@@ -297,7 +297,7 @@ export const Sidebar: React.FC = () => {
 
             <Link
               to={ROUTES.AI_ASSISTANT}
-              aria-label="AI Assistant, not implemented"
+              aria-label="AI Assistant (not implemented yet)"
               className="flex items-center justify-between gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
             >
               <span className="flex items-center gap-2.5">

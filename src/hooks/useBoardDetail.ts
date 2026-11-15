@@ -196,8 +196,9 @@ export function useBoardDetail(boardId?: string) {
     return null;
   }, [board, selectedCardId]);
 
-  const handleSelectCard = React.useCallback((card: KanbanCard) => {
-    setSelectedCardId(card.id);
+  const handleSelectCard = React.useCallback((cardOrId: KanbanCard | string) => {
+    const id = typeof cardOrId === "string" ? cardOrId : cardOrId.id;
+    setSelectedCardId(id);
   }, []);
 
   const handleCloseCardDetail = React.useCallback(() => {

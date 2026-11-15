@@ -8,6 +8,7 @@ import {
   SlidersHorizontal,
   X,
   Image as ImageIcon,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { BoardCardFilters, BoardLabel, BoardMember, CardPriority, ListCategory } from "@/types";
@@ -23,6 +24,7 @@ export interface BoardDetailToolbarProps {
   archivedListsCount?: number;
   onArchivedListsClick?: () => void;
   onFilterClick?: () => void;
+  onToggleAiCopilot?: () => void;
   filters: BoardCardFilters;
   onFiltersChange: (filters: BoardCardFilters) => void;
   members: BoardMember[];
@@ -39,6 +41,7 @@ export const BoardDetailToolbar: React.FC<BoardDetailToolbarProps> = ({
   archivedListsCount = 0,
   onArchivedListsClick,
   onFilterClick,
+  onToggleAiCopilot,
   filters,
   onFiltersChange,
   members,
@@ -216,6 +219,21 @@ export const BoardDetailToolbar: React.FC<BoardDetailToolbarProps> = ({
           </div>
         )}
         </div>
+
+        {/* AI Copilot Trigger Button */}
+        {onToggleAiCopilot && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onToggleAiCopilot}
+            aria-label="AI Copilot"
+            className="h-8 gap-1.5 rounded-lg border-primary-200/90 bg-primary-50/70 text-xs font-semibold text-primary-700 hover:bg-primary-100 hover:border-primary-300 shadow-xs transition-all cursor-pointer"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-primary-600" />
+            <span>AI Copilot</span>
+          </Button>
+        )}
       </div>
     </div>
   );

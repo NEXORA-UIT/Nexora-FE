@@ -60,7 +60,7 @@ describe("CardDetailDependencies Component", () => {
     fireEvent.click(addBtn);
 
     // Dialog should open
-    expect(screen.getByText("Add Prerequisite Dependency")).toBeDefined();
+    expect(screen.getByText(/Add prerequisite dependency/i)).toBeDefined();
 
     // Find an available candidate card (e.g., NEX-102)
     const candidateBtn = screen.getByText("NEX-102").closest("button");
@@ -69,7 +69,7 @@ describe("CardDetailDependencies Component", () => {
     fireEvent.click(candidateBtn!);
 
     // Submit
-    const submitBtn = screen.getByRole("button", { name: "Add Dependency" });
+    const submitBtn = screen.getByRole("button", { name: /Add dependency/i });
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
