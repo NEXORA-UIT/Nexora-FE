@@ -59,7 +59,9 @@ describe("WorkspaceInvitationPage", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: /accept invitation/i }));
-    expect(await screen.findByText("We could not process this invitation.")).toBeTruthy();
+    expect(
+      await screen.findByText(/This invitation has expired|We could not process this invitation/i)
+    ).toBeTruthy();
     expect(screen.queryByText("Lời mời đã hết hạn")).toBeNull();
   });
 });

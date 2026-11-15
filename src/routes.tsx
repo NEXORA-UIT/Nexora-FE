@@ -19,6 +19,7 @@ import { WorkspaceInvitationPage } from "@/pages/workspaces/WorkspaceInvitationP
 import { MyTasksPage } from "@/pages/tasks/MyTasksPage";
 import { WorkspaceCalendarPage } from "@/pages/calendar/WorkspaceCalendarPage";
 import { QuickNotesPage } from "@/pages/quick-notes/QuickNotesPage";
+import { AiAssistantPage } from "@/pages/ai";
 import {
   ProtectedRoute,
   PublicOnlyRoute,
@@ -74,7 +75,7 @@ export const router = createBrowserRouter([
       },
       {
         path: ROUTES.AI_ASSISTANT,
-        element: <UnderDevelopmentPage title="AI Assistant and Agents are not implemented yet" />,
+        element: <AiAssistantPage />,
       },
       {
         path: ROUTES.SETTINGS,
