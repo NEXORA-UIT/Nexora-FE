@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 import {
   BoardSelectorHeader,
   DocumentDropzone,
@@ -56,7 +57,15 @@ export const KnowledgeBasePage: React.FC = () => {
     deleteDocument,
     queryRAG,
     clearRAGAnswer,
+    stopPolling,
   } = useKnowledgeBaseStore();
+
+  // Stop background polling on unmount
+  React.useEffect(() => {
+    return () => {
+      stopPolling();
+    };
+  }, [stopPolling]);
 
   // Synchronize active board when boards load
   React.useEffect(() => {
@@ -83,7 +92,12 @@ export const KnowledgeBasePage: React.FC = () => {
 
   const handleUpload = async (file: File) => {
     const currentBoardId = activeBoardId || (boards[0]?.id ?? "default-board");
-    await uploadDocument(currentBoardId, file);
+    try {
+      await uploadDocument(currentBoardId, file);
+      toast.success("Document uploaded successfully.");
+    } catch {
+      toast.error("Failed to upload document. Please try again.");
+    }
   };
 
   const handleSearchQuestion = async (q: string) => {

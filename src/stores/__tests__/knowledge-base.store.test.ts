@@ -58,4 +58,9 @@ describe("useKnowledgeBaseStore", () => {
     expect(state.documents.some((d) => d.fileName === "upload_test.pdf")).toBe(true);
     expect(state.isUploading).toBe(false);
   });
+
+  it("handles stopPolling cleanly", () => {
+    const store = useKnowledgeBaseStore.getState();
+    expect(() => store.stopPolling()).not.toThrow();
+  });
 });

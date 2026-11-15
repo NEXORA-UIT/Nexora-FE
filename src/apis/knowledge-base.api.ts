@@ -1,4 +1,5 @@
 import axios, { type AxiosInstance } from "axios";
+import { useAuthStore } from "@/stores/auth.store";
 import type { KnowledgeDocument, RAGAnswer, RAGCitation } from "@/types/knowledge-base";
 
 const AI_BASE_URL = import.meta.env.VITE_AI_SERVICE_URL || "/ai-service";
@@ -11,6 +12,14 @@ export const kbClient: AxiosInstance = axios.create({
   },
   timeout: 10000,
 });
+
+function getValidUuid(id?: string | null): string {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (id && uuidRegex.test(id)) {
+    return id;
+  }
+  return "00000000-0000-0000-0000-000000000001";
+}
 
 // Storage key helper for offline simulator persistence
 const getStorageKey = (boardId: string) => `nexora_kb_docs_${boardId}`;
@@ -114,7 +123,8 @@ export const knowledgeBaseApi = {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("board_id", boardId);
-      formData.append("uploaded_by", "current-user");
+      const currentUserId = getValidUuid(useAuthStore.getState().user?.id);
+      formData.append("uploaded_by", currentUserId);
 
       const response = await kbClient.post<{
         document_id: string;
@@ -232,7 +242,7 @@ export const knowledgeBaseApi = {
           page_number?: number | null;
           snippet: string;
         }>;
-      }>("/v1/answers", {
+      }>("/v1/answer", {
         question,
         board_id: boardId,
       });

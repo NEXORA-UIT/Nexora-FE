@@ -24,7 +24,10 @@ export interface KnowledgeBaseState {
   setSearchQuery: (query: string) => void;
   setStatusFilter: (status: DocumentStatus | "ALL") => void;
   pollProcessingDocuments: () => void;
+  stopPolling: () => void;
 }
+
+let activePollingTimer: ReturnType<typeof setInterval> | null = null;
 
 export const useKnowledgeBaseStore = create<KnowledgeBaseState>((set, get) => ({
   documents: [],
@@ -39,7 +42,12 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseState>((set, get) => ({
   errorMessage: null,
 
   setActiveBoard: (boardId: string) => {
-    set({ activeBoardId: boardId });
+    if (get().activeBoardId !== boardId) {
+      get().stopPolling();
+      set({ activeBoardId: boardId, ragAnswer: null });
+    } else {
+      set({ activeBoardId: boardId });
+    }
     void get().loadDocuments(boardId);
   },
 
@@ -121,20 +129,46 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseState>((set, get) => ({
     const boardId = get().activeBoardId;
     if (!boardId) return;
 
+    if (activePollingTimer) {
+      clearInterval(activePollingTimer);
+      activePollingTimer = null;
+    }
+
     // Check every 2 seconds if there are still documents in PENDING or PROCESSING status
-    const interval = setInterval(async () => {
+    activePollingTimer = setInterval(async () => {
+      // Abort if active board changed
+      if (get().activeBoardId !== boardId) {
+        if (activePollingTimer) {
+          clearInterval(activePollingTimer);
+          activePollingTimer = null;
+        }
+        return;
+      }
+
       const currentDocs = get().documents;
       const hasProcessing = currentDocs.some(
         (d) => d.status === "PENDING" || d.status === "PROCESSING"
       );
 
       if (!hasProcessing) {
-        clearInterval(interval);
+        if (activePollingTimer) {
+          clearInterval(activePollingTimer);
+          activePollingTimer = null;
+        }
         return;
       }
 
       const refreshed = await knowledgeBaseApi.listDocuments(boardId);
-      set({ documents: refreshed });
+      if (get().activeBoardId === boardId) {
+        set({ documents: refreshed });
+      }
     }, 2000);
+  },
+
+  stopPolling: () => {
+    if (activePollingTimer) {
+      clearInterval(activePollingTimer);
+      activePollingTimer = null;
+    }
   },
 }));

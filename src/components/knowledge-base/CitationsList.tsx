@@ -33,9 +33,11 @@ export const CitationsList: React.FC<CitationsListProps> = ({ citations, classNa
                 </span>
               )}
             </div>
-            <p className="text-[11px] text-neutral-600 leading-relaxed italic line-clamp-3">
-              “{citation.snippet}”
-            </p>
+            {citation.snippet ? (
+              <p className="text-[11px] text-neutral-600 leading-relaxed italic line-clamp-3">
+                “{citation.snippet}”
+              </p>
+            ) : null}
           </div>
         ))}
       </div>
