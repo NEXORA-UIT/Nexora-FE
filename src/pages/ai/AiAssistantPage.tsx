@@ -18,7 +18,7 @@ import {
   PromptSuggestionsBar,
   PromptSuggestionsGrid,
 } from "@/components/ai-copilot";
-import type { BoardSummary } from "@/types";
+import type { Board } from "@/types";
 
 export const AiAssistantPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -28,7 +28,7 @@ export const AiAssistantPage: React.FC = () => {
   const activeWorkspace = useWorkspaceStore((state) => state.getActiveWorkspace());
   const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
 
-  const [boards, setBoards] = useState<BoardSummary[]>([]);
+  const [boards, setBoards] = useState<Board[]>([]);
   const [isLoadingBoards, setIsLoadingBoards] = useState(false);
 
   const urlBoardId = searchParams.get("boardId");
@@ -271,8 +271,11 @@ export const AiAssistantPage: React.FC = () => {
           <ChatInputBar
             onSendMessage={handleSend}
             isThinking={isThinking}
+            disabled={!currentBoardId}
             placeholder={
-              currentBoard
+              !currentBoardId
+                ? "Vui lòng chọn một bảng để bắt đầu trò chuyện..."
+                : currentBoard
                 ? `Hỏi AI Copilot về bảng "${currentBoard.name}"...`
                 : "Hỏi AI Copilot..."
             }

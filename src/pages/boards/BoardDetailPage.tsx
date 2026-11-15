@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams, Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, AlertCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { ROUTES } from "@/constants/routes";
@@ -43,6 +43,8 @@ export const BoardDetailPage: React.FC = () => {
   const { fetchGitActivity } = useGitHubCardActivity();
   const boardContainerRef = React.useRef<HTMLDivElement>(null);
   const { toggleDrawer: toggleAiCopilot } = useAiCopilotStore();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const cardIdFromUrl = searchParams.get("cardId");
 
 
 
@@ -108,6 +110,22 @@ export const BoardDetailPage: React.FC = () => {
     handleDeleteDependency,
     handleUpdateBoard,
   } = useBoardDetail(boardId);
+
+  // Auto-open card detail if cardId is provided in URL
+  React.useEffect(() => {
+    if (cardIdFromUrl) {
+      handleSelectCard(cardIdFromUrl);
+    }
+  }, [cardIdFromUrl, handleSelectCard]);
+
+  const handleCloseDetailAndUrl = React.useCallback(() => {
+    handleCloseCardDetail();
+    if (searchParams.has("cardId")) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("cardId");
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [handleCloseCardDetail, searchParams, setSearchParams]);
 
   const currentUser = useAuthStore((state) => state.user);
   const { isWorkspaceOwner, verifiedOwnerContext } = useWorkspaceOwnership(
@@ -413,7 +431,7 @@ export const BoardDetailPage: React.FC = () => {
           <CardDetailDrawer
             card={selectedCard}
             isOpen={Boolean(selectedCardId && selectedCard)}
-            onClose={handleCloseCardDetail}
+            onClose={handleCloseDetailAndUrl}
             operations={{
               onUpdate: async (payload) => {
                 if (!selectedCard) return;

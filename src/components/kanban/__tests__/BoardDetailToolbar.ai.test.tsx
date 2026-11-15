@@ -1,4 +1,3 @@
-import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { BoardDetailToolbar } from "../BoardDetailToolbar";
@@ -10,11 +9,17 @@ describe("BoardDetailToolbar AI button", () => {
       <BoardDetailToolbar
         activeView="board"
         onViewChange={vi.fn()}
-        backgroundPreset="default"
+        backgroundPreset="aurora"
         onBackgroundChange={vi.fn()}
         searchQuery=""
         onSearchChange={vi.fn()}
-        filters={{}}
+        filters={{
+          statusGroup: "ALL",
+          priority: "ALL",
+          assigneeIds: [],
+          dueDate: "ALL",
+          labelIds: [],
+        }}
         onFiltersChange={vi.fn()}
         members={[]}
         labels={[]}

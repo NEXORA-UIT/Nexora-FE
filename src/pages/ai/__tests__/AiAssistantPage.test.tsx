@@ -1,4 +1,3 @@
-import React from "react";
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MemoryRouter } from "react-router-dom";
@@ -28,15 +27,11 @@ describe("AiAssistantPage", () => {
         {
           id: "ws-1",
           name: "Main Workspace",
-          ownerId: "user-1",
-          description: "",
-          iconUrl: null,
-          status: "ACTIVE",
-          plan: "FREE",
           slug: "main-ws",
-          createdAt: "",
-          updatedAt: "",
-          members: [],
+          status: "active",
+          description: "",
+          teamType: "engineering",
+          initials: "MW",
         },
       ],
       activeWorkspaceId: "ws-1",
