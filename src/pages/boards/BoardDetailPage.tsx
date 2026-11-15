@@ -18,8 +18,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { boardApi } from "@/apis/board.api";
 import { EditBoardModal } from "@/components/boards";
+import { AiCopilotDrawer } from "@/components/ai-copilot";
 import { useAuthStore } from "@/stores/auth.store";
 import { useWorkspaceStore } from "@/stores/workspace.store";
+import { useAiCopilotStore } from "@/stores/ai-copilot.store";
 import { canUserManageDependencies } from "@/utils";
 import {
   isWorkspaceArchived,
@@ -40,6 +42,7 @@ export const BoardDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { fetchGitActivity } = useGitHubCardActivity();
   const boardContainerRef = React.useRef<HTMLDivElement>(null);
+  const { toggleDrawer: toggleAiCopilot } = useAiCopilotStore();
 
 
 
@@ -372,6 +375,7 @@ export const BoardDetailPage: React.FC = () => {
             archivedListsCount={board.archivedListsCount}
             onArchivedListsClick={handleArchivedListsClick}
             onFilterClick={handleFilterClick}
+            onToggleAiCopilot={() => toggleAiCopilot(board.id)}
           />
 
           {/* Canvas Views */}
@@ -496,6 +500,15 @@ export const BoardDetailPage: React.FC = () => {
               onSubmit={handleSubmitEditBoard}
               initialName={board.name}
               initialDescription={board.description}
+            />
+          )}
+
+          {/* AI Copilot Drawer */}
+          {board && (
+            <AiCopilotDrawer
+              boardId={board.id}
+              boardTitle={board.name}
+              onSelectCard={handleSelectCard}
             />
           )}
         </>
