@@ -9,3 +9,4 @@ export * from "./github.api";
 export * from "./notifications.api";
 export * from "./list.api";
 export * from "./card.api";
+export * from "./ai.api";
