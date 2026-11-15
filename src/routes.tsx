@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AuthLayout } from "@/layouts/AuthLayout";
 import { AppLayout } from "@/layouts/AppLayout";
 import { LandingPage } from "@/pages/LandingPage";
@@ -76,6 +76,10 @@ export const router = createBrowserRouter([
       {
         path: ROUTES.AI_ASSISTANT,
         element: <AiAssistantPage />,
+      },
+      {
+        path: "/ai-assistant",
+        element: <Navigate to={ROUTES.AI_ASSISTANT} replace />,
       },
       {
         path: ROUTES.SETTINGS,

@@ -41,7 +41,7 @@ export const PromptSuggestionsBar: React.FC<PromptSuggestionsBarProps> = ({
           key={item.id}
           type="button"
           onClick={() => onSelectPrompt(item.prompt)}
-          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-neutral-600 bg-white hover:bg-neutral-100 border border-neutral-200/80 rounded-full shrink-0 shadow-2xs transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-neutral-600 bg-white hover:bg-neutral-100 border border-neutral-200/80 rounded-full shrink-0 shadow-xs transition-colors cursor-pointer"
         >
           {getIcon(item.iconName)}
           <span>{item.label}</span>

@@ -98,9 +98,11 @@ export const useAiCopilotStore = create<AiCopilotStoreState>((set, get) => ({
       };
     });
 
+    let stepTimer: ReturnType<typeof setTimeout> | undefined;
+
     try {
       // Dynamic thinking steps simulation if taking more than 500ms
-      const stepTimer = setTimeout(() => {
+      stepTimer = setTimeout(() => {
         if (get().isThinking) {
           set({ thinkingStep: "Đang tra cứu dữ liệu bảng..." });
         }
@@ -160,6 +162,8 @@ export const useAiCopilotStore = create<AiCopilotStoreState>((set, get) => ({
           error: errorMessage,
         };
       });
+    } finally {
+      if (stepTimer) clearTimeout(stepTimer);
     }
   },
 }));

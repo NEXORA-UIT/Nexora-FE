@@ -63,7 +63,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             {message.timestamp}
           </span>
         </div>
-        <div className="w-7 h-7 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+        <div className="w-7 h-7 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
           <User className="w-4 h-4" />
         </div>
       </div>

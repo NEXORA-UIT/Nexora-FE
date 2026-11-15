@@ -3,6 +3,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { AiCopilotDrawer } from "../AiCopilotDrawer";
 import { useAiCopilotStore } from "@/stores/ai-copilot.store";
+import { ROUTES } from "@/constants/routes";
+
+const mockNavigate = vi.fn();
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
 
 describe("AiCopilotDrawer", () => {
   beforeEach(() => {
@@ -84,5 +94,17 @@ describe("AiCopilotDrawer", () => {
     fireEvent.click(sendBtn);
 
     expect(sendMessageSpy).toHaveBeenCalledWith("Tóm tắt tiến độ", "b-1");
+  });
+
+  it("navigates to ROUTES.AI_ASSISTANT when maximize button is clicked", () => {
+    render(
+      <MemoryRouter>
+        <AiCopilotDrawer boardId="b-1" onSelectCard={vi.fn()} />
+      </MemoryRouter>
+    );
+
+    const expandBtn = screen.getByRole("button", { name: /Mở toàn màn hình/i });
+    fireEvent.click(expandBtn);
+    expect(mockNavigate).toHaveBeenCalledWith(`${ROUTES.AI_ASSISTANT}?boardId=b-1`);
   });
 });

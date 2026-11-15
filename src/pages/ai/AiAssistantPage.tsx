@@ -76,7 +76,7 @@ export const AiAssistantPage: React.FC = () => {
     if (currentBoardId) {
       setActiveBoardId(currentBoardId);
       if (urlBoardId !== currentBoardId) {
-        setSearchParams({ boardId: currentBoardId });
+        setSearchParams({ boardId: currentBoardId }, { replace: true });
       }
     }
   }, [currentBoardId, urlBoardId, setActiveBoardId, setSearchParams]);
@@ -248,7 +248,7 @@ export const AiAssistantPage: React.FC = () => {
                   <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary-600 to-indigo-500 text-white flex items-center justify-center shrink-0 shadow-xs animate-pulse">
                     <Sparkles className="w-4 h-4" />
                   </div>
-                  <div className="bg-neutral-50 border border-neutral-200/80 rounded-2xl rounded-tl-xs px-4 py-3 shadow-2xs">
+                  <div className="bg-neutral-50 border border-neutral-200/80 rounded-2xl rounded-tl-xs px-4 py-3 shadow-xs">
                     <div className="flex items-center gap-2 text-xs font-medium text-primary-700">
                       <span className="relative flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75" />

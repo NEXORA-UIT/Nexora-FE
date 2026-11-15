@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sparkles, X, Trash2, Maximize2, Bot } from "lucide-react";
+import { ROUTES } from "@/constants/routes";
 import { useAiCopilotStore } from "@/stores/ai-copilot.store";
 import { ChatMessageItem } from "./ChatMessageItem";
 import { ChatInputBar } from "./ChatInputBar";
@@ -61,14 +62,14 @@ export const AiCopilotDrawer: React.FC<AiCopilotDrawerProps> = ({
   };
 
   const handleExpandToFullPage = () => {
-    navigate(`/ai-assistant?boardId=${boardId}`);
+    navigate(`${ROUTES.AI_ASSISTANT}?boardId=${boardId}`);
   };
 
   return (
     <>
       {/* Mobile Backdrop */}
       <div
-        className="fixed inset-0 bg-black/20 backdrop-blur-2xs z-35 sm:hidden"
+        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 sm:hidden"
         onClick={closeDrawer}
         aria-hidden="true"
       />
@@ -139,7 +140,7 @@ export const AiCopilotDrawer: React.FC<AiCopilotDrawerProps> = ({
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-4">
-              <div className="w-12 h-12 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center mb-3 shadow-2xs">
+              <div className="w-12 h-12 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center mb-3 shadow-xs">
                 <Bot className="w-6 h-6" />
               </div>
               <h3 className="text-base font-semibold text-neutral-800">
@@ -164,7 +165,7 @@ export const AiCopilotDrawer: React.FC<AiCopilotDrawerProps> = ({
                   <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-primary-600 to-indigo-500 text-white flex items-center justify-center shrink-0 shadow-xs animate-pulse">
                     <Sparkles className="w-4 h-4" />
                   </div>
-                  <div className="bg-neutral-50 border border-neutral-200/80 rounded-2xl rounded-tl-xs px-4 py-3 shadow-2xs">
+                  <div className="bg-neutral-50 border border-neutral-200/80 rounded-2xl rounded-tl-xs px-4 py-3 shadow-xs">
                     <div className="flex items-center gap-2 text-xs font-medium text-primary-700">
                       <span className="relative flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75" />
